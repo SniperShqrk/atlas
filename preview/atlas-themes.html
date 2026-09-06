@@ -1,0 +1,269 @@
+<title>ATLAS Palettes</title>
+<style>
+  :root { --line:#2A2825; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:#08080A; color:#F0EEE9;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif; }
+  .page { max-width:1180px; margin:0 auto; padding:44px 24px 80px; }
+  h1 { font-size:30px; font-weight:700; letter-spacing:6px; margin:0; }
+  h1 b { color:#C08A3E; }
+  .lede { color:#8C887F; font-size:14.5px; line-height:1.65; margin:14px 0 0; max-width:74ch; }
+  .theme { border-radius:16px; padding:26px 26px 22px; margin-top:26px; border:1px solid var(--line); }
+  .th { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
+  .th h2 { margin:0; font-size:22px; font-weight:700; letter-spacing:-.3px; }
+  .th p { margin:5px 0 0; font-size:13.5px; }
+  .pill { font-size:9.5px; font-weight:700; letter-spacing:1.4px; border:1px solid; border-radius:5px; padding:4px 8px; white-space:nowrap; }
+  .grid { display:grid; grid-template-columns:1.25fr .85fr 1fr; gap:16px; margin-top:20px; }
+  .card { border:1px solid; border-radius:14px; padding:18px; }
+  .card.center { display:flex; align-items:center; justify-content:center; }
+  .eyebrow { font-size:9.5px; font-weight:700; letter-spacing:1.6px; }
+  .h { font-size:19px; font-weight:600; margin-top:12px; letter-spacing:-.2px; }
+  .b { font-size:13px; margin-top:6px; line-height:1.5; }
+  .actions { display:flex; gap:8px; margin-top:16px; flex-wrap:wrap; }
+  .btn { font-size:12.5px; font-weight:700; padding:9px 14px; border-radius:9px; }
+  .btn.ghost { background:none; border:1px solid; }
+  .sev { display:flex; gap:14px; margin-top:16px; font-size:9.5px; font-weight:700; letter-spacing:1.4px; }
+  .sev span { display:flex; align-items:center; gap:5px; }
+  .sev i { width:6px; height:6px; border-radius:3px; display:block; }
+  .figure { display:flex; gap:6px; padding:12px; border-radius:9px; margin-top:10px; }
+  .swatch { flex:1; height:34px; border-radius:5px; }
+  .scaleLabels { display:flex; gap:6px; margin-top:6px; }
+  .scaleLabels span { flex:1; font-size:9.5px; text-align:center; }
+  .surfaces { display:flex; gap:6px; margin-top:10px; }
+  .surfaces div { flex:1; height:26px; border-radius:5px; border:1px solid; }
+  .warn { font-size:12px; margin:16px 0 0; }
+  @media (max-width:900px) { .grid { grid-template-columns:1fr; } }
+</style>
+<div class="page">
+  <h1>ATL<b>A</b>S</h1>
+  <p class="lede">
+    The four palettes on the three surfaces that encode meaning in colour. A theme swaps tokens and
+    nothing else — accent always marks what needs work, bronze always marks what is recovering,
+    complete or Premium. Each panel is drawn entirely in its own theme's tokens, and the badge
+    reports a contrast audit of the pairs that have to stay legible.
+  </p>
+  <section class="theme" style="background:#0D0D0E;color:#F0EEE9">
+  <header class="th">
+    <div>
+      <h2 style="color:#F0EEE9">Obsidian</h2>
+      <p style="color:#8C887F">Volcanic glass and terracotta. The default.</p>
+    </div>
+    <span class="pill" style="background:rgba(192,138,62,0.15);color:#C08A3E;border-color:#C08A3E">
+      CONTRAST OK
+    </span>
+  </header>
+
+  <div class="grid">
+    <!-- a card of type, an accent action and a bronze state -->
+    <div class="card" style="background:#181715;border-color:#2A2825">
+      <div class="eyebrow" style="color:#C08A3E">ATLAS READ YOUR LAST BLOCK</div>
+      <div class="h" style="color:#F0EEE9">Calves is falling behind</div>
+      <div class="b" style="color:#A8A49B">No direct calves work logged in this period.</div>
+      <div class="b" style="color:#8C887F">Target 12 sets a week · currently 0</div>
+      <div class="actions">
+        <span class="btn" style="background:#B4472F;color:#F5F2EC">See what ATLAS found</span>
+        <span class="btn ghost" style="border-color:#C08A3E;color:#C08A3E">Premium</span>
+      </div>
+      <div class="sev">
+        <span style="color:#B4472F"><i style="background:#B4472F"></i>ACTION</span><span style="color:#A8A49B"><i style="background:#A8A49B"></i>WATCH</span><span style="color:#C08A3E"><i style="background:#C08A3E"></i>WORKING</span>
+      </div>
+    </div>
+
+    <!-- the radar -->
+    <div class="card center" style="background:#181715;border-color:#2A2825">
+      <svg viewBox="0 0 210 210" width="210" height="210">
+    <polygon points="105,81.33 121.73,88.27 128.67,105 121.73,121.73 105,128.67 88.27,121.73 81.33,105 88.27,88.27" fill="none" stroke="#2A2825" stroke-width="1"/><polygon points="105,57.67 138.47,71.53 152.33,105 138.47,138.47 105,152.33 71.53,138.47 57.67,105 71.53,71.53" fill="none" stroke="#C08A3E" stroke-width="1.1" stroke-dasharray="3 4"/><polygon points="105,34 155.2,54.8 176,105 155.2,155.2 105,176 54.8,155.2 34,105 54.8,54.8" fill="none" stroke="#2A2825" stroke-width="1"/>
+    <line x1="105" y1="105" x2="105" y2="34" stroke="#2A2825"/><line x1="105" y1="105" x2="155.2" y2="54.8" stroke="#2A2825"/><line x1="105" y1="105" x2="176" y2="105" stroke="#2A2825"/><line x1="105" y1="105" x2="155.2" y2="155.2" stroke="#2A2825"/><line x1="105" y1="105" x2="105" y2="176" stroke="#2A2825"/><line x1="105" y1="105" x2="54.8" y2="155.2" stroke="#2A2825"/><line x1="105" y1="105" x2="34" y2="105" stroke="#2A2825"/><line x1="105" y1="105" x2="54.8" y2="54.8" stroke="#2A2825"/>
+    <polygon points="105,63.82 142.49,67.51 156.12,105 126.09,126.09 105,105 86.93,123.07 75.65,105 74.54,74.54" fill="#EDEAE3" fill-opacity="0.14" stroke="#EDEAE3" stroke-width="1.8" stroke-linejoin="round"/>
+    <circle cx="105" cy="63.82" r="3" fill="#EDEAE3"/><circle cx="142.49" cy="67.51" r="3" fill="#EDEAE3"/><circle cx="156.12" cy="105" r="3" fill="#EDEAE3"/><circle cx="126.09" cy="126.09" r="3" fill="#EDEAE3"/><circle cx="105" cy="105" r="3" fill="#B4472F"/><circle cx="86.93" cy="123.07" r="3" fill="#EDEAE3"/><circle cx="75.65" cy="105" r="3" fill="#EDEAE3"/><circle cx="74.54" cy="74.54" r="3" fill="#EDEAE3"/>
+    <text x="105" y="28" fill="#8C887F" font-size="8" font-weight="700" text-anchor="middle" font-family="system-ui">CHEST</text><text x="161.57" y="51.43" fill="#8C887F" font-size="8" font-weight="700" text-anchor="start" font-family="system-ui">DELTS</text><text x="185" y="108" fill="#8C887F" font-size="8" font-weight="700" text-anchor="start" font-family="system-ui">ARMS</text><text x="161.57" y="164.57" fill="#8C887F" font-size="8" font-weight="700" text-anchor="start" font-family="system-ui">CORE</text><text x="105" y="188" fill="#B4472F" font-size="8" font-weight="700" text-anchor="middle" font-family="system-ui">CALF</text><text x="48.43" y="164.57" fill="#8C887F" font-size="8" font-weight="700" text-anchor="end" font-family="system-ui">POST</text><text x="25" y="108" fill="#8C887F" font-size="8" font-weight="700" text-anchor="end" font-family="system-ui">QUAD</text><text x="48.43" y="51.43" fill="#8C887F" font-size="8" font-weight="700" text-anchor="end" font-family="system-ui">BACK</text>
+  </svg>
+    </div>
+
+    <!-- the recovery scale against the figure -->
+    <div class="card" style="background:#181715;border-color:#2A2825">
+      <div class="eyebrow" style="color:#8C887F">RECOVERY SCALE ON THE FIGURE</div>
+      <div class="figure" style="background:#35322E">
+        <div class="swatch" style="background:#EDEAE3"></div><div class="swatch" style="background:#C9C5BC"></div><div class="swatch" style="background:#C08A3E"></div><div class="swatch" style="background:#B4472F"></div><div class="swatch" style="background:#5E5A54"></div>
+      </div>
+      <div class="scaleLabels">
+        <span style="color:#5A5750">Fresh</span><span style="color:#5A5750">Ready</span><span style="color:#5A5750">Moderate</span><span style="color:#5A5750">Fatigued</span><span style="color:#5A5750">Untrained</span>
+      </div>
+      <div class="eyebrow" style="color:#8C887F;margin-top:16px">SURFACES</div>
+      <div class="surfaces">
+        <div style="background:#0D0D0E;border-color:#38352F" title="bg"></div><div style="background:#141415;border-color:#38352F" title="bgElevated"></div><div style="background:#181715;border-color:#38352F" title="card"></div><div style="background:#1F1E1C;border-color:#38352F" title="cardAlt"></div><div style="background:#2A2825;border-color:#38352F" title="border"></div><div style="background:#38352F;border-color:#38352F" title="borderStrong"></div>
+      </div>
+    </div>
+  </div>
+
+  
+</section>
+<section class="theme" style="background:#F4F2EC;color:#1E1C19">
+  <header class="th">
+    <div>
+      <h2 style="color:#1E1C19">Marble</h2>
+      <p style="color:#6F6A61">Pentelic white and deep ink. Reads in daylight.</p>
+    </div>
+    <span class="pill" style="background:rgba(138,98,36,0.13);color:#8A6224;border-color:#8A6224">
+      CONTRAST OK
+    </span>
+  </header>
+
+  <div class="grid">
+    <!-- a card of type, an accent action and a bronze state -->
+    <div class="card" style="background:#FFFFFF;border-color:#DCD7CC">
+      <div class="eyebrow" style="color:#8A6224">ATLAS READ YOUR LAST BLOCK</div>
+      <div class="h" style="color:#1E1C19">Calves is falling behind</div>
+      <div class="b" style="color:#57534B">No direct calves work logged in this period.</div>
+      <div class="b" style="color:#6F6A61">Target 12 sets a week · currently 0</div>
+      <div class="actions">
+        <span class="btn" style="background:#9C3A24;color:#FAF8F4">See what ATLAS found</span>
+        <span class="btn ghost" style="border-color:#8A6224;color:#8A6224">Premium</span>
+      </div>
+      <div class="sev">
+        <span style="color:#9C3A24"><i style="background:#9C3A24"></i>ACTION</span><span style="color:#57534B"><i style="background:#57534B"></i>WATCH</span><span style="color:#8A6224"><i style="background:#8A6224"></i>WORKING</span>
+      </div>
+    </div>
+
+    <!-- the radar -->
+    <div class="card center" style="background:#FFFFFF;border-color:#DCD7CC">
+      <svg viewBox="0 0 210 210" width="210" height="210">
+    <polygon points="105,81.33 121.73,88.27 128.67,105 121.73,121.73 105,128.67 88.27,121.73 81.33,105 88.27,88.27" fill="none" stroke="#DCD7CC" stroke-width="1"/><polygon points="105,57.67 138.47,71.53 152.33,105 138.47,138.47 105,152.33 71.53,138.47 57.67,105 71.53,71.53" fill="none" stroke="#8A6224" stroke-width="1.1" stroke-dasharray="3 4"/><polygon points="105,34 155.2,54.8 176,105 155.2,155.2 105,176 54.8,155.2 34,105 54.8,54.8" fill="none" stroke="#DCD7CC" stroke-width="1"/>
+    <line x1="105" y1="105" x2="105" y2="34" stroke="#DCD7CC"/><line x1="105" y1="105" x2="155.2" y2="54.8" stroke="#DCD7CC"/><line x1="105" y1="105" x2="176" y2="105" stroke="#DCD7CC"/><line x1="105" y1="105" x2="155.2" y2="155.2" stroke="#DCD7CC"/><line x1="105" y1="105" x2="105" y2="176" stroke="#DCD7CC"/><line x1="105" y1="105" x2="54.8" y2="155.2" stroke="#DCD7CC"/><line x1="105" y1="105" x2="34" y2="105" stroke="#DCD7CC"/><line x1="105" y1="105" x2="54.8" y2="54.8" stroke="#DCD7CC"/>
+    <polygon points="105,63.82 142.49,67.51 156.12,105 126.09,126.09 105,105 86.93,123.07 75.65,105 74.54,74.54" fill="#2B2822" fill-opacity="0.14" stroke="#2B2822" stroke-width="1.8" stroke-linejoin="round"/>
+    <circle cx="105" cy="63.82" r="3" fill="#2B2822"/><circle cx="142.49" cy="67.51" r="3" fill="#2B2822"/><circle cx="156.12" cy="105" r="3" fill="#2B2822"/><circle cx="126.09" cy="126.09" r="3" fill="#2B2822"/><circle cx="105" cy="105" r="3" fill="#9C3A24"/><circle cx="86.93" cy="123.07" r="3" fill="#2B2822"/><circle cx="75.65" cy="105" r="3" fill="#2B2822"/><circle cx="74.54" cy="74.54" r="3" fill="#2B2822"/>
+    <text x="105" y="28" fill="#6F6A61" font-size="8" font-weight="700" text-anchor="middle" font-family="system-ui">CHEST</text><text x="161.57" y="51.43" fill="#6F6A61" font-size="8" font-weight="700" text-anchor="start" font-family="system-ui">DELTS</text><text x="185" y="108" fill="#6F6A61" font-size="8" font-weight="700" text-anchor="start" font-family="system-ui">ARMS</text><text x="161.57" y="164.57" fill="#6F6A61" font-size="8" font-weight="700" text-anchor="start" font-family="system-ui">CORE</text><text x="105" y="188" fill="#9C3A24" font-size="8" font-weight="700" text-anchor="middle" font-family="system-ui">CALF</text><text x="48.43" y="164.57" fill="#6F6A61" font-size="8" font-weight="700" text-anchor="end" font-family="system-ui">POST</text><text x="25" y="108" fill="#6F6A61" font-size="8" font-weight="700" text-anchor="end" font-family="system-ui">QUAD</text><text x="48.43" y="51.43" fill="#6F6A61" font-size="8" font-weight="700" text-anchor="end" font-family="system-ui">BACK</text>
+  </svg>
+    </div>
+
+    <!-- the recovery scale against the figure -->
+    <div class="card" style="background:#FFFFFF;border-color:#DCD7CC">
+      <div class="eyebrow" style="color:#6F6A61">RECOVERY SCALE ON THE FIGURE</div>
+      <div class="figure" style="background:#B5AE9F">
+        <div class="swatch" style="background:#F5F3ED"></div><div class="swatch" style="background:#DAD4C7"></div><div class="swatch" style="background:#8A6224"></div><div class="swatch" style="background:#9C3A24"></div><div class="swatch" style="background:#B5AE9F"></div>
+      </div>
+      <div class="scaleLabels">
+        <span style="color:#9A948A">Fresh</span><span style="color:#9A948A">Ready</span><span style="color:#9A948A">Moderate</span><span style="color:#9A948A">Fatigued</span><span style="color:#9A948A">Untrained</span>
+      </div>
+      <div class="eyebrow" style="color:#6F6A61;margin-top:16px">SURFACES</div>
+      <div class="surfaces">
+        <div style="background:#F4F2EC;border-color:#C4BEB0" title="bg"></div><div style="background:#FAF8F4;border-color:#C4BEB0" title="bgElevated"></div><div style="background:#FFFFFF;border-color:#C4BEB0" title="card"></div><div style="background:#EDEAE2;border-color:#C4BEB0" title="cardAlt"></div><div style="background:#DCD7CC;border-color:#C4BEB0" title="border"></div><div style="background:#C4BEB0;border-color:#C4BEB0" title="borderStrong"></div>
+      </div>
+    </div>
+  </div>
+
+  
+</section>
+<section class="theme" style="background:#0F0C09;color:#F3EDE1">
+  <header class="th">
+    <div>
+      <h2 style="color:#F3EDE1">Bronze</h2>
+      <p style="color:#948570">Oxidised metal and lamp black. Warm and heavy.</p>
+    </div>
+    <span class="pill" style="background:rgba(214,160,83,0.16);color:#D6A053;border-color:#D6A053">
+      CONTRAST OK
+    </span>
+  </header>
+
+  <div class="grid">
+    <!-- a card of type, an accent action and a bronze state -->
+    <div class="card" style="background:#1C1712;border-color:#33291F">
+      <div class="eyebrow" style="color:#D6A053">ATLAS READ YOUR LAST BLOCK</div>
+      <div class="h" style="color:#F3EDE1">Calves is falling behind</div>
+      <div class="b" style="color:#B3A48C">No direct calves work logged in this period.</div>
+      <div class="b" style="color:#948570">Target 12 sets a week · currently 0</div>
+      <div class="actions">
+        <span class="btn" style="background:#B84A2C;color:#FBF6EC">See what ATLAS found</span>
+        <span class="btn ghost" style="border-color:#D6A053;color:#D6A053">Premium</span>
+      </div>
+      <div class="sev">
+        <span style="color:#B84A2C"><i style="background:#B84A2C"></i>ACTION</span><span style="color:#B3A48C"><i style="background:#B3A48C"></i>WATCH</span><span style="color:#D6A053"><i style="background:#D6A053"></i>WORKING</span>
+      </div>
+    </div>
+
+    <!-- the radar -->
+    <div class="card center" style="background:#1C1712;border-color:#33291F">
+      <svg viewBox="0 0 210 210" width="210" height="210">
+    <polygon points="105,81.33 121.73,88.27 128.67,105 121.73,121.73 105,128.67 88.27,121.73 81.33,105 88.27,88.27" fill="none" stroke="#33291F" stroke-width="1"/><polygon points="105,57.67 138.47,71.53 152.33,105 138.47,138.47 105,152.33 71.53,138.47 57.67,105 71.53,71.53" fill="none" stroke="#D6A053" stroke-width="1.1" stroke-dasharray="3 4"/><polygon points="105,34 155.2,54.8 176,105 155.2,155.2 105,176 54.8,155.2 34,105 54.8,54.8" fill="none" stroke="#33291F" stroke-width="1"/>
+    <line x1="105" y1="105" x2="105" y2="34" stroke="#33291F"/><line x1="105" y1="105" x2="155.2" y2="54.8" stroke="#33291F"/><line x1="105" y1="105" x2="176" y2="105" stroke="#33291F"/><line x1="105" y1="105" x2="155.2" y2="155.2" stroke="#33291F"/><line x1="105" y1="105" x2="105" y2="176" stroke="#33291F"/><line x1="105" y1="105" x2="54.8" y2="155.2" stroke="#33291F"/><line x1="105" y1="105" x2="34" y2="105" stroke="#33291F"/><line x1="105" y1="105" x2="54.8" y2="54.8" stroke="#33291F"/>
+    <polygon points="105,63.82 142.49,67.51 156.12,105 126.09,126.09 105,105 86.93,123.07 75.65,105 74.54,74.54" fill="#F3EDE1" fill-opacity="0.14" stroke="#F3EDE1" stroke-width="1.8" stroke-linejoin="round"/>
+    <circle cx="105" cy="63.82" r="3" fill="#F3EDE1"/><circle cx="142.49" cy="67.51" r="3" fill="#F3EDE1"/><circle cx="156.12" cy="105" r="3" fill="#F3EDE1"/><circle cx="126.09" cy="126.09" r="3" fill="#F3EDE1"/><circle cx="105" cy="105" r="3" fill="#B84A2C"/><circle cx="86.93" cy="123.07" r="3" fill="#F3EDE1"/><circle cx="75.65" cy="105" r="3" fill="#F3EDE1"/><circle cx="74.54" cy="74.54" r="3" fill="#F3EDE1"/>
+    <text x="105" y="28" fill="#948570" font-size="8" font-weight="700" text-anchor="middle" font-family="system-ui">CHEST</text><text x="161.57" y="51.43" fill="#948570" font-size="8" font-weight="700" text-anchor="start" font-family="system-ui">DELTS</text><text x="185" y="108" fill="#948570" font-size="8" font-weight="700" text-anchor="start" font-family="system-ui">ARMS</text><text x="161.57" y="164.57" fill="#948570" font-size="8" font-weight="700" text-anchor="start" font-family="system-ui">CORE</text><text x="105" y="188" fill="#B84A2C" font-size="8" font-weight="700" text-anchor="middle" font-family="system-ui">CALF</text><text x="48.43" y="164.57" fill="#948570" font-size="8" font-weight="700" text-anchor="end" font-family="system-ui">POST</text><text x="25" y="108" fill="#948570" font-size="8" font-weight="700" text-anchor="end" font-family="system-ui">QUAD</text><text x="48.43" y="51.43" fill="#948570" font-size="8" font-weight="700" text-anchor="end" font-family="system-ui">BACK</text>
+  </svg>
+    </div>
+
+    <!-- the recovery scale against the figure -->
+    <div class="card" style="background:#1C1712;border-color:#33291F">
+      <div class="eyebrow" style="color:#948570">RECOVERY SCALE ON THE FIGURE</div>
+      <div class="figure" style="background:#3A2F23">
+        <div class="swatch" style="background:#F3EDE1"></div><div class="swatch" style="background:#CBB89A"></div><div class="swatch" style="background:#D6A053"></div><div class="swatch" style="background:#B84A2C"></div><div class="swatch" style="background:#65543E"></div>
+      </div>
+      <div class="scaleLabels">
+        <span style="color:#655847">Fresh</span><span style="color:#655847">Ready</span><span style="color:#655847">Moderate</span><span style="color:#655847">Fatigued</span><span style="color:#655847">Untrained</span>
+      </div>
+      <div class="eyebrow" style="color:#948570;margin-top:16px">SURFACES</div>
+      <div class="surfaces">
+        <div style="background:#0F0C09;border-color:#453729" title="bg"></div><div style="background:#171310;border-color:#453729" title="bgElevated"></div><div style="background:#1C1712;border-color:#453729" title="card"></div><div style="background:#241E17;border-color:#453729" title="cardAlt"></div><div style="background:#33291F;border-color:#453729" title="border"></div><div style="background:#453729;border-color:#453729" title="borderStrong"></div>
+      </div>
+    </div>
+  </div>
+
+  
+</section>
+<section class="theme" style="background:#101113;color:#ECEEF0">
+  <header class="th">
+    <div>
+      <h2 style="color:#ECEEF0">Stone</h2>
+      <p style="color:#848B93">Cool limestone and slate. The quietest one.</p>
+    </div>
+    <span class="pill" style="background:rgba(167,144,104,0.16);color:#A79068;border-color:#A79068">
+      CONTRAST OK
+    </span>
+  </header>
+
+  <div class="grid">
+    <!-- a card of type, an accent action and a bronze state -->
+    <div class="card" style="background:#1B1D21;border-color:#2C3034">
+      <div class="eyebrow" style="color:#A79068">ATLAS READ YOUR LAST BLOCK</div>
+      <div class="h" style="color:#ECEEF0">Calves is falling behind</div>
+      <div class="b" style="color:#A0A6AD">No direct calves work logged in this period.</div>
+      <div class="b" style="color:#848B93">Target 12 sets a week · currently 0</div>
+      <div class="actions">
+        <span class="btn" style="background:#A8503C;color:#F4F6F7">See what ATLAS found</span>
+        <span class="btn ghost" style="border-color:#A79068;color:#A79068">Premium</span>
+      </div>
+      <div class="sev">
+        <span style="color:#A8503C"><i style="background:#A8503C"></i>ACTION</span><span style="color:#A0A6AD"><i style="background:#A0A6AD"></i>WATCH</span><span style="color:#A79068"><i style="background:#A79068"></i>WORKING</span>
+      </div>
+    </div>
+
+    <!-- the radar -->
+    <div class="card center" style="background:#1B1D21;border-color:#2C3034">
+      <svg viewBox="0 0 210 210" width="210" height="210">
+    <polygon points="105,81.33 121.73,88.27 128.67,105 121.73,121.73 105,128.67 88.27,121.73 81.33,105 88.27,88.27" fill="none" stroke="#2C3034" stroke-width="1"/><polygon points="105,57.67 138.47,71.53 152.33,105 138.47,138.47 105,152.33 71.53,138.47 57.67,105 71.53,71.53" fill="none" stroke="#A79068" stroke-width="1.1" stroke-dasharray="3 4"/><polygon points="105,34 155.2,54.8 176,105 155.2,155.2 105,176 54.8,155.2 34,105 54.8,54.8" fill="none" stroke="#2C3034" stroke-width="1"/>
+    <line x1="105" y1="105" x2="105" y2="34" stroke="#2C3034"/><line x1="105" y1="105" x2="155.2" y2="54.8" stroke="#2C3034"/><line x1="105" y1="105" x2="176" y2="105" stroke="#2C3034"/><line x1="105" y1="105" x2="155.2" y2="155.2" stroke="#2C3034"/><line x1="105" y1="105" x2="105" y2="176" stroke="#2C3034"/><line x1="105" y1="105" x2="54.8" y2="155.2" stroke="#2C3034"/><line x1="105" y1="105" x2="34" y2="105" stroke="#2C3034"/><line x1="105" y1="105" x2="54.8" y2="54.8" stroke="#2C3034"/>
+    <polygon points="105,63.82 142.49,67.51 156.12,105 126.09,126.09 105,105 86.93,123.07 75.65,105 74.54,74.54" fill="#E7EAEC" fill-opacity="0.14" stroke="#E7EAEC" stroke-width="1.8" stroke-linejoin="round"/>
+    <circle cx="105" cy="63.82" r="3" fill="#E7EAEC"/><circle cx="142.49" cy="67.51" r="3" fill="#E7EAEC"/><circle cx="156.12" cy="105" r="3" fill="#E7EAEC"/><circle cx="126.09" cy="126.09" r="3" fill="#E7EAEC"/><circle cx="105" cy="105" r="3" fill="#A8503C"/><circle cx="86.93" cy="123.07" r="3" fill="#E7EAEC"/><circle cx="75.65" cy="105" r="3" fill="#E7EAEC"/><circle cx="74.54" cy="74.54" r="3" fill="#E7EAEC"/>
+    <text x="105" y="28" fill="#848B93" font-size="8" font-weight="700" text-anchor="middle" font-family="system-ui">CHEST</text><text x="161.57" y="51.43" fill="#848B93" font-size="8" font-weight="700" text-anchor="start" font-family="system-ui">DELTS</text><text x="185" y="108" fill="#848B93" font-size="8" font-weight="700" text-anchor="start" font-family="system-ui">ARMS</text><text x="161.57" y="164.57" fill="#848B93" font-size="8" font-weight="700" text-anchor="start" font-family="system-ui">CORE</text><text x="105" y="188" fill="#A8503C" font-size="8" font-weight="700" text-anchor="middle" font-family="system-ui">CALF</text><text x="48.43" y="164.57" fill="#848B93" font-size="8" font-weight="700" text-anchor="end" font-family="system-ui">POST</text><text x="25" y="108" fill="#848B93" font-size="8" font-weight="700" text-anchor="end" font-family="system-ui">QUAD</text><text x="48.43" y="51.43" fill="#848B93" font-size="8" font-weight="700" text-anchor="end" font-family="system-ui">BACK</text>
+  </svg>
+    </div>
+
+    <!-- the recovery scale against the figure -->
+    <div class="card" style="background:#1B1D21;border-color:#2C3034">
+      <div class="eyebrow" style="color:#848B93">RECOVERY SCALE ON THE FIGURE</div>
+      <div class="figure" style="background:#2E3237">
+        <div class="swatch" style="background:#E7EAEC"></div><div class="swatch" style="background:#BCC1C6"></div><div class="swatch" style="background:#A79068"></div><div class="swatch" style="background:#A8503C"></div><div class="swatch" style="background:#525960"></div>
+      </div>
+      <div class="scaleLabels">
+        <span style="color:#565C63">Fresh</span><span style="color:#565C63">Ready</span><span style="color:#565C63">Moderate</span><span style="color:#565C63">Fatigued</span><span style="color:#565C63">Untrained</span>
+      </div>
+      <div class="eyebrow" style="color:#848B93;margin-top:16px">SURFACES</div>
+      <div class="surfaces">
+        <div style="background:#101113;border-color:#3C4147" title="bg"></div><div style="background:#16181B;border-color:#3C4147" title="bgElevated"></div><div style="background:#1B1D21;border-color:#3C4147" title="card"></div><div style="background:#232629;border-color:#3C4147" title="cardAlt"></div><div style="background:#2C3034;border-color:#3C4147" title="border"></div><div style="background:#3C4147;border-color:#3C4147" title="borderStrong"></div>
+      </div>
+    </div>
+  </div>
+
+  
+</section>
+</div>

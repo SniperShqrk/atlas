@@ -1,0 +1,920 @@
+<title>ATLAS Progress</title>
+<style>
+  /* ------------------------------------------------------------------
+     This preview honours the app's own design system rather than inventing
+     one: every colour below is lifted verbatim from app/src/theme/theme.ts,
+     and the type scale mirrors the `typography` object there. The app is a
+     deliberately single-theme, dark-only product, so the page commits to
+     that ground and paints every colour explicitly.
+     ------------------------------------------------------------------ */
+  :root {
+    --bg: #0D0D0E;
+    --bg-elevated: #141415;
+    --card: #181715;
+    --card-alt: #1F1E1C;
+    --card-pressed: #272522;
+    --border: #2A2825;
+    --border-strong: #38352F;
+
+    --text: #F0EEE9;
+    --text-secondary: #A8A49B;
+    --text-dim: #8C887F;
+    --text-faint: #5A5750;
+
+    --accent: #B4472F;          /* terracotta — red-figure pottery */
+    --accent-soft: rgba(180, 71, 47, 0.15);
+    --bronze: #C08A3E;
+    --bronze-soft: rgba(192, 138, 62, 0.15);
+    --on-accent: #F5F2EC;
+
+    --marble-light: #EDEAE3;
+    --marble-mid: #C9C5BC;
+
+    --sys: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sys);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .stage {
+    min-height: 100vh;
+    display: flex;
+    gap: 48px;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 44px 32px 64px;
+    flex-wrap: wrap;
+  }
+
+  /* ---------- control rail ---------- */
+  .rail { width: 300px; padding-top: 8px; }
+
+  .wordmark {
+    font-size: 27px;
+    font-weight: 700;
+    letter-spacing: 7px;
+    color: var(--text);
+    margin: 0;
+  }
+  .wordmark span { color: var(--bronze); }
+
+  .rail-sub {
+    color: var(--text-dim);
+    font-size: 13.5px;
+    line-height: 1.65;
+    margin: 14px 0 0;
+    max-width: 34ch;
+  }
+
+  .rail-group { margin-top: 30px; }
+
+  .rail-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 1.3px;
+    color: var(--text-faint);
+    margin-bottom: 10px;
+  }
+
+  .tier {
+    display: flex;
+    background: var(--card-alt);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 3px;
+  }
+  .tier button {
+    flex: 1;
+    border: 0;
+    background: none;
+    color: var(--text-dim);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 9px 0;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background .15s, color .15s;
+  }
+  .tier button:hover { color: var(--text-secondary); }
+  .tier button[aria-pressed="true"] { background: var(--card-pressed); color: var(--text); }
+  .tier button:focus-visible { outline: 2px solid var(--bronze); outline-offset: 2px; }
+
+  .rail-note {
+    font-size: 12.5px;
+    line-height: 1.7;
+    color: var(--text-faint);
+    margin-top: 12px;
+    max-width: 34ch;
+  }
+
+  .fixture {
+    margin-top: 30px;
+    border-left: 2px solid var(--border-strong);
+    padding-left: 14px;
+  }
+  .fixture dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 5px 14px; }
+  .fixture dt { font-size: 12px; color: var(--text-faint); }
+  .fixture dd {
+    margin: 0;
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- phone ---------- */
+  .phone {
+    width: 393px;
+    height: 852px;
+    background: var(--bg);
+    border-radius: 52px;
+    border: 1px solid var(--border-strong);
+    box-shadow: 0 0 0 9px #16151a, 0 34px 70px rgba(0, 0, 0, .62);
+    position: relative;
+    overflow: hidden;
+    flex: 0 0 auto;
+  }
+
+  .island {
+    position: absolute;
+    top: 11px; left: 50%;
+    transform: translateX(-50%);
+    width: 122px; height: 35px;
+    background: #000;
+    border-radius: 20px;
+    z-index: 30;
+  }
+
+  .statusbar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 30px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    z-index: 20;
+    pointer-events: none;
+    background: linear-gradient(var(--bg) 0 46px, transparent 56px);
+  }
+  .statusbar .glyphs { display: flex; gap: 5px; align-items: center; }
+  .bar { width: 3px; background: var(--text); border-radius: 1px; }
+
+  .screen {
+    position: absolute;
+    inset: 0;
+    padding: 56px 20px 96px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+  }
+  .screen::-webkit-scrollbar { width: 5px; }
+  .screen::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+
+  .tabbar {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 84px;
+    background: var(--bg-elevated);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    padding-top: 10px;
+    z-index: 20;
+  }
+  .tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--text-faint);
+  }
+  .tab.on { color: var(--accent); }
+  .home-indicator {
+    position: absolute;
+    bottom: 9px; left: 50%;
+    transform: translateX(-50%);
+    width: 138px; height: 5px;
+    border-radius: 3px;
+    background: #3A3833;
+    z-index: 25;
+  }
+
+  /* ---------- in-app type + components ---------- */
+  h1.title { font-size: 32px; font-weight: 700; letter-spacing: -.6px; margin: 0; }
+
+  .section { margin-top: 24px; }
+  .section-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .section-title { font-size: 16px; font-weight: 600; letter-spacing: -.2px; }
+  .section-action { font-size: 13px; font-weight: 600; color: var(--accent); }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+  }
+
+  .note { font-size: 13px; font-weight: 500; color: var(--text-dim); line-height: 1.46; }
+
+  /* range control */
+  .range {
+    display: flex;
+    background: var(--card-alt);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 3px;
+    margin-top: 16px;
+  }
+  .range button {
+    flex: 1; border: 0; background: none; cursor: pointer;
+    font: inherit; font-size: 13px; font-weight: 600;
+    color: var(--text-dim);
+    padding: 7px 0; border-radius: 999px;
+    transition: background .15s, color .15s;
+  }
+  .range button[aria-pressed="true"] { background: var(--card-pressed); color: var(--text); }
+  .range button:focus-visible { outline: 2px solid var(--bronze); outline-offset: -2px; }
+
+  /* stat tiles */
+  .stats { display: flex; }
+  .stat { flex: 1; }
+  .stat .v {
+    font-size: 26px; font-weight: 700; letter-spacing: -.5px;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat .v small { font-size: 13px; font-weight: 500; color: var(--text-dim); margin-left: 3px; }
+  .stat .l { font-size: 13px; font-weight: 500; color: var(--text-dim); margin-top: 2px; }
+
+  .deltas {
+    display: flex; align-items: center; gap: 12px;
+    margin-top: 12px; padding-top: 12px;
+    border-top: 1px solid var(--border);
+    font-size: 13px; font-weight: 700;
+  }
+  .deltas .spacer { flex: 1; }
+  .deltas .vs { font-weight: 500; color: var(--text-faint); }
+
+  /* insights */
+  .headline {
+    background: var(--card);
+    border: 1px solid rgba(192, 138, 62, .32);
+    border-radius: 16px;
+    padding: 16px;
+  }
+  .kicker {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 10px; font-weight: 700; letter-spacing: 1.1px;
+    color: var(--bronze);
+  }
+  .headline .praise {
+    font-size: 19px; font-weight: 600; letter-spacing: -.3px;
+    line-height: 1.32; margin-top: 12px;
+    text-wrap: balance;
+  }
+  .headline .tease {
+    font-size: 15px; color: var(--text-secondary);
+    line-height: 1.4; margin-top: 6px;
+  }
+  .cta {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    width: 100%; margin-top: 16px;
+    background: var(--accent); color: var(--on-accent);
+    border: 0; border-radius: 12px; padding: 12px;
+    font: inherit; font-size: 15px; font-weight: 700;
+    cursor: pointer;
+  }
+  .cta:hover { background: #C34F35; }
+
+  .insights { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+
+  .insight {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+    font: inherit;
+    color: inherit;
+    display: block;
+  }
+  .insight:hover { background: var(--card-pressed); }
+  .insight:focus-visible { outline: 2px solid var(--bronze); outline-offset: 2px; }
+
+  .insight-top { display: flex; align-items: center; gap: 7px; margin-bottom: 10px; }
+  .dot { width: 6px; height: 6px; border-radius: 3px; }
+  .sev { font-size: 10px; font-weight: 700; letter-spacing: 1.1px; }
+  .insight-top .grow { flex: 1; }
+
+  .insight h3 { font-size: 16px; font-weight: 600; letter-spacing: -.2px; margin: 0; line-height: 1.35; }
+  .insight .preview { font-size: 13px; font-weight: 500; color: var(--text-dim); margin-top: 5px; line-height: 1.45; }
+
+  .body { margin-top: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .metrics {
+    display: flex; gap: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .metrics div { min-width: 62px; }
+  .metrics .mv { font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .metrics .ml { font-size: 11px; font-weight: 500; color: var(--text-faint); margin-top: 1px; }
+  .body p { margin: 0; font-size: 14px; color: var(--text-secondary); line-height: 1.57; }
+
+  .action {
+    background: var(--card-alt);
+    border-radius: 12px;
+    border-left: 2px solid var(--bronze);
+    padding: 12px;
+  }
+  .action .k { font-size: 10px; font-weight: 700; letter-spacing: 1.1px; color: var(--bronze); }
+  .action p { color: var(--text); margin-top: 5px; }
+
+  .locked-foot {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 12px; padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+  .locked-foot span { flex: 1; font-size: 13px; font-weight: 500; color: var(--text-faint); }
+  .pill {
+    background: var(--bronze-soft);
+    border-radius: 8px;
+    padding: 2px 6px;
+    font-size: 9px; font-weight: 700; letter-spacing: 1.1px;
+    color: var(--bronze);
+  }
+
+  .footer-cta {
+    width: 100%; margin-top: 12px;
+    background: none; border: 1px solid rgba(192, 138, 62, .35);
+    border-radius: 12px; padding: 12px;
+    font: inherit; font-size: 13px; font-weight: 700;
+    color: var(--bronze); cursor: pointer;
+  }
+  .footer-cta:hover { background: rgba(192, 138, 62, .07); }
+
+  /* pro gate */
+  .gate {
+    background: var(--card);
+    border: 1px solid rgba(192, 138, 62, .3);
+    border-radius: 16px;
+    padding: 16px;
+    cursor: pointer;
+    width: 100%; text-align: left; font: inherit; color: inherit;
+    display: block;
+  }
+  .gate:hover { background: var(--card-pressed); }
+  .gate-row { display: flex; align-items: center; gap: 8px; }
+  .gate-row h3 { flex: 1; margin: 0; font-size: 16px; font-weight: 600; }
+  .gate .blurb { font-size: 15px; color: var(--text-dim); margin-top: 8px; line-height: 1.4; }
+  .gate .unlock { font-size: 13px; font-weight: 700; color: var(--bronze); margin-top: 12px; }
+
+  /* radar */
+  .radar-wrap { display: flex; justify-content: center; margin-top: 12px; }
+  .score-row { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+  .score-row .n {
+    font-size: 34px; font-weight: 700; letter-spacing: -.9px;
+    font-variant-numeric: tabular-nums; min-width: 56px;
+  }
+  .score-row .lbl { font-size: 11px; font-weight: 700; letter-spacing: 1.1px; color: var(--text-dim); }
+  .score-row .hint { font-size: 13px; font-weight: 500; color: var(--text-faint); margin-top: 2px; }
+  .keys { display: flex; gap: 16px; margin-top: 12px; }
+  .key { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; color: var(--text-dim); }
+  .key i { width: 7px; height: 7px; border-radius: 4px; display: block; }
+  .legend-note { font-size: 13px; font-weight: 500; color: var(--text-faint); margin-top: 12px; line-height: 1.4; }
+
+  /* lift chips */
+  .chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip {
+    flex: 0 0 auto;
+    background: var(--card-alt);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 7px 12px;
+    font: inherit; font-size: 13px; font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+
+  .trend-foot { display: flex; justify-content: space-between; margin-top: 4px; font-size: 13px; }
+  .trend-foot .range-txt { color: var(--text-dim); font-weight: 500; }
+  .trend-foot .delta { font-weight: 700; }
+
+  /* rank rows */
+  .rank { display: flex; align-items: center; gap: 12px; padding: 9px 0; }
+  .rank .i { width: 16px; font-size: 13px; font-weight: 500; color: var(--text-faint); font-variant-numeric: tabular-nums; }
+  .rank .t { flex: 1; min-width: 0; }
+  .rank .t b { display: block; font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rank .t small { display: block; font-size: 13px; font-weight: 500; color: var(--text-faint); margin-top: 1px; }
+  .rank .v { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  /* bar chart */
+  .bars { display: flex; align-items: flex-end; gap: 4px; height: 110px; }
+  .bars > div { flex: 1; display: flex; align-items: flex-end; }
+  .bars i { display: block; width: 100%; border-radius: 3px; background: var(--border-strong); }
+  .bars i.last { background: var(--marble-light); }
+  .bar-axis { display: flex; justify-content: space-between; margin-top: 8px; font-size: 11px; font-weight: 500; color: var(--text-faint); }
+
+  /* consistency grid */
+  .grid { display: flex; gap: 4px; }
+  .grid-col { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+  .grid-col i { display: block; width: 100%; aspect-ratio: 1; border-radius: 2.5px; background: var(--card-alt); }
+  .grid-caption { font-size: 13px; font-weight: 500; color: var(--text-faint); margin-top: 10px; }
+
+  /* volume landmarks */
+  .vol { display: flex; align-items: center; gap: 12px; padding: 7px 0; }
+  .vol .l { width: 86px; font-size: 13px; font-weight: 500; }
+  .vol .track {
+    flex: 1; height: 8px; border-radius: 4px;
+    background: var(--card-alt); position: relative; overflow: hidden;
+  }
+  .vol .window { position: absolute; top: 0; bottom: 0; background: rgba(192, 138, 62, .18); }
+  .vol .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; }
+  .vol .n { width: 30px; text-align: right; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+
+  @media (max-width: 820px) {
+    .stage { gap: 32px; padding: 28px 16px 48px; }
+    .rail { width: 100%; max-width: 393px; }
+    .phone { transform-origin: top center; }
+  }
+</style>
+
+<div class="stage">
+  <aside class="rail">
+    <h1 class="wordmark">ATL<span>A</span>S</h1>
+    <p class="rail-sub">
+      The Progress screen, rendered from the real analytics engine. Every figure below comes
+      from <code>store/analytics.ts</code> and <code>store/insights.ts</code> running over a
+      24-week training log — nothing here is mocked up.
+    </p>
+
+    <div class="rail-group">
+      <div class="rail-label">SUBSCRIPTION STATE</div>
+      <div class="tier" role="group" aria-label="Subscription state">
+        <button type="button" data-tier="free" aria-pressed="true">Free</button>
+        <button type="button" data-tier="pro" aria-pressed="false">Premium</button>
+      </div>
+      <p class="rail-note">
+        Switch this to see exactly what a free user gives up. The insight headlines and
+        their evidence stay visible either way — only the diagnosis and the fix are held back.
+      </p>
+    </div>
+
+    <div class="fixture">
+      <div class="rail-label">THE LOGGED HISTORY</div>
+      <dl>
+        <dt>Split</dt><dd>Push / Pull / Legs / Upper</dd>
+        <dt>Span</dt><dd>24 weeks, 4 days a week</dd>
+        <dt>Bias</dt><dd>press-heavy, no rear delts</dd>
+        <dt>Legs</dt><dd>quad-only, no hinge or curl</dd>
+        <dt>Calves</dt><dd>never trained</dd>
+        <dt>Squat</dt><dd>parked since week 16</dd>
+      </dl>
+      <p class="rail-note">
+        The engine was given this history blind. Everything it reports on the right, it
+        worked out.
+      </p>
+    </div>
+  </aside>
+
+  <div class="phone">
+    <div class="island"></div>
+    <div class="statusbar">
+      <span>9:41</span>
+      <span class="glyphs" aria-hidden="true">
+        <i class="bar" style="height:5px"></i>
+        <i class="bar" style="height:8px"></i>
+        <i class="bar" style="height:11px"></i>
+        <i class="bar" style="height:14px"></i>
+        <svg width="26" height="13" viewBox="0 0 26 13" style="margin-left:5px">
+          <rect x=".5" y=".5" width="21" height="12" rx="3.5" fill="none" stroke="#F0EEE9" opacity=".45"/>
+          <rect x="2" y="2" width="18" height="9" rx="2" fill="#F0EEE9"/>
+          <path d="M23.5 4.5v4a2.2 2.2 0 0 0 0-4z" fill="#F0EEE9" opacity=".45"/>
+        </svg>
+      </span>
+    </div>
+
+    <main class="screen" id="screen"></main>
+
+    <nav class="tabbar" aria-hidden="true">
+      <div class="tab"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#5A5750" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4,20.5 V11 C4,6.9 7.6,3.5 12,3.5 C16.4,3.5 20,6.9 20,11 V20.5 M4,20.5 H20"/></svg>Home</div>
+      <div class="tab"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#5A5750" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5,6.5 C5,5.1 6.1,4 7.5,4 C8.9,4 10,5.1 10,6.5 V17.5 C10,18.9 11.1,20 12.5,20 H17 C18.4,20 19.5,18.9 19.5,17.5 V6.5 C19.5,5.1 18.4,4 17,4 H7.5 M12.8,8.5 H16.6 M12.8,12 H16.6 M12.8,15.5 H15.2"/></svg>Plan</div>
+      <div class="tab"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#5A5750" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.8,9.5 V14.5 M6.3,6 V18 M17.7,6 V18 M21.2,9.5 V14.5 M6.3,12 H17.7"/></svg>Workout</div>
+      <div class="tab on"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#B4472F" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4,20 V4 M4,20 H20 M8,16.5 V12 M12,16.5 V7.5 M16,16.5 V10"/></svg>Progress</div>
+      <div class="tab"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#5A5750" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12,3.8 C14.3,3.8 16.1,5.6 16.1,7.9 C16.1,10.2 14.3,12 12,12 C9.7,12 7.9,10.2 7.9,7.9 C7.9,5.6 9.7,3.8 12,3.8 Z M4.8,20.5 C4.8,16.4 8,13.4 12,13.4 C16,13.4 19.2,16.4 19.2,20.5"/></svg>Profile</div>
+    </nav>
+    <div class="home-indicator"></div>
+  </div>
+</div>
+
+<script type="application/json" id="atlas-data">{"now":1788631200000,"ranges":["7D","30D","90D","1Y","ALL"],"rangeLabels":{"7D":"7D","30D":"30D","90D":"90D","1Y":"1Y","ALL":"All"},"regionShort":{"chest":"CHEST","shoulders":"DELTS","arms":"ARMS","core":"CORE","calves":"CALF","posterior":"POST","quads":"QUAD","back":"BACK"},"consistency":{"weekStreak":25,"daysSinceLast":2,"adherencePct":100,"longestWeekStreak":25},"trainingDays":[{"at":1781481600000,"sets":13},{"at":1781568000000,"sets":0},{"at":1781654400000,"sets":10},{"at":1781740800000,"sets":14},{"at":1781827200000,"sets":0},{"at":1781913600000,"sets":0},{"at":1782000000000,"sets":16},{"at":1782086400000,"sets":13},{"at":1782172800000,"sets":0},{"at":1782259200000,"sets":10},{"at":1782345600000,"sets":14},{"at":1782432000000,"sets":0},{"at":1782518400000,"sets":0},{"at":1782604800000,"sets":16},{"at":1782691200000,"sets":13},{"at":1782777600000,"sets":0},{"at":1782864000000,"sets":10},{"at":1782950400000,"sets":14},{"at":1783036800000,"sets":0},{"at":1783123200000,"sets":0},{"at":1783209600000,"sets":16},{"at":1783296000000,"sets":13},{"at":1783382400000,"sets":0},{"at":1783468800000,"sets":10},{"at":1783555200000,"sets":14},{"at":1783641600000,"sets":0},{"at":1783728000000,"sets":0},{"at":1783814400000,"sets":16},{"at":1783900800000,"sets":13},{"at":1783987200000,"sets":0},{"at":1784073600000,"sets":10},{"at":1784160000000,"sets":14},{"at":1784246400000,"sets":0},{"at":1784332800000,"sets":0},{"at":1784419200000,"sets":16},{"at":1784505600000,"sets":13},{"at":1784592000000,"sets":0},{"at":1784678400000,"sets":10},{"at":1784764800000,"sets":14},{"at":1784851200000,"sets":0},{"at":1784937600000,"sets":0},{"at":1785024000000,"sets":16},{"at":1785110400000,"sets":13},{"at":1785196800000,"sets":0},{"at":1785283200000,"sets":10},{"at":1785369600000,"sets":14},{"at":1785456000000,"sets":0},{"at":1785542400000,"sets":0},{"at":1785628800000,"sets":16},{"at":1785715200000,"sets":13},{"at":1785801600000,"sets":0},{"at":1785888000000,"sets":10},{"at":1785974400000,"sets":14},{"at":1786060800000,"sets":0},{"at":1786147200000,"sets":0},{"at":1786233600000,"sets":16},{"at":1786320000000,"sets":13},{"at":1786406400000,"sets":0},{"at":1786492800000,"sets":10},{"at":1786579200000,"sets":14},{"at":1786665600000,"sets":0},{"at":1786752000000,"sets":0},{"at":1786838400000,"sets":16},{"at":1786924800000,"sets":13},{"at":1787011200000,"sets":0},{"at":1787097600000,"sets":10},{"at":1787184000000,"sets":14},{"at":1787270400000,"sets":0},{"at":1787356800000,"sets":0},{"at":1787443200000,"sets":16},{"at":1787529600000,"sets":13},{"at":1787616000000,"sets":0},{"at":1787702400000,"sets":10},{"at":1787788800000,"sets":14},{"at":1787875200000,"sets":0},{"at":1787961600000,"sets":0},{"at":1788048000000,"sets":16},{"at":1788134400000,"sets":13},{"at":1788220800000,"sets":0},{"at":1788307200000,"sets":10},{"at":1788393600000,"sets":14},{"at":1788480000000,"sets":0},{"at":1788566400000,"sets":0},{"at":1788652800000,"sets":0}],"byRange":{"7D":{"metrics":{"window":{"from":1788026400000,"to":1788631200000,"days":7},"sessionCount":4,"totalSets":53,"totalReps":551,"totalVolumeKg":32985,"activeDays":4,"sessionsPerWeek":4,"avgSetsPerSession":13.3,"avgVolumePerSession":8246,"avgDurationMin":62,"topSet":{"exerciseId":"leg_press","weightKg":173,"reps":12,"at":1788364920000}},"deltas":{"volume":1,"sets":0},"balance":[{"region":"chest","label":"Chest","setsPerWeek":14,"target":15,"ratio":0.9333333333333333,"status":"on_target"},{"region":"shoulders","label":"Shoulders","setsPerWeek":24,"target":20,"ratio":1.2,"status":"on_target"},{"region":"arms","label":"Arms","setsPerWeek":25.5,"target":22,"ratio":1.1590909090909092,"status":"on_target"},{"region":"core","label":"Core","setsPerWeek":8,"target":12,"ratio":0.6666666666666666,"status":"light"},{"region":"calves","label":"Calves","setsPerWeek":0,"target":12,"ratio":0,"status":"neglected"},{"region":"posterior","label":"Hams / Glutes","setsPerWeek":10.5,"target":18,"ratio":0.5833333333333334,"status":"light"},{"region":"quads","label":"Quads","setsPerWeek":10,"target":15,"ratio":0.6666666666666666,"status":"light"},{"region":"back","label":"Back","setsPerWeek":21.5,"target":22,"ratio":0.9772727272727273,"status":"on_target"}],"balanceScore":71,"radar":{"size":272,"cx":136,"cy":136,"radius":90,"axes":[{"x":136,"y":46,"labelX":136,"labelY":37,"anchor":"middle","angle":-1.5707963267948966},{"x":199.64,"y":72.36,"labelX":206,"labelY":66,"anchor":"start","angle":-0.7853981633974483},{"x":226,"y":136,"labelX":235,"labelY":136,"anchor":"start","angle":0},{"x":199.64,"y":199.64,"labelX":206,"labelY":206,"anchor":"start","angle":0.7853981633974483},{"x":136,"y":226,"labelX":136,"labelY":235,"anchor":"middle","angle":1.5707963267948966},{"x":72.36,"y":199.64,"labelX":66,"labelY":206,"anchor":"end","angle":2.356194490192345},{"x":46,"y":136,"labelX":37,"labelY":136,"anchor":"end","angle":3.141592653589793},{"x":72.36,"y":72.36,"labelX":66,"labelY":66,"anchor":"end","angle":3.9269908169872414}],"rings":[{"value":0.5,"points":"136,106 157.21,114.79 166,136 157.21,157.21 136,166 114.79,157.21 106,136 114.79,114.79"},{"value":1,"points":"136,76 178.43,93.57 196,136 178.43,178.43 136,196 93.57,178.43 76,136 93.57,93.57"},{"value":1.5,"points":"136,46 199.64,72.36 226,136 199.64,199.64 136,226 72.36,199.64 46,136 72.36,72.36"}],"valuePoints":[{"x":136,"y":80},{"x":186.91,"y":85.09},{"x":205.55,"y":136},{"x":164.28,"y":164.28},{"x":136,"y":136},{"x":111.25,"y":160.75},{"x":96,"y":136},{"x":94.54,"y":94.54}],"polygon":"136,80 186.91,85.09 205.55,136 164.28,164.28 136,136 111.25,160.75 96,136 94.54,94.54","plotted":[0.9333333333333333,1.2,1.1590909090909092,0.6666666666666666,0,0.5833333333333334,0.6666666666666666,0.9772727272727273]},"insights":{"headline":{"praise":"15 personal records in this period","tease":"ATLAS found 3 things in your training that are holding you back.","findingCount":3},"free":[{"id":"neglect:calves","kind":"neglect","severity":"warn","headline":"Calves is falling behind","preview":"No direct calves work logged in this period.","detail":["You are averaging 0 sets per week on calves, against a growth target of about 12 sets.","Below roughly a third of target, a muscle group is at or under maintenance — you are holding position at best, and more likely losing size and strength there over a training block.","Left alone this becomes a visible asymmetry and, for the posterior chain and rear delts specifically, a shoulder and lower-back injury risk as the trained side keeps getting stronger."],"action":"Add 4 sets of direct calves work to two sessions a week. Put it at the start of a session, not tacked onto the end where it gets dropped.","metrics":[{"label":"Current","value":"0/wk"},{"label":"Target","value":"12/wk"},{"label":"Gap","value":"100%"}],"weight":100},{"id":"records","kind":"records","severity":"good","headline":"15 personal records in this period","preview":"Most recent: Incline Barbell Press at 69kg × 8.","detail":["15 lifts beat their previous best estimated 1RM in this window.","Incline Barbell Press — 69kg × 8 (e1RM 87kg, up 1.3kg).","Seated Cable Row — 69kg × 10 (e1RM 92kg, up 1.3kg).","Dumbbell Lateral Raise — 16kg × 15 (e1RM 24kg, up 0.8kg)."],"action":"Records cluster around lifts you are running well. Note which of these share a rep range and use it as the default for lifts that are stuck.","metrics":[{"label":"PRs","value":"15"},{"label":"Best gain","value":"+1.5kg"}],"weight":28},{"id":"consistency:streak","kind":"consistency","severity":"good","headline":"25 weeks trained without a gap","preview":"Averaging 4 sessions a week over this period.","detail":["25 consecutive weeks with at least one session — your longest run is 25.","You hit your 4-day target in 100% of the last eight weeks.","Consistency compounds in a way that programme design does not. The lifter who trains three times a week for two years beats the one who trains six times a week for three months, every time."],"action":"Protect the streak over the individual session. A short session beats a skipped one.","metrics":[{"label":"Streak","value":"25w"},{"label":"Best","value":"25w"},{"label":"Adherence","value":"100%"}],"weight":25}],"locked":[{"id":"ratio:delts","kind":"imbalance","severity":"warn","headline":"Your rear delts are being left behind your front delts","preview":"Front-to-rear delt work is at roughly 2.7:1.","detail":["Front delts: 13.5 sets. Rear delts: 5 sets.","Front delts are hit by every press you do, so they accumulate volume whether you plan it or not. Rear delts get almost nothing unless you deliberately train them.","This is the most common imbalance in people who train hard, and it is the one that most visibly changes how a physique reads from the side — plus it is a direct contributor to impingement."],"action":"Two dedicated rear-delt sets at the start of every upper-body session. Reverse flyes or face pulls, 12–20 reps, taken close to failure — this is not a movement to go heavy on.","metrics":[{"label":"Front","value":"14"},{"label":"Rear","value":"5"},{"label":"Ratio","value":"2.7:1"}],"weight":75},{"id":"ratio:legs","kind":"imbalance","severity":"watch","headline":"Quad-dominant leg training","preview":"Quads to hamstrings is running 2.9:1.","detail":["Quads: 10 sets. Hamstrings: 3.5 sets.","Squats and presses cover the quads thoroughly and the hamstrings barely at all — hamstrings need their own hinge and curl work to grow.","A weak posterior chain caps how much you can squat and deadlift long before your quads become the limit, and hamstring strength relative to quad strength is one of the better-supported knee-injury predictors."],"action":"Add a dedicated hinge (Romanian deadlift or good morning) plus a curl variation twice a week — around 3 sets.","metrics":[{"label":"Quads","value":"10"},{"label":"Hams","value":"4"},{"label":"Ratio","value":"2.9:1"}],"weight":55}],"all":[{"id":"neglect:calves","kind":"neglect","severity":"warn","headline":"Calves is falling behind","preview":"No direct calves work logged in this period.","detail":["You are averaging 0 sets per week on calves, against a growth target of about 12 sets.","Below roughly a third of target, a muscle group is at or under maintenance — you are holding position at best, and more likely losing size and strength there over a training block.","Left alone this becomes a visible asymmetry and, for the posterior chain and rear delts specifically, a shoulder and lower-back injury risk as the trained side keeps getting stronger."],"action":"Add 4 sets of direct calves work to two sessions a week. Put it at the start of a session, not tacked onto the end where it gets dropped.","metrics":[{"label":"Current","value":"0/wk"},{"label":"Target","value":"12/wk"},{"label":"Gap","value":"100%"}],"weight":100},{"id":"ratio:delts","kind":"imbalance","severity":"warn","headline":"Your rear delts are being left behind your front delts","preview":"Front-to-rear delt work is at roughly 2.7:1.","detail":["Front delts: 13.5 sets. Rear delts: 5 sets.","Front delts are hit by every press you do, so they accumulate volume whether you plan it or not. Rear delts get almost nothing unless you deliberately train them.","This is the most common imbalance in people who train hard, and it is the one that most visibly changes how a physique reads from the side — plus it is a direct contributor to impingement."],"action":"Two dedicated rear-delt sets at the start of every upper-body session. Reverse flyes or face pulls, 12–20 reps, taken close to failure — this is not a movement to go heavy on.","metrics":[{"label":"Front","value":"14"},{"label":"Rear","value":"5"},{"label":"Ratio","value":"2.7:1"}],"weight":75},{"id":"ratio:legs","kind":"imbalance","severity":"watch","headline":"Quad-dominant leg training","preview":"Quads to hamstrings is running 2.9:1.","detail":["Quads: 10 sets. Hamstrings: 3.5 sets.","Squats and presses cover the quads thoroughly and the hamstrings barely at all — hamstrings need their own hinge and curl work to grow.","A weak posterior chain caps how much you can squat and deadlift long before your quads become the limit, and hamstring strength relative to quad strength is one of the better-supported knee-injury predictors."],"action":"Add a dedicated hinge (Romanian deadlift or good morning) plus a curl variation twice a week — around 3 sets.","metrics":[{"label":"Quads","value":"10"},{"label":"Hams","value":"4"},{"label":"Ratio","value":"2.9:1"}],"weight":55},{"id":"records","kind":"records","severity":"good","headline":"15 personal records in this period","preview":"Most recent: Incline Barbell Press at 69kg × 8.","detail":["15 lifts beat their previous best estimated 1RM in this window.","Incline Barbell Press — 69kg × 8 (e1RM 87kg, up 1.3kg).","Seated Cable Row — 69kg × 10 (e1RM 92kg, up 1.3kg).","Dumbbell Lateral Raise — 16kg × 15 (e1RM 24kg, up 0.8kg)."],"action":"Records cluster around lifts you are running well. Note which of these share a rep range and use it as the default for lifts that are stuck.","metrics":[{"label":"PRs","value":"15"},{"label":"Best gain","value":"+1.5kg"}],"weight":28},{"id":"consistency:streak","kind":"consistency","severity":"good","headline":"25 weeks trained without a gap","preview":"Averaging 4 sessions a week over this period.","detail":["25 consecutive weeks with at least one session — your longest run is 25.","You hit your 4-day target in 100% of the last eight weeks.","Consistency compounds in a way that programme design does not. The lifter who trains three times a week for two years beats the one who trains six times a week for three months, every time."],"action":"Protect the streak over the individual session. A short session beats a skipped one.","metrics":[{"label":"Streak","value":"25w"},{"label":"Best","value":"25w"},{"label":"Adherence","value":"100%"}],"weight":25}],"hasEnoughData":true,"balance":[{"region":"chest","label":"Chest","setsPerWeek":14,"target":15,"ratio":0.9333333333333333,"status":"on_target"},{"region":"shoulders","label":"Shoulders","setsPerWeek":24,"target":20,"ratio":1.2,"status":"on_target"},{"region":"arms","label":"Arms","setsPerWeek":25.5,"target":22,"ratio":1.1590909090909092,"status":"on_target"},{"region":"core","label":"Core","setsPerWeek":8,"target":12,"ratio":0.6666666666666666,"status":"light"},{"region":"calves","label":"Calves","setsPerWeek":0,"target":12,"ratio":0,"status":"neglected"},{"region":"posterior","label":"Hams / Glutes","setsPerWeek":10.5,"target":18,"ratio":0.5833333333333334,"status":"light"},{"region":"quads","label":"Quads","setsPerWeek":10,"target":15,"ratio":0.6666666666666666,"status":"light"},{"region":"back","label":"Back","setsPerWeek":21.5,"target":22,"ratio":0.9772727272727273,"status":"on_target"}],"balanceScore":71},"movers":[],"weekly":[{"weekStart":1787529600000,"label":"Aug 24","sessions":1,"sets":16,"volumeKg":7716},{"weekStart":1788134400000,"label":"Aug 31","sessions":3,"sets":37,"volumeKg":25269}],"prs":[{"at":1788451320000,"exerciseId":"incline_barbell_press","name":"Incline Barbell Press","weightKg":69,"reps":8,"e1rm":87,"gainKg":1.3},{"at":1788451320000,"exerciseId":"seated_cable_row","name":"Seated Cable Row","weightKg":69,"reps":10,"e1rm":92,"gainKg":1.3},{"at":1788451320000,"exerciseId":"lateral_raise","name":"Dumbbell Lateral Raise","weightKg":16,"reps":15,"e1rm":24,"gainKg":0.8},{"at":1788451320000,"exerciseId":"cable_crunch","name":"Cable Crunch","weightKg":49,"reps":15,"e1rm":74,"gainKg":1.5},{"at":1788364920000,"exerciseId":"leg_press","name":"Leg Press","weightKg":173,"reps":12,"e1rm":242,"gainKg":1.4},{"at":1788364920000,"exerciseId":"leg_extension","name":"Leg Extension","weightKg":59,"reps":15,"e1rm":89,"gainKg":1.5}],"landmarks":[{"muscle":"chest","label":"Chest","sets":14,"maintenance":6,"growth":[10,20]},{"muscle":"front_delts","label":"Front Delts","sets":13.5,"maintenance":4,"growth":[6,16]},{"muscle":"biceps","label":"Biceps","sets":11,"maintenance":5,"growth":[8,20]},{"muscle":"lats","label":"Lats","sets":10,"maintenance":8,"growth":[10,22]},{"muscle":"triceps","label":"Triceps","sets":10,"maintenance":5,"growth":[8,20]},{"muscle":"quads","label":"Quads","sets":10,"maintenance":6,"growth":[10,20]},{"muscle":"traps","label":"Traps","sets":8,"maintenance":4,"growth":[8,20]},{"muscle":"glutes","label":"Glutes","sets":7,"maintenance":0,"growth":[6,16]},{"muscle":"abs","label":"Abs","sets":6.5,"maintenance":0,"growth":[6,20]},{"muscle":"side_delts","label":"Side Delts","sets":5.5,"maintenance":6,"growth":[12,26]},{"muscle":"rear_delts","label":"Rear Delts","sets":5,"maintenance":4,"growth":[10,24]},{"muscle":"forearms","label":"Forearms","sets":4.5,"maintenance":2,"growth":[4,16]},{"muscle":"lower_back","label":"Lower Back","sets":3.5,"maintenance":2,"growth":[4,12]},{"muscle":"hamstrings","label":"Hamstrings","sets":3.5,"maintenance":4,"growth":[8,16]},{"muscle":"obliques","label":"Obliques","sets":1.5,"maintenance":0,"growth":[4,16]},{"muscle":"calves","label":"Calves","sets":0,"maintenance":6,"growth":[8,20]}],"lifts":[{"id":"barbell_bench_press","name":"Barbell Bench Press","series":[{"at":1788105720000,"e1rm":118,"bestWeightKg":93,"bestReps":8}]},{"id":"incline_db_press","name":"Incline Dumbbell Press","series":[{"at":1788105720000,"e1rm":53,"bestWeightKg":40,"bestReps":10}]},{"id":"overhead_press","name":"Standing Overhead Press","series":[{"at":1788105720000,"e1rm":68,"bestWeightKg":54,"bestReps":8}]},{"id":"cable_fly","name":"Cable Fly","series":[{"at":1788105720000,"e1rm":35,"bestWeightKg":24,"bestReps":14}]},{"id":"triceps_pushdown","name":"Triceps Pushdown","series":[{"at":1788105720000,"e1rm":62,"bestWeightKg":44,"bestReps":12}]},{"id":"lat_pulldown","name":"Lat Pulldown","series":[{"at":1788192120000,"e1rm":111,"bestWeightKg":83,"bestReps":10}]},{"id":"barbell_row","name":"Barbell Row","series":[{"at":1788192120000,"e1rm":92,"bestWeightKg":69,"bestReps":10}]},{"id":"barbell_curl","name":"Barbell Curl","series":[{"at":1788192120000,"e1rm":59,"bestWeightKg":44,"bestReps":10}]}],"variety":{"distinctExercises":16,"top5SharePct":38,"compoundSharePct":58}},"30D":{"metrics":{"window":{"from":1786039200000,"to":1788631200000,"days":30},"sessionCount":16,"totalSets":212,"totalReps":2204,"totalVolumeKg":129740,"activeDays":16,"sessionsPerWeek":3.7,"avgSetsPerSession":13.3,"avgVolumePerSession":8109,"avgDurationMin":62,"topSet":{"exerciseId":"leg_press","weightKg":173,"reps":12,"at":1788364920000}},"deltas":{"volume":-8,"sets":-10},"balance":[{"region":"chest","label":"Chest","setsPerWeek":13.1,"target":15,"ratio":0.8733333333333333,"status":"on_target"},{"region":"shoulders","label":"Shoulders","setsPerWeek":22.4,"target":20,"ratio":1.1199999999999999,"status":"on_target"},{"region":"arms","label":"Arms","setsPerWeek":23.8,"target":22,"ratio":1.0818181818181818,"status":"on_target"},{"region":"core","label":"Core","setsPerWeek":7.5,"target":12,"ratio":0.625,"status":"light"},{"region":"calves","label":"Calves","setsPerWeek":0,"target":12,"ratio":0,"status":"neglected"},{"region":"posterior","label":"Hams / Glutes","setsPerWeek":9.8,"target":18,"ratio":0.5444444444444445,"status":"light"},{"region":"quads","label":"Quads","setsPerWeek":9.3,"target":15,"ratio":0.62,"status":"light"},{"region":"back","label":"Back","setsPerWeek":20.1,"target":22,"ratio":0.9136363636363637,"status":"on_target"}],"balanceScore":68,"radar":{"size":272,"cx":136,"cy":136,"radius":90,"axes":[{"x":136,"y":46,"labelX":136,"labelY":37,"anchor":"middle","angle":-1.5707963267948966},{"x":199.64,"y":72.36,"labelX":206,"labelY":66,"anchor":"start","angle":-0.7853981633974483},{"x":226,"y":136,"labelX":235,"labelY":136,"anchor":"start","angle":0},{"x":199.64,"y":199.64,"labelX":206,"labelY":206,"anchor":"start","angle":0.7853981633974483},{"x":136,"y":226,"labelX":136,"labelY":235,"anchor":"middle","angle":1.5707963267948966},{"x":72.36,"y":199.64,"labelX":66,"labelY":206,"anchor":"end","angle":2.356194490192345},{"x":46,"y":136,"labelX":37,"labelY":136,"anchor":"end","angle":3.141592653589793},{"x":72.36,"y":72.36,"labelX":66,"labelY":66,"anchor":"end","angle":3.9269908169872414}],"rings":[{"value":0.5,"points":"136,106 157.21,114.79 166,136 157.21,157.21 136,166 114.79,157.21 106,136 114.79,114.79"},{"value":1,"points":"136,76 178.43,93.57 196,136 178.43,178.43 136,196 93.57,178.43 76,136 93.57,93.57"},{"value":1.5,"points":"136,46 199.64,72.36 226,136 199.64,199.64 136,226 72.36,199.64 46,136 72.36,72.36"}],"valuePoints":[{"x":136,"y":83.6},{"x":183.52,"y":88.48},{"x":200.91,"y":136},{"x":162.52,"y":162.52},{"x":136,"y":136},{"x":112.9,"y":159.1},{"x":98.8,"y":136},{"x":97.24,"y":97.24}],"polygon":"136,83.6 183.52,88.48 200.91,136 162.52,162.52 136,136 112.9,159.1 98.8,136 97.24,97.24","plotted":[0.8733333333333333,1.1199999999999999,1.0818181818181818,0.625,0,0.5444444444444445,0.62,0.9136363636363637]},"insights":{"headline":{"praise":"Triceps Pushdown is your fastest-moving lift","tease":"ATLAS found 4 things in your training that are holding you back.","findingCount":4},"free":[{"id":"neglect:calves","kind":"neglect","severity":"warn","headline":"Calves is falling behind","preview":"No direct calves work logged in this period.","detail":["You are averaging 0 sets per week on calves, against a growth target of about 12 sets.","Below roughly a third of target, a muscle group is at or under maintenance — you are holding position at best, and more likely losing size and strength there over a training block.","Left alone this becomes a visible asymmetry and, for the posterior chain and rear delts specifically, a shoulder and lower-back injury risk as the trained side keeps getting stronger."],"action":"Add 4 sets of direct calves work to two sessions a week. Put it at the start of a session, not tacked onto the end where it gets dropped.","metrics":[{"label":"Current","value":"0/wk"},{"label":"Target","value":"12/wk"},{"label":"Gap","value":"100%"}],"weight":100},{"id":"progress:triceps_pushdown","kind":"progress","severity":"good","headline":"Triceps Pushdown is your fastest-moving lift","preview":"Estimated 1RM up 3kg (5%) across 4 sessions.","detail":["59kg to 62kg estimated 1RM over 4 logged sessions — 5% in this period.","Your best working set was 44kg × 12.","15 tracked lifts improved in this window. The gap between your fastest and slowest mover is where your programming is uneven."],"action":"Do not change anything about how you are running Triceps Pushdown. Copy its set and rep scheme onto whichever lift the plateau analysis flagged.","metrics":[{"label":"Gain","value":"+3kg"},{"label":"Change","value":"+5%"},{"label":"Sessions","value":"4"}],"weight":30},{"id":"records","kind":"records","severity":"good","headline":"54 personal records in this period","preview":"Most recent: Incline Barbell Press at 69kg × 8.","detail":["54 lifts beat their previous best estimated 1RM in this window.","Incline Barbell Press — 69kg × 8 (e1RM 87kg, up 1.3kg).","Seated Cable Row — 69kg × 10 (e1RM 92kg, up 1.3kg).","Dumbbell Lateral Raise — 16kg × 15 (e1RM 24kg, up 0.8kg)."],"action":"Records cluster around lifts you are running well. Note which of these share a rep range and use it as the default for lifts that are stuck.","metrics":[{"label":"PRs","value":"54"},{"label":"Best gain","value":"+1.5kg"}],"weight":28},{"id":"consistency:streak","kind":"consistency","severity":"good","headline":"25 weeks trained without a gap","preview":"Averaging 3.7 sessions a week over this period.","detail":["25 consecutive weeks with at least one session — your longest run is 25.","You hit your 4-day target in 100% of the last eight weeks.","Consistency compounds in a way that programme design does not. The lifter who trains three times a week for two years beats the one who trains six times a week for three months, every time."],"action":"Protect the streak over the individual session. A short session beats a skipped one.","metrics":[{"label":"Streak","value":"25w"},{"label":"Best","value":"25w"},{"label":"Adherence","value":"100%"}],"weight":25}],"locked":[{"id":"plateau:back_squat","kind":"plateau","severity":"warn","headline":"Back Squat has stopped progressing","preview":"No new best in 3 sessions — 24 days.","detail":["Your best estimated 1RM on Back Squat is 127kg, set 24 days and 3 sessions ago.","Only this lift is stalled — the rest are still moving, which usually means the problem is specific to how this movement is being loaded rather than systemic.","A plateau at four-plus sessions is not bad luck. It is the point where the stimulus has stopped being novel enough, the load is being pushed past what technique supports, or recovery is not keeping up."],"action":"Drop Back Squat to 90% of your stuck load and rebuild with strict double progression, or swap to a close variation for four weeks and come back to it.","metrics":[{"label":"Best e1RM","value":"127kg"},{"label":"Sessions since","value":"3"},{"label":"Stalled lifts","value":"1"}],"weight":80},{"id":"ratio:delts","kind":"imbalance","severity":"warn","headline":"Your rear delts are being left behind your front delts","preview":"Front-to-rear delt work is at roughly 2.7:1.","detail":["Front delts: 54 sets. Rear delts: 20 sets.","Front delts are hit by every press you do, so they accumulate volume whether you plan it or not. Rear delts get almost nothing unless you deliberately train them.","This is the most common imbalance in people who train hard, and it is the one that most visibly changes how a physique reads from the side — plus it is a direct contributor to impingement."],"action":"Two dedicated rear-delt sets at the start of every upper-body session. Reverse flyes or face pulls, 12–20 reps, taken close to failure — this is not a movement to go heavy on.","metrics":[{"label":"Front","value":"54"},{"label":"Rear","value":"20"},{"label":"Ratio","value":"2.7:1"}],"weight":75},{"id":"ratio:legs","kind":"imbalance","severity":"watch","headline":"Quad-dominant leg training","preview":"Quads to hamstrings is running 2.9:1.","detail":["Quads: 40 sets. Hamstrings: 14 sets.","Squats and presses cover the quads thoroughly and the hamstrings barely at all — hamstrings need their own hinge and curl work to grow.","A weak posterior chain caps how much you can squat and deadlift long before your quads become the limit, and hamstring strength relative to quad strength is one of the better-supported knee-injury predictors."],"action":"Add a dedicated hinge (Romanian deadlift or good morning) plus a curl variation twice a week — around 13 sets.","metrics":[{"label":"Quads","value":"40"},{"label":"Hams","value":"14"},{"label":"Ratio","value":"2.9:1"}],"weight":55}],"all":[{"id":"neglect:calves","kind":"neglect","severity":"warn","headline":"Calves is falling behind","preview":"No direct calves work logged in this period.","detail":["You are averaging 0 sets per week on calves, against a growth target of about 12 sets.","Below roughly a third of target, a muscle group is at or under maintenance — you are holding position at best, and more likely losing size and strength there over a training block.","Left alone this becomes a visible asymmetry and, for the posterior chain and rear delts specifically, a shoulder and lower-back injury risk as the trained side keeps getting stronger."],"action":"Add 4 sets of direct calves work to two sessions a week. Put it at the start of a session, not tacked onto the end where it gets dropped.","metrics":[{"label":"Current","value":"0/wk"},{"label":"Target","value":"12/wk"},{"label":"Gap","value":"100%"}],"weight":100},{"id":"plateau:back_squat","kind":"plateau","severity":"warn","headline":"Back Squat has stopped progressing","preview":"No new best in 3 sessions — 24 days.","detail":["Your best estimated 1RM on Back Squat is 127kg, set 24 days and 3 sessions ago.","Only this lift is stalled — the rest are still moving, which usually means the problem is specific to how this movement is being loaded rather than systemic.","A plateau at four-plus sessions is not bad luck. It is the point where the stimulus has stopped being novel enough, the load is being pushed past what technique supports, or recovery is not keeping up."],"action":"Drop Back Squat to 90% of your stuck load and rebuild with strict double progression, or swap to a close variation for four weeks and come back to it.","metrics":[{"label":"Best e1RM","value":"127kg"},{"label":"Sessions since","value":"3"},{"label":"Stalled lifts","value":"1"}],"weight":80},{"id":"ratio:delts","kind":"imbalance","severity":"warn","headline":"Your rear delts are being left behind your front delts","preview":"Front-to-rear delt work is at roughly 2.7:1.","detail":["Front delts: 54 sets. Rear delts: 20 sets.","Front delts are hit by every press you do, so they accumulate volume whether you plan it or not. Rear delts get almost nothing unless you deliberately train them.","This is the most common imbalance in people who train hard, and it is the one that most visibly changes how a physique reads from the side — plus it is a direct contributor to impingement."],"action":"Two dedicated rear-delt sets at the start of every upper-body session. Reverse flyes or face pulls, 12–20 reps, taken close to failure — this is not a movement to go heavy on.","metrics":[{"label":"Front","value":"54"},{"label":"Rear","value":"20"},{"label":"Ratio","value":"2.7:1"}],"weight":75},{"id":"ratio:legs","kind":"imbalance","severity":"watch","headline":"Quad-dominant leg training","preview":"Quads to hamstrings is running 2.9:1.","detail":["Quads: 40 sets. Hamstrings: 14 sets.","Squats and presses cover the quads thoroughly and the hamstrings barely at all — hamstrings need their own hinge and curl work to grow.","A weak posterior chain caps how much you can squat and deadlift long before your quads become the limit, and hamstring strength relative to quad strength is one of the better-supported knee-injury predictors."],"action":"Add a dedicated hinge (Romanian deadlift or good morning) plus a curl variation twice a week — around 13 sets.","metrics":[{"label":"Quads","value":"40"},{"label":"Hams","value":"14"},{"label":"Ratio","value":"2.9:1"}],"weight":55},{"id":"progress:triceps_pushdown","kind":"progress","severity":"good","headline":"Triceps Pushdown is your fastest-moving lift","preview":"Estimated 1RM up 3kg (5%) across 4 sessions.","detail":["59kg to 62kg estimated 1RM over 4 logged sessions — 5% in this period.","Your best working set was 44kg × 12.","15 tracked lifts improved in this window. The gap between your fastest and slowest mover is where your programming is uneven."],"action":"Do not change anything about how you are running Triceps Pushdown. Copy its set and rep scheme onto whichever lift the plateau analysis flagged.","metrics":[{"label":"Gain","value":"+3kg"},{"label":"Change","value":"+5%"},{"label":"Sessions","value":"4"}],"weight":30},{"id":"records","kind":"records","severity":"good","headline":"54 personal records in this period","preview":"Most recent: Incline Barbell Press at 69kg × 8.","detail":["54 lifts beat their previous best estimated 1RM in this window.","Incline Barbell Press — 69kg × 8 (e1RM 87kg, up 1.3kg).","Seated Cable Row — 69kg × 10 (e1RM 92kg, up 1.3kg).","Dumbbell Lateral Raise — 16kg × 15 (e1RM 24kg, up 0.8kg)."],"action":"Records cluster around lifts you are running well. Note which of these share a rep range and use it as the default for lifts that are stuck.","metrics":[{"label":"PRs","value":"54"},{"label":"Best gain","value":"+1.5kg"}],"weight":28},{"id":"consistency:streak","kind":"consistency","severity":"good","headline":"25 weeks trained without a gap","preview":"Averaging 3.7 sessions a week over this period.","detail":["25 consecutive weeks with at least one session — your longest run is 25.","You hit your 4-day target in 100% of the last eight weeks.","Consistency compounds in a way that programme design does not. The lifter who trains three times a week for two years beats the one who trains six times a week for three months, every time."],"action":"Protect the streak over the individual session. A short session beats a skipped one.","metrics":[{"label":"Streak","value":"25w"},{"label":"Best","value":"25w"},{"label":"Adherence","value":"100%"}],"weight":25}],"hasEnoughData":true,"balance":[{"region":"chest","label":"Chest","setsPerWeek":13.1,"target":15,"ratio":0.8733333333333333,"status":"on_target"},{"region":"shoulders","label":"Shoulders","setsPerWeek":22.4,"target":20,"ratio":1.1199999999999999,"status":"on_target"},{"region":"arms","label":"Arms","setsPerWeek":23.8,"target":22,"ratio":1.0818181818181818,"status":"on_target"},{"region":"core","label":"Core","setsPerWeek":7.5,"target":12,"ratio":0.625,"status":"light"},{"region":"calves","label":"Calves","setsPerWeek":0,"target":12,"ratio":0,"status":"neglected"},{"region":"posterior","label":"Hams / Glutes","setsPerWeek":9.8,"target":18,"ratio":0.5444444444444445,"status":"light"},{"region":"quads","label":"Quads","setsPerWeek":9.3,"target":15,"ratio":0.62,"status":"light"},{"region":"back","label":"Back","setsPerWeek":20.1,"target":22,"ratio":0.9136363636363637,"status":"on_target"}],"balanceScore":68},"movers":[{"exerciseId":"barbell_bench_press","name":"Barbell Bench Press","sessions":4,"first":{"at":1786291320000,"e1rm":114,"bestWeightKg":90,"bestReps":8},"last":{"at":1788105720000,"e1rm":118,"bestWeightKg":93,"bestReps":8},"deltaKg":4,"deltaPct":4,"sessionsSinceBest":0,"daysSinceBest":6,"stalled":false},{"exerciseId":"lat_pulldown","name":"Lat Pulldown","sessions":4,"first":{"at":1786377720000,"e1rm":107,"bestWeightKg":80,"bestReps":10},"last":{"at":1788192120000,"e1rm":111,"bestWeightKg":83,"bestReps":10},"deltaKg":4,"deltaPct":4,"sessionsSinceBest":0,"daysSinceBest":5,"stalled":false},{"exerciseId":"leg_press","name":"Leg Press","sessions":4,"first":{"at":1786550520000,"e1rm":238,"bestWeightKg":170,"bestReps":12},"last":{"at":1788364920000,"e1rm":242,"bestWeightKg":173,"bestReps":12},"deltaKg":4,"deltaPct":2,"sessionsSinceBest":0,"daysSinceBest":3,"stalled":false},{"exerciseId":"triceps_pushdown","name":"Triceps Pushdown","sessions":4,"first":{"at":1786291320000,"e1rm":59,"bestWeightKg":42,"bestReps":12},"last":{"at":1788105720000,"e1rm":62,"bestWeightKg":44,"bestReps":12},"deltaKg":3,"deltaPct":5,"sessionsSinceBest":0,"daysSinceBest":6,"stalled":false},{"exerciseId":"barbell_row","name":"Barbell Row","sessions":4,"first":{"at":1786377720000,"e1rm":89,"bestWeightKg":67,"bestReps":10},"last":{"at":1788192120000,"e1rm":92,"bestWeightKg":69,"bestReps":10},"deltaKg":3,"deltaPct":3,"sessionsSinceBest":0,"daysSinceBest":5,"stalled":false}],"weekly":[{"weekStart":1785715200000,"label":"Aug 3","sessions":1,"sets":16,"volumeKg":7411},{"weekStart":1786320000000,"label":"Aug 10","sessions":4,"sets":53,"volumeKg":32052},{"weekStart":1786924800000,"label":"Aug 17","sessions":4,"sets":53,"volumeKg":32347.5},{"weekStart":1787529600000,"label":"Aug 24","sessions":4,"sets":53,"volumeKg":32660.5},{"weekStart":1788134400000,"label":"Aug 31","sessions":3,"sets":37,"volumeKg":25269}],"prs":[{"at":1788451320000,"exerciseId":"incline_barbell_press","name":"Incline Barbell Press","weightKg":69,"reps":8,"e1rm":87,"gainKg":1.3},{"at":1788451320000,"exerciseId":"seated_cable_row","name":"Seated Cable Row","weightKg":69,"reps":10,"e1rm":92,"gainKg":1.3},{"at":1788451320000,"exerciseId":"lateral_raise","name":"Dumbbell Lateral Raise","weightKg":16,"reps":15,"e1rm":24,"gainKg":0.8},{"at":1788451320000,"exerciseId":"cable_crunch","name":"Cable Crunch","weightKg":49,"reps":15,"e1rm":74,"gainKg":1.5},{"at":1788364920000,"exerciseId":"leg_press","name":"Leg Press","weightKg":173,"reps":12,"e1rm":242,"gainKg":1.4},{"at":1788364920000,"exerciseId":"leg_extension","name":"Leg Extension","weightKg":59,"reps":15,"e1rm":89,"gainKg":1.5}],"landmarks":[{"muscle":"chest","label":"Chest","sets":13.1,"maintenance":6,"growth":[10,20]},{"muscle":"front_delts","label":"Front Delts","sets":12.6,"maintenance":4,"growth":[6,16]},{"muscle":"biceps","label":"Biceps","sets":10.3,"maintenance":5,"growth":[8,20]},{"muscle":"lats","label":"Lats","sets":9.3,"maintenance":8,"growth":[10,22]},{"muscle":"triceps","label":"Triceps","sets":9.3,"maintenance":5,"growth":[8,20]},{"muscle":"quads","label":"Quads","sets":9.3,"maintenance":6,"growth":[10,20]},{"muscle":"traps","label":"Traps","sets":7.5,"maintenance":4,"growth":[8,20]},{"muscle":"glutes","label":"Glutes","sets":6.5,"maintenance":0,"growth":[6,16]},{"muscle":"abs","label":"Abs","sets":6.1,"maintenance":0,"growth":[6,20]},{"muscle":"side_delts","label":"Side Delts","sets":5.1,"maintenance":6,"growth":[12,26]},{"muscle":"rear_delts","label":"Rear Delts","sets":4.7,"maintenance":4,"growth":[10,24]},{"muscle":"forearms","label":"Forearms","sets":4.2,"maintenance":2,"growth":[4,16]},{"muscle":"lower_back","label":"Lower Back","sets":3.3,"maintenance":2,"growth":[4,12]},{"muscle":"hamstrings","label":"Hamstrings","sets":3.3,"maintenance":4,"growth":[8,16]},{"muscle":"obliques","label":"Obliques","sets":1.4,"maintenance":0,"growth":[4,16]},{"muscle":"calves","label":"Calves","sets":0,"maintenance":6,"growth":[8,20]}],"lifts":[{"id":"barbell_bench_press","name":"Barbell Bench Press","series":[{"at":1786291320000,"e1rm":114,"bestWeightKg":90,"bestReps":8},{"at":1786896120000,"e1rm":115,"bestWeightKg":91,"bestReps":8},{"at":1787500920000,"e1rm":117,"bestWeightKg":92,"bestReps":8},{"at":1788105720000,"e1rm":118,"bestWeightKg":93,"bestReps":8}]},{"id":"incline_db_press","name":"Incline Dumbbell Press","series":[{"at":1786291320000,"e1rm":51,"bestWeightKg":38,"bestReps":10},{"at":1786896120000,"e1rm":51,"bestWeightKg":38.5,"bestReps":10},{"at":1787500920000,"e1rm":52,"bestWeightKg":39,"bestReps":10},{"at":1788105720000,"e1rm":53,"bestWeightKg":40,"bestReps":10}]},{"id":"overhead_press","name":"Standing Overhead Press","series":[{"at":1786291320000,"e1rm":66,"bestWeightKg":52,"bestReps":8},{"at":1786896120000,"e1rm":67,"bestWeightKg":52.5,"bestReps":8},{"at":1787500920000,"e1rm":67,"bestWeightKg":53,"bestReps":8},{"at":1788105720000,"e1rm":68,"bestWeightKg":54,"bestReps":8}]},{"id":"cable_fly","name":"Cable Fly","series":[{"at":1786291320000,"e1rm":34,"bestWeightKg":23,"bestReps":14},{"at":1786896120000,"e1rm":34,"bestWeightKg":23.5,"bestReps":14},{"at":1787500920000,"e1rm":34,"bestWeightKg":23.5,"bestReps":14},{"at":1788105720000,"e1rm":35,"bestWeightKg":24,"bestReps":14}]},{"id":"triceps_pushdown","name":"Triceps Pushdown","series":[{"at":1786291320000,"e1rm":59,"bestWeightKg":42,"bestReps":12},{"at":1786896120000,"e1rm":59,"bestWeightKg":42.5,"bestReps":12},{"at":1787500920000,"e1rm":60,"bestWeightKg":43,"bestReps":12},{"at":1788105720000,"e1rm":62,"bestWeightKg":44,"bestReps":12}]},{"id":"lat_pulldown","name":"Lat Pulldown","series":[{"at":1786377720000,"e1rm":107,"bestWeightKg":80,"bestReps":10},{"at":1786982520000,"e1rm":108,"bestWeightKg":81,"bestReps":10},{"at":1787587320000,"e1rm":109,"bestWeightKg":82,"bestReps":10},{"at":1788192120000,"e1rm":111,"bestWeightKg":83,"bestReps":10}]},{"id":"barbell_row","name":"Barbell Row","series":[{"at":1786377720000,"e1rm":89,"bestWeightKg":67,"bestReps":10},{"at":1786982520000,"e1rm":90,"bestWeightKg":67.5,"bestReps":10},{"at":1787587320000,"e1rm":91,"bestWeightKg":68,"bestReps":10},{"at":1788192120000,"e1rm":92,"bestWeightKg":69,"bestReps":10}]},{"id":"barbell_curl","name":"Barbell Curl","series":[{"at":1786377720000,"e1rm":56,"bestWeightKg":42,"bestReps":10},{"at":1786982520000,"e1rm":57,"bestWeightKg":42.5,"bestReps":10},{"at":1787587320000,"e1rm":57,"bestWeightKg":43,"bestReps":10},{"at":1788192120000,"e1rm":59,"bestWeightKg":44,"bestReps":10}]}],"variety":{"distinctExercises":16,"top5SharePct":38,"compoundSharePct":58}},"90D":{"metrics":{"window":{"from":1780855200000,"to":1788631200000,"days":90},"sessionCount":51,"totalSets":673,"totalReps":7005,"totalVolumeKg":396593,"activeDays":51,"sessionsPerWeek":4,"avgSetsPerSession":13.2,"avgVolumePerSession":7776,"avgDurationMin":62,"topSet":{"exerciseId":"leg_press","weightKg":173,"reps":12,"at":1788364920000}},"deltas":{"volume":30,"sets":12},"balance":[{"region":"chest","label":"Chest","setsPerWeek":13.4,"target":15,"ratio":0.8933333333333333,"status":"on_target"},{"region":"shoulders","label":"Shoulders","setsPerWeek":23.4,"target":20,"ratio":1.17,"status":"on_target"},{"region":"arms","label":"Arms","setsPerWeek":25.2,"target":22,"ratio":1.1454545454545455,"status":"on_target"},{"region":"core","label":"Core","setsPerWeek":8,"target":12,"ratio":0.6666666666666666,"status":"light"},{"region":"calves","label":"Calves","setsPerWeek":0,"target":12,"ratio":0,"status":"neglected"},{"region":"posterior","label":"Hams / Glutes","setsPerWeek":10.6,"target":18,"ratio":0.5888888888888889,"status":"light"},{"region":"quads","label":"Quads","setsPerWeek":10.1,"target":15,"ratio":0.6733333333333333,"status":"light"},{"region":"back","label":"Back","setsPerWeek":21.7,"target":22,"ratio":0.9863636363636363,"status":"on_target"}],"balanceScore":71,"radar":{"size":272,"cx":136,"cy":136,"radius":90,"axes":[{"x":136,"y":46,"labelX":136,"labelY":37,"anchor":"middle","angle":-1.5707963267948966},{"x":199.64,"y":72.36,"labelX":206,"labelY":66,"anchor":"start","angle":-0.7853981633974483},{"x":226,"y":136,"labelX":235,"labelY":136,"anchor":"start","angle":0},{"x":199.64,"y":199.64,"labelX":206,"labelY":206,"anchor":"start","angle":0.7853981633974483},{"x":136,"y":226,"labelX":136,"labelY":235,"anchor":"middle","angle":1.5707963267948966},{"x":72.36,"y":199.64,"labelX":66,"labelY":206,"anchor":"end","angle":2.356194490192345},{"x":46,"y":136,"labelX":37,"labelY":136,"anchor":"end","angle":3.141592653589793},{"x":72.36,"y":72.36,"labelX":66,"labelY":66,"anchor":"end","angle":3.9269908169872414}],"rings":[{"value":0.5,"points":"136,106 157.21,114.79 166,136 157.21,157.21 136,166 114.79,157.21 106,136 114.79,114.79"},{"value":1,"points":"136,76 178.43,93.57 196,136 178.43,178.43 136,196 93.57,178.43 76,136 93.57,93.57"},{"value":1.5,"points":"136,46 199.64,72.36 226,136 199.64,199.64 136,226 72.36,199.64 46,136 72.36,72.36"}],"valuePoints":[{"x":136,"y":82.4},{"x":185.64,"y":86.36},{"x":204.73,"y":136},{"x":164.28,"y":164.28},{"x":136,"y":136},{"x":111.02,"y":160.98},{"x":95.6,"y":136},{"x":94.15,"y":94.15}],"polygon":"136,82.4 185.64,86.36 204.73,136 164.28,164.28 136,136 111.02,160.98 95.6,136 94.15,94.15","plotted":[0.8933333333333333,1.17,1.1454545454545455,0.6666666666666666,0,0.5888888888888889,0.6733333333333333,0.9863636363636363]},"insights":{"headline":{"praise":"Training volume is up 30% on the previous period","tease":"ATLAS found 4 things in your training that are holding you back.","findingCount":4},"free":[{"id":"neglect:calves","kind":"neglect","severity":"warn","headline":"Calves is falling behind","preview":"No direct calves work logged in this period.","detail":["You are averaging 0 sets per week on calves, against a growth target of about 12 sets.","Below roughly a third of target, a muscle group is at or under maintenance — you are holding position at best, and more likely losing size and strength there over a training block.","Left alone this becomes a visible asymmetry and, for the posterior chain and rear delts specifically, a shoulder and lower-back injury risk as the trained side keeps getting stronger."],"action":"Add 4 sets of direct calves work to two sessions a week. Put it at the start of a session, not tacked onto the end where it gets dropped.","metrics":[{"label":"Current","value":"0/wk"},{"label":"Target","value":"12/wk"},{"label":"Gap","value":"100%"}],"weight":100},{"id":"volume_shift","kind":"volume_shift","severity":"good","headline":"Training volume is up 30% on the previous period","preview":"396,593kg moved, against 304,194kg before.","detail":["You moved 396,593kg this period against 304,194kg in the one before — a 30% increase.","That is a healthy rate of progression — enough to drive adaptation without outrunning recovery.","Sessions: 51 vs 45. Average sets per session: 13.2 vs 13.3."],"action":"Keep the progression rate where it is. Add sets to lagging regions rather than to what is already working.","metrics":[{"label":"This period","value":"396,593kg"},{"label":"Previous","value":"304,194kg"},{"label":"Change","value":"+30%"}],"weight":35},{"id":"progress:barbell_curl","kind":"progress","severity":"good","headline":"Barbell Curl is your fastest-moving lift","preview":"Estimated 1RM up 10kg (20%) across 13 sessions.","detail":["49kg to 59kg estimated 1RM over 13 logged sessions — 20% in this period.","Your best working set was 44kg × 10.","16 tracked lifts improved in this window. The gap between your fastest and slowest mover is where your programming is uneven."],"action":"Do not change anything about how you are running Barbell Curl. Copy its set and rep scheme onto whichever lift the plateau analysis flagged.","metrics":[{"label":"Gain","value":"+10kg"},{"label":"Change","value":"+20%"},{"label":"Sessions","value":"13"}],"weight":30},{"id":"records","kind":"records","severity":"good","headline":"178 personal records in this period","preview":"Most recent: Incline Barbell Press at 69kg × 8.","detail":["178 lifts beat their previous best estimated 1RM in this window.","Incline Barbell Press — 69kg × 8 (e1RM 87kg, up 1.3kg).","Seated Cable Row — 69kg × 10 (e1RM 92kg, up 1.3kg).","Dumbbell Lateral Raise — 16kg × 15 (e1RM 24kg, up 0.8kg)."],"action":"Records cluster around lifts you are running well. Note which of these share a rep range and use it as the default for lifts that are stuck.","metrics":[{"label":"PRs","value":"178"},{"label":"Best gain","value":"+1.5kg"}],"weight":28},{"id":"consistency:streak","kind":"consistency","severity":"good","headline":"25 weeks trained without a gap","preview":"Averaging 4 sessions a week over this period.","detail":["25 consecutive weeks with at least one session — your longest run is 25.","You hit your 4-day target in 100% of the last eight weeks.","Consistency compounds in a way that programme design does not. The lifter who trains three times a week for two years beats the one who trains six times a week for three months, every time."],"action":"Protect the streak over the individual session. A short session beats a skipped one.","metrics":[{"label":"Streak","value":"25w"},{"label":"Best","value":"25w"},{"label":"Adherence","value":"100%"}],"weight":25}],"locked":[{"id":"plateau:back_squat","kind":"plateau","severity":"warn","headline":"Back Squat has stopped progressing","preview":"No new best in 7 sessions — 52 days.","detail":["Your best estimated 1RM on Back Squat is 127kg, set 52 days and 7 sessions ago.","Only this lift is stalled — the rest are still moving, which usually means the problem is specific to how this movement is being loaded rather than systemic.","A plateau at four-plus sessions is not bad luck. It is the point where the stimulus has stopped being novel enough, the load is being pushed past what technique supports, or recovery is not keeping up."],"action":"Drop Back Squat to 90% of your stuck load and rebuild with strict double progression, or swap to a close variation for four weeks and come back to it.","metrics":[{"label":"Best e1RM","value":"127kg"},{"label":"Sessions since","value":"7"},{"label":"Stalled lifts","value":"1"}],"weight":80},{"id":"ratio:delts","kind":"imbalance","severity":"warn","headline":"Your rear delts are being left behind your front delts","preview":"Front-to-rear delt work is at roughly 2.6:1.","detail":["Front delts: 166 sets. Rear delts: 65 sets.","Front delts are hit by every press you do, so they accumulate volume whether you plan it or not. Rear delts get almost nothing unless you deliberately train them.","This is the most common imbalance in people who train hard, and it is the one that most visibly changes how a physique reads from the side — plus it is a direct contributor to impingement."],"action":"Two dedicated rear-delt sets at the start of every upper-body session. Reverse flyes or face pulls, 12–20 reps, taken close to failure — this is not a movement to go heavy on.","metrics":[{"label":"Front","value":"166"},{"label":"Rear","value":"65"},{"label":"Ratio","value":"2.6:1"}],"weight":75},{"id":"ratio:legs","kind":"imbalance","severity":"watch","headline":"Quad-dominant leg training","preview":"Quads to hamstrings is running 2.9:1.","detail":["Quads: 130 sets. Hamstrings: 45.5 sets.","Squats and presses cover the quads thoroughly and the hamstrings barely at all — hamstrings need their own hinge and curl work to grow.","A weak posterior chain caps how much you can squat and deadlift long before your quads become the limit, and hamstring strength relative to quad strength is one of the better-supported knee-injury predictors."],"action":"Add a dedicated hinge (Romanian deadlift or good morning) plus a curl variation twice a week — around 42 sets.","metrics":[{"label":"Quads","value":"130"},{"label":"Hams","value":"46"},{"label":"Ratio","value":"2.9:1"}],"weight":55}],"all":[{"id":"neglect:calves","kind":"neglect","severity":"warn","headline":"Calves is falling behind","preview":"No direct calves work logged in this period.","detail":["You are averaging 0 sets per week on calves, against a growth target of about 12 sets.","Below roughly a third of target, a muscle group is at or under maintenance — you are holding position at best, and more likely losing size and strength there over a training block.","Left alone this becomes a visible asymmetry and, for the posterior chain and rear delts specifically, a shoulder and lower-back injury risk as the trained side keeps getting stronger."],"action":"Add 4 sets of direct calves work to two sessions a week. Put it at the start of a session, not tacked onto the end where it gets dropped.","metrics":[{"label":"Current","value":"0/wk"},{"label":"Target","value":"12/wk"},{"label":"Gap","value":"100%"}],"weight":100},{"id":"plateau:back_squat","kind":"plateau","severity":"warn","headline":"Back Squat has stopped progressing","preview":"No new best in 7 sessions — 52 days.","detail":["Your best estimated 1RM on Back Squat is 127kg, set 52 days and 7 sessions ago.","Only this lift is stalled — the rest are still moving, which usually means the problem is specific to how this movement is being loaded rather than systemic.","A plateau at four-plus sessions is not bad luck. It is the point where the stimulus has stopped being novel enough, the load is being pushed past what technique supports, or recovery is not keeping up."],"action":"Drop Back Squat to 90% of your stuck load and rebuild with strict double progression, or swap to a close variation for four weeks and come back to it.","metrics":[{"label":"Best e1RM","value":"127kg"},{"label":"Sessions since","value":"7"},{"label":"Stalled lifts","value":"1"}],"weight":80},{"id":"ratio:delts","kind":"imbalance","severity":"warn","headline":"Your rear delts are being left behind your front delts","preview":"Front-to-rear delt work is at roughly 2.6:1.","detail":["Front delts: 166 sets. Rear delts: 65 sets.","Front delts are hit by every press you do, so they accumulate volume whether you plan it or not. Rear delts get almost nothing unless you deliberately train them.","This is the most common imbalance in people who train hard, and it is the one that most visibly changes how a physique reads from the side — plus it is a direct contributor to impingement."],"action":"Two dedicated rear-delt sets at the start of every upper-body session. Reverse flyes or face pulls, 12–20 reps, taken close to failure — this is not a movement to go heavy on.","metrics":[{"label":"Front","value":"166"},{"label":"Rear","value":"65"},{"label":"Ratio","value":"2.6:1"}],"weight":75},{"id":"ratio:legs","kind":"imbalance","severity":"watch","headline":"Quad-dominant leg training","preview":"Quads to hamstrings is running 2.9:1.","detail":["Quads: 130 sets. Hamstrings: 45.5 sets.","Squats and presses cover the quads thoroughly and the hamstrings barely at all — hamstrings need their own hinge and curl work to grow.","A weak posterior chain caps how much you can squat and deadlift long before your quads become the limit, and hamstring strength relative to quad strength is one of the better-supported knee-injury predictors."],"action":"Add a dedicated hinge (Romanian deadlift or good morning) plus a curl variation twice a week — around 42 sets.","metrics":[{"label":"Quads","value":"130"},{"label":"Hams","value":"46"},{"label":"Ratio","value":"2.9:1"}],"weight":55},{"id":"volume_shift","kind":"volume_shift","severity":"good","headline":"Training volume is up 30% on the previous period","preview":"396,593kg moved, against 304,194kg before.","detail":["You moved 396,593kg this period against 304,194kg in the one before — a 30% increase.","That is a healthy rate of progression — enough to drive adaptation without outrunning recovery.","Sessions: 51 vs 45. Average sets per session: 13.2 vs 13.3."],"action":"Keep the progression rate where it is. Add sets to lagging regions rather than to what is already working.","metrics":[{"label":"This period","value":"396,593kg"},{"label":"Previous","value":"304,194kg"},{"label":"Change","value":"+30%"}],"weight":35},{"id":"progress:barbell_curl","kind":"progress","severity":"good","headline":"Barbell Curl is your fastest-moving lift","preview":"Estimated 1RM up 10kg (20%) across 13 sessions.","detail":["49kg to 59kg estimated 1RM over 13 logged sessions — 20% in this period.","Your best working set was 44kg × 10.","16 tracked lifts improved in this window. The gap between your fastest and slowest mover is where your programming is uneven."],"action":"Do not change anything about how you are running Barbell Curl. Copy its set and rep scheme onto whichever lift the plateau analysis flagged.","metrics":[{"label":"Gain","value":"+10kg"},{"label":"Change","value":"+20%"},{"label":"Sessions","value":"13"}],"weight":30},{"id":"records","kind":"records","severity":"good","headline":"178 personal records in this period","preview":"Most recent: Incline Barbell Press at 69kg × 8.","detail":["178 lifts beat their previous best estimated 1RM in this window.","Incline Barbell Press — 69kg × 8 (e1RM 87kg, up 1.3kg).","Seated Cable Row — 69kg × 10 (e1RM 92kg, up 1.3kg).","Dumbbell Lateral Raise — 16kg × 15 (e1RM 24kg, up 0.8kg)."],"action":"Records cluster around lifts you are running well. Note which of these share a rep range and use it as the default for lifts that are stuck.","metrics":[{"label":"PRs","value":"178"},{"label":"Best gain","value":"+1.5kg"}],"weight":28},{"id":"consistency:streak","kind":"consistency","severity":"good","headline":"25 weeks trained without a gap","preview":"Averaging 4 sessions a week over this period.","detail":["25 consecutive weeks with at least one session — your longest run is 25.","You hit your 4-day target in 100% of the last eight weeks.","Consistency compounds in a way that programme design does not. The lifter who trains three times a week for two years beats the one who trains six times a week for three months, every time."],"action":"Protect the streak over the individual session. A short session beats a skipped one.","metrics":[{"label":"Streak","value":"25w"},{"label":"Best","value":"25w"},{"label":"Adherence","value":"100%"}],"weight":25}],"hasEnoughData":true,"balance":[{"region":"chest","label":"Chest","setsPerWeek":13.4,"target":15,"ratio":0.8933333333333333,"status":"on_target"},{"region":"shoulders","label":"Shoulders","setsPerWeek":23.4,"target":20,"ratio":1.17,"status":"on_target"},{"region":"arms","label":"Arms","setsPerWeek":25.2,"target":22,"ratio":1.1454545454545455,"status":"on_target"},{"region":"core","label":"Core","setsPerWeek":8,"target":12,"ratio":0.6666666666666666,"status":"light"},{"region":"calves","label":"Calves","setsPerWeek":0,"target":12,"ratio":0,"status":"neglected"},{"region":"posterior","label":"Hams / Glutes","setsPerWeek":10.6,"target":18,"ratio":0.5888888888888889,"status":"light"},{"region":"quads","label":"Quads","setsPerWeek":10.1,"target":15,"ratio":0.6733333333333333,"status":"light"},{"region":"back","label":"Back","setsPerWeek":21.7,"target":22,"ratio":0.9863636363636363,"status":"on_target"}],"balanceScore":71},"movers":[{"exerciseId":"leg_press","name":"Leg Press","sessions":13,"first":{"at":1781107320000,"e1rm":225,"bestWeightKg":161,"bestReps":12},"last":{"at":1788364920000,"e1rm":242,"bestWeightKg":173,"bestReps":12},"deltaKg":17,"deltaPct":8,"sessionsSinceBest":0,"daysSinceBest":3,"stalled":false},{"exerciseId":"lat_pulldown","name":"Lat Pulldown","sessions":13,"first":{"at":1780934520000,"e1rm":95,"bestWeightKg":71,"bestReps":10},"last":{"at":1788192120000,"e1rm":111,"bestWeightKg":83,"bestReps":10},"deltaKg":16,"deltaPct":17,"sessionsSinceBest":0,"daysSinceBest":5,"stalled":false},{"exerciseId":"barbell_bench_press","name":"Barbell Bench Press","sessions":12,"first":{"at":1781452920000,"e1rm":104,"bestWeightKg":82,"bestReps":8},"last":{"at":1788105720000,"e1rm":118,"bestWeightKg":93,"bestReps":8},"deltaKg":14,"deltaPct":13,"sessionsSinceBest":0,"daysSinceBest":6,"stalled":false},{"exerciseId":"leg_extension","name":"Leg Extension","sessions":13,"first":{"at":1781107320000,"e1rm":77,"bestWeightKg":51.5,"bestReps":15},"last":{"at":1788364920000,"e1rm":89,"bestWeightKg":59,"bestReps":15},"deltaKg":12,"deltaPct":16,"sessionsSinceBest":0,"daysSinceBest":3,"stalled":false},{"exerciseId":"cable_crunch","name":"Cable Crunch","sessions":13,"first":{"at":1781193720000,"e1rm":62,"bestWeightKg":41.5,"bestReps":15},"last":{"at":1788451320000,"e1rm":74,"bestWeightKg":49,"bestReps":15},"deltaKg":12,"deltaPct":19,"sessionsSinceBest":0,"daysSinceBest":2,"stalled":false}],"weekly":[{"weekStart":1780272000000,"label":"Jun 1","sessions":0,"sets":0,"volumeKg":0},{"weekStart":1780876800000,"label":"Jun 8","sessions":4,"sets":53,"volumeKg":29120.5},{"weekStart":1781481600000,"label":"Jun 15","sessions":4,"sets":53,"volumeKg":29455.5},{"weekStart":1782086400000,"label":"Jun 22","sessions":4,"sets":53,"volumeKg":29875.5},{"weekStart":1782691200000,"label":"Jun 29","sessions":4,"sets":53,"volumeKg":30167},{"weekStart":1783296000000,"label":"Jul 6","sessions":4,"sets":53,"volumeKg":30484.5},{"weekStart":1783900800000,"label":"Jul 13","sessions":4,"sets":53,"volumeKg":30776},{"weekStart":1784505600000,"label":"Jul 20","sessions":4,"sets":53,"volumeKg":31115},{"weekStart":1785110400000,"label":"Jul 27","sessions":4,"sets":53,"volumeKg":31487},{"weekStart":1785715200000,"label":"Aug 3","sessions":4,"sets":53,"volumeKg":31782.5},{"weekStart":1786320000000,"label":"Aug 10","sessions":4,"sets":53,"volumeKg":32052},{"weekStart":1786924800000,"label":"Aug 17","sessions":4,"sets":53,"volumeKg":32347.5},{"weekStart":1787529600000,"label":"Aug 24","sessions":4,"sets":53,"volumeKg":32660.5},{"weekStart":1788134400000,"label":"Aug 31","sessions":3,"sets":37,"volumeKg":25269}],"prs":[{"at":1788451320000,"exerciseId":"incline_barbell_press","name":"Incline Barbell Press","weightKg":69,"reps":8,"e1rm":87,"gainKg":1.3},{"at":1788451320000,"exerciseId":"seated_cable_row","name":"Seated Cable Row","weightKg":69,"reps":10,"e1rm":92,"gainKg":1.3},{"at":1788451320000,"exerciseId":"lateral_raise","name":"Dumbbell Lateral Raise","weightKg":16,"reps":15,"e1rm":24,"gainKg":0.8},{"at":1788451320000,"exerciseId":"cable_crunch","name":"Cable Crunch","weightKg":49,"reps":15,"e1rm":74,"gainKg":1.5},{"at":1788364920000,"exerciseId":"leg_press","name":"Leg Press","weightKg":173,"reps":12,"e1rm":242,"gainKg":1.4},{"at":1788364920000,"exerciseId":"leg_extension","name":"Leg Extension","weightKg":59,"reps":15,"e1rm":89,"gainKg":1.5}],"landmarks":[{"muscle":"chest","label":"Chest","sets":13.4,"maintenance":6,"growth":[10,20]},{"muscle":"front_delts","label":"Front Delts","sets":12.9,"maintenance":4,"growth":[6,16]},{"muscle":"biceps","label":"Biceps","sets":11.1,"maintenance":5,"growth":[8,20]},{"muscle":"lats","label":"Lats","sets":10.1,"maintenance":8,"growth":[10,22]},{"muscle":"quads","label":"Quads","sets":10.1,"maintenance":6,"growth":[10,20]},{"muscle":"triceps","label":"Triceps","sets":9.5,"maintenance":5,"growth":[8,20]},{"muscle":"traps","label":"Traps","sets":8.1,"maintenance":4,"growth":[8,20]},{"muscle":"glutes","label":"Glutes","sets":7.1,"maintenance":0,"growth":[6,16]},{"muscle":"abs","label":"Abs","sets":6.5,"maintenance":0,"growth":[6,20]},{"muscle":"side_delts","label":"Side Delts","sets":5.4,"maintenance":6,"growth":[12,26]},{"muscle":"rear_delts","label":"Rear Delts","sets":5.1,"maintenance":4,"growth":[10,24]},{"muscle":"forearms","label":"Forearms","sets":4.6,"maintenance":2,"growth":[4,16]},{"muscle":"lower_back","label":"Lower Back","sets":3.5,"maintenance":2,"growth":[4,12]},{"muscle":"hamstrings","label":"Hamstrings","sets":3.5,"maintenance":4,"growth":[8,16]},{"muscle":"obliques","label":"Obliques","sets":1.5,"maintenance":0,"growth":[4,16]},{"muscle":"calves","label":"Calves","sets":0,"maintenance":6,"growth":[8,20]}],"lifts":[{"id":"lat_pulldown","name":"Lat Pulldown","series":[{"at":1780934520000,"e1rm":95,"bestWeightKg":71,"bestReps":10},{"at":1781539320000,"e1rm":96,"bestWeightKg":72,"bestReps":10},{"at":1782144120000,"e1rm":97,"bestWeightKg":73,"bestReps":10},{"at":1782748920000,"e1rm":99,"bestWeightKg":74,"bestReps":10},{"at":1783353720000,"e1rm":100,"bestWeightKg":75,"bestReps":10},{"at":1783958520000,"e1rm":101,"bestWeightKg":76,"bestReps":10},{"at":1784563320000,"e1rm":103,"bestWeightKg":77,"bestReps":10},{"at":1785168120000,"e1rm":104,"bestWeightKg":78,"bestReps":10},{"at":1785772920000,"e1rm":105,"bestWeightKg":79,"bestReps":10},{"at":1786377720000,"e1rm":107,"bestWeightKg":80,"bestReps":10},{"at":1786982520000,"e1rm":108,"bestWeightKg":81,"bestReps":10},{"at":1787587320000,"e1rm":109,"bestWeightKg":82,"bestReps":10},{"at":1788192120000,"e1rm":111,"bestWeightKg":83,"bestReps":10}]},{"id":"barbell_row","name":"Barbell Row","series":[{"at":1780934520000,"e1rm":82,"bestWeightKg":61.5,"bestReps":10},{"at":1781539320000,"e1rm":83,"bestWeightKg":62,"bestReps":10},{"at":1782144120000,"e1rm":84,"bestWeightKg":63,"bestReps":10},{"at":1782748920000,"e1rm":85,"bestWeightKg":63.5,"bestReps":10},{"at":1783353720000,"e1rm":85,"bestWeightKg":64,"bestReps":10},{"at":1783958520000,"e1rm":86,"bestWeightKg":64.5,"bestReps":10},{"at":1784563320000,"e1rm":87,"bestWeightKg":65,"bestReps":10},{"at":1785168120000,"e1rm":88,"bestWeightKg":66,"bestReps":10},{"at":1785772920000,"e1rm":89,"bestWeightKg":66.5,"bestReps":10},{"at":1786377720000,"e1rm":89,"bestWeightKg":67,"bestReps":10},{"at":1786982520000,"e1rm":90,"bestWeightKg":67.5,"bestReps":10},{"at":1787587320000,"e1rm":91,"bestWeightKg":68,"bestReps":10},{"at":1788192120000,"e1rm":92,"bestWeightKg":69,"bestReps":10}]},{"id":"barbell_curl","name":"Barbell Curl","series":[{"at":1780934520000,"e1rm":49,"bestWeightKg":36.5,"bestReps":10},{"at":1781539320000,"e1rm":49,"bestWeightKg":37,"bestReps":10},{"at":1782144120000,"e1rm":51,"bestWeightKg":38,"bestReps":10},{"at":1782748920000,"e1rm":51,"bestWeightKg":38.5,"bestReps":10},{"at":1783353720000,"e1rm":52,"bestWeightKg":39,"bestReps":10},{"at":1783958520000,"e1rm":53,"bestWeightKg":39.5,"bestReps":10},{"at":1784563320000,"e1rm":53,"bestWeightKg":40,"bestReps":10},{"at":1785168120000,"e1rm":55,"bestWeightKg":41,"bestReps":10},{"at":1785772920000,"e1rm":55,"bestWeightKg":41.5,"bestReps":10},{"at":1786377720000,"e1rm":56,"bestWeightKg":42,"bestReps":10},{"at":1786982520000,"e1rm":57,"bestWeightKg":42.5,"bestReps":10},{"at":1787587320000,"e1rm":57,"bestWeightKg":43,"bestReps":10},{"at":1788192120000,"e1rm":59,"bestWeightKg":44,"bestReps":10}]},{"id":"hammer_curl","name":"Hammer Curl","series":[{"at":1780934520000,"e1rm":24,"bestWeightKg":17,"bestReps":12},{"at":1781539320000,"e1rm":24,"bestWeightKg":17,"bestReps":12},{"at":1782144120000,"e1rm":25,"bestWeightKg":17.5,"bestReps":12},{"at":1782748920000,"e1rm":25,"bestWeightKg":17.5,"bestReps":12},{"at":1783353720000,"e1rm":25,"bestWeightKg":18,"bestReps":12},{"at":1783958520000,"e1rm":25,"bestWeightKg":18,"bestReps":12},{"at":1784563320000,"e1rm":26,"bestWeightKg":18.5,"bestReps":12},{"at":1785168120000,"e1rm":26,"bestWeightKg":18.5,"bestReps":12},{"at":1785772920000,"e1rm":27,"bestWeightKg":19,"bestReps":12},{"at":1786377720000,"e1rm":27,"bestWeightKg":19,"bestReps":12},{"at":1786982520000,"e1rm":27,"bestWeightKg":19.5,"bestReps":12},{"at":1787587320000,"e1rm":27,"bestWeightKg":19.5,"bestReps":12},{"at":1788192120000,"e1rm":28,"bestWeightKg":20,"bestReps":12}]},{"id":"back_squat","name":"Back Squat","series":[{"at":1781107320000,"e1rm":121,"bestWeightKg":101,"bestReps":6},{"at":1781712120000,"e1rm":122,"bestWeightKg":102,"bestReps":6},{"at":1782316920000,"e1rm":124,"bestWeightKg":103,"bestReps":6},{"at":1782921720000,"e1rm":125,"bestWeightKg":104,"bestReps":6},{"at":1783526520000,"e1rm":126,"bestWeightKg":105,"bestReps":6},{"at":1784131320000,"e1rm":127,"bestWeightKg":106,"bestReps":6},{"at":1784736120000,"e1rm":127,"bestWeightKg":106,"bestReps":6},{"at":1785340920000,"e1rm":127,"bestWeightKg":106,"bestReps":6},{"at":1785945720000,"e1rm":127,"bestWeightKg":106,"bestReps":6},{"at":1786550520000,"e1rm":127,"bestWeightKg":106,"bestReps":6},{"at":1787155320000,"e1rm":127,"bestWeightKg":106,"bestReps":6},{"at":1787760120000,"e1rm":127,"bestWeightKg":106,"bestReps":6},{"at":1788364920000,"e1rm":127,"bestWeightKg":106,"bestReps":6}]},{"id":"leg_press","name":"Leg Press","series":[{"at":1781107320000,"e1rm":225,"bestWeightKg":161,"bestReps":12},{"at":1781712120000,"e1rm":227,"bestWeightKg":162,"bestReps":12},{"at":1782316920000,"e1rm":228,"bestWeightKg":163,"bestReps":12},{"at":1782921720000,"e1rm":230,"bestWeightKg":164,"bestReps":12},{"at":1783526520000,"e1rm":231,"bestWeightKg":165,"bestReps":12},{"at":1784131320000,"e1rm":232,"bestWeightKg":166,"bestReps":12},{"at":1784736120000,"e1rm":234,"bestWeightKg":167,"bestReps":12},{"at":1785340920000,"e1rm":235,"bestWeightKg":168,"bestReps":12},{"at":1785945720000,"e1rm":237,"bestWeightKg":169,"bestReps":12},{"at":1786550520000,"e1rm":238,"bestWeightKg":170,"bestReps":12},{"at":1787155320000,"e1rm":239,"bestWeightKg":171,"bestReps":12},{"at":1787760120000,"e1rm":241,"bestWeightKg":172,"bestReps":12},{"at":1788364920000,"e1rm":242,"bestWeightKg":173,"bestReps":12}]},{"id":"leg_extension","name":"Leg Extension","series":[{"at":1781107320000,"e1rm":77,"bestWeightKg":51.5,"bestReps":15},{"at":1781712120000,"e1rm":78,"bestWeightKg":52,"bestReps":15},{"at":1782316920000,"e1rm":80,"bestWeightKg":53,"bestReps":15},{"at":1782921720000,"e1rm":80,"bestWeightKg":53.5,"bestReps":15},{"at":1783526520000,"e1rm":81,"bestWeightKg":54,"bestReps":15},{"at":1784131320000,"e1rm":82,"bestWeightKg":54.5,"bestReps":15},{"at":1784736120000,"e1rm":83,"bestWeightKg":55,"bestReps":15},{"at":1785340920000,"e1rm":84,"bestWeightKg":56,"bestReps":15},{"at":1785945720000,"e1rm":85,"bestWeightKg":56.5,"bestReps":15},{"at":1786550520000,"e1rm":86,"bestWeightKg":57,"bestReps":15},{"at":1787155320000,"e1rm":86,"bestWeightKg":57.5,"bestReps":15},{"at":1787760120000,"e1rm":87,"bestWeightKg":58,"bestReps":15},{"at":1788364920000,"e1rm":89,"bestWeightKg":59,"bestReps":15}]},{"id":"incline_barbell_press","name":"Incline Barbell Press","series":[{"at":1781193720000,"e1rm":78,"bestWeightKg":61.5,"bestReps":8},{"at":1781798520000,"e1rm":79,"bestWeightKg":62,"bestReps":8},{"at":1782403320000,"e1rm":80,"bestWeightKg":63,"bestReps":8},{"at":1783008120000,"e1rm":80,"bestWeightKg":63.5,"bestReps":8},{"at":1783612920000,"e1rm":81,"bestWeightKg":64,"bestReps":8},{"at":1784217720000,"e1rm":82,"bestWeightKg":64.5,"bestReps":8},{"at":1784822520000,"e1rm":82,"bestWeightKg":65,"bestReps":8},{"at":1785427320000,"e1rm":84,"bestWeightKg":66,"bestReps":8},{"at":1786032120000,"e1rm":84,"bestWeightKg":66.5,"bestReps":8},{"at":1786636920000,"e1rm":85,"bestWeightKg":67,"bestReps":8},{"at":1787241720000,"e1rm":86,"bestWeightKg":67.5,"bestReps":8},{"at":1787846520000,"e1rm":86,"bestWeightKg":68,"bestReps":8},{"at":1788451320000,"e1rm":87,"bestWeightKg":69,"bestReps":8}]}],"variety":{"distinctExercises":16,"top5SharePct":38,"compoundSharePct":58}},"1Y":{"metrics":{"window":{"from":1757095200000,"to":1788631200000,"days":365},"sessionCount":96,"totalSets":1272,"totalReps":13224,"totalVolumeKg":700786,"activeDays":96,"sessionsPerWeek":1.8,"avgSetsPerSession":13.3,"avgVolumePerSession":7300,"avgDurationMin":62,"topSet":{"exerciseId":"leg_press","weightKg":173,"reps":12,"at":1788364920000}},"deltas":{"volume":null,"sets":null},"balance":[{"region":"chest","label":"Chest","setsPerWeek":6.4,"target":15,"ratio":0.4266666666666667,"status":"light"},{"region":"shoulders","label":"Shoulders","setsPerWeek":11,"target":20,"ratio":0.55,"status":"light"},{"region":"arms","label":"Arms","setsPerWeek":11.7,"target":22,"ratio":0.5318181818181817,"status":"light"},{"region":"core","label":"Core","setsPerWeek":3.7,"target":12,"ratio":0.30833333333333335,"status":"neglected"},{"region":"calves","label":"Calves","setsPerWeek":0,"target":12,"ratio":0,"status":"neglected"},{"region":"posterior","label":"Hams / Glutes","setsPerWeek":4.8,"target":18,"ratio":0.26666666666666666,"status":"neglected"},{"region":"quads","label":"Quads","setsPerWeek":4.6,"target":15,"ratio":0.30666666666666664,"status":"neglected"},{"region":"back","label":"Back","setsPerWeek":9.9,"target":22,"ratio":0.45,"status":"light"}],"balanceScore":36,"radar":{"size":272,"cx":136,"cy":136,"radius":90,"axes":[{"x":136,"y":46,"labelX":136,"labelY":37,"anchor":"middle","angle":-1.5707963267948966},{"x":199.64,"y":72.36,"labelX":206,"labelY":66,"anchor":"start","angle":-0.7853981633974483},{"x":226,"y":136,"labelX":235,"labelY":136,"anchor":"start","angle":0},{"x":199.64,"y":199.64,"labelX":206,"labelY":206,"anchor":"start","angle":0.7853981633974483},{"x":136,"y":226,"labelX":136,"labelY":235,"anchor":"middle","angle":1.5707963267948966},{"x":72.36,"y":199.64,"labelX":66,"labelY":206,"anchor":"end","angle":2.356194490192345},{"x":46,"y":136,"labelX":37,"labelY":136,"anchor":"end","angle":3.141592653589793},{"x":72.36,"y":72.36,"labelX":66,"labelY":66,"anchor":"end","angle":3.9269908169872414}],"rings":[{"value":0.5,"points":"136,106 157.21,114.79 166,136 157.21,157.21 136,166 114.79,157.21 106,136 114.79,114.79"},{"value":1,"points":"136,76 178.43,93.57 196,136 178.43,178.43 136,196 93.57,178.43 76,136 93.57,93.57"},{"value":1.5,"points":"136,46 199.64,72.36 226,136 199.64,199.64 136,226 72.36,199.64 46,136 72.36,72.36"}],"valuePoints":[{"x":136,"y":110.4},{"x":159.33,"y":112.67},{"x":167.91,"y":136},{"x":149.08,"y":149.08},{"x":136,"y":136},{"x":124.69,"y":147.31},{"x":117.6,"y":136},{"x":116.91,"y":116.91}],"polygon":"136,110.4 159.33,112.67 167.91,136 149.08,149.08 136,136 124.69,147.31 117.6,136 116.91,116.91","plotted":[0.4266666666666667,0.55,0.5318181818181817,0.30833333333333335,0,0.26666666666666666,0.30666666666666664,0.45]},"insights":{"headline":{"praise":"Dumbbell Lateral Raise is your fastest-moving lift","tease":"ATLAS found 5 things in your training that are holding you back.","findingCount":5},"free":[{"id":"neglect:calves","kind":"neglect","severity":"warn","headline":"Calves is falling behind","preview":"No direct calves work logged in this period.","detail":["You are averaging 0 sets per week on calves, against a growth target of about 12 sets.","Below roughly a third of target, a muscle group is at or under maintenance — you are holding position at best, and more likely losing size and strength there over a training block.","Left alone this becomes a visible asymmetry and, for the posterior chain and rear delts specifically, a shoulder and lower-back injury risk as the trained side keeps getting stronger."],"action":"Add 4 sets of direct calves work to two sessions a week. Put it at the start of a session, not tacked onto the end where it gets dropped.","metrics":[{"label":"Current","value":"0/wk"},{"label":"Target","value":"12/wk"},{"label":"Gap","value":"100%"}],"weight":100},{"id":"progress:lateral_raise","kind":"progress","severity":"good","headline":"Dumbbell Lateral Raise is your fastest-moving lift","preview":"Estimated 1RM up 9kg (60%) across 24 sessions.","detail":["15kg to 24kg estimated 1RM over 24 logged sessions — 60% in this period.","Your best working set was 16kg × 15.","16 tracked lifts improved in this window. The gap between your fastest and slowest mover is where your programming is uneven."],"action":"Do not change anything about how you are running Dumbbell Lateral Raise. Copy its set and rep scheme onto whichever lift the plateau analysis flagged.","metrics":[{"label":"Gain","value":"+9kg"},{"label":"Change","value":"+60%"},{"label":"Sessions","value":"24"}],"weight":30},{"id":"records","kind":"records","severity":"good","headline":"328 personal records in this period","preview":"Most recent: Incline Barbell Press at 69kg × 8.","detail":["328 lifts beat their previous best estimated 1RM in this window.","Incline Barbell Press — 69kg × 8 (e1RM 87kg, up 1.3kg).","Seated Cable Row — 69kg × 10 (e1RM 92kg, up 1.3kg).","Dumbbell Lateral Raise — 16kg × 15 (e1RM 24kg, up 0.8kg)."],"action":"Records cluster around lifts you are running well. Note which of these share a rep range and use it as the default for lifts that are stuck.","metrics":[{"label":"PRs","value":"328"},{"label":"Best gain","value":"+1.5kg"}],"weight":28},{"id":"consistency:streak","kind":"consistency","severity":"good","headline":"25 weeks trained without a gap","preview":"Averaging 1.8 sessions a week over this period.","detail":["25 consecutive weeks with at least one session — your longest run is 25.","You hit your 4-day target in 100% of the last eight weeks.","Consistency compounds in a way that programme design does not. The lifter who trains three times a week for two years beats the one who trains six times a week for three months, every time."],"action":"Protect the streak over the individual session. A short session beats a skipped one.","metrics":[{"label":"Streak","value":"25w"},{"label":"Best","value":"25w"},{"label":"Adherence","value":"100%"}],"weight":25}],"locked":[{"id":"plateau:back_squat","kind":"plateau","severity":"warn","headline":"Back Squat has stopped progressing","preview":"No new best in 7 sessions — 52 days.","detail":["Your best estimated 1RM on Back Squat is 127kg, set 52 days and 7 sessions ago.","Only this lift is stalled — the rest are still moving, which usually means the problem is specific to how this movement is being loaded rather than systemic.","A plateau at four-plus sessions is not bad luck. It is the point where the stimulus has stopped being novel enough, the load is being pushed past what technique supports, or recovery is not keeping up."],"action":"Drop Back Squat to 90% of your stuck load and rebuild with strict double progression, or swap to a close variation for four weeks and come back to it.","metrics":[{"label":"Best e1RM","value":"127kg"},{"label":"Sessions since","value":"7"},{"label":"Stalled lifts","value":"1"}],"weight":80},{"id":"ratio:delts","kind":"imbalance","severity":"warn","headline":"Your rear delts are being left behind your front delts","preview":"Front-to-rear delt work is at roughly 2.7:1.","detail":["Front delts: 324 sets. Rear delts: 120 sets.","Front delts are hit by every press you do, so they accumulate volume whether you plan it or not. Rear delts get almost nothing unless you deliberately train them.","This is the most common imbalance in people who train hard, and it is the one that most visibly changes how a physique reads from the side — plus it is a direct contributor to impingement."],"action":"Two dedicated rear-delt sets at the start of every upper-body session. Reverse flyes or face pulls, 12–20 reps, taken close to failure — this is not a movement to go heavy on.","metrics":[{"label":"Front","value":"324"},{"label":"Rear","value":"120"},{"label":"Ratio","value":"2.7:1"}],"weight":75},{"id":"neglect:posterior","kind":"neglect","severity":"warn","headline":"Hams / Glutes is falling behind","preview":"4.8 sets/week — roughly 27% of what this region needs.","detail":["You are averaging 4.8 sets per week on hams / glutes, against a growth target of about 18 sets.","Below roughly a third of target, a muscle group is at or under maintenance — you are holding position at best, and more likely losing size and strength there over a training block.","Left alone this becomes a visible asymmetry and, for the posterior chain and rear delts specifically, a shoulder and lower-back injury risk as the trained side keeps getting stronger."],"action":"Add 4 sets of direct hams / glutes work to two sessions a week. Put it at the start of a session, not tacked onto the end where it gets dropped.","metrics":[{"label":"Current","value":"4.8/wk"},{"label":"Target","value":"18/wk"},{"label":"Gap","value":"73%"}],"weight":73},{"id":"ratio:legs","kind":"imbalance","severity":"watch","headline":"Quad-dominant leg training","preview":"Quads to hamstrings is running 2.9:1.","detail":["Quads: 240 sets. Hamstrings: 84 sets.","Squats and presses cover the quads thoroughly and the hamstrings barely at all — hamstrings need their own hinge and curl work to grow.","A weak posterior chain caps how much you can squat and deadlift long before your quads become the limit, and hamstring strength relative to quad strength is one of the better-supported knee-injury predictors."],"action":"Add a dedicated hinge (Romanian deadlift or good morning) plus a curl variation twice a week — around 78 sets.","metrics":[{"label":"Quads","value":"240"},{"label":"Hams","value":"84"},{"label":"Ratio","value":"2.9:1"}],"weight":55}],"all":[{"id":"neglect:calves","kind":"neglect","severity":"warn","headline":"Calves is falling behind","preview":"No direct calves work logged in this period.","detail":["You are averaging 0 sets per week on calves, against a growth target of about 12 sets.","Below roughly a third of target, a muscle group is at or under maintenance — you are holding position at best, and more likely losing size and strength there over a training block.","Left alone this becomes a visible asymmetry and, for the posterior chain and rear delts specifically, a shoulder and lower-back injury risk as the trained side keeps getting stronger."],"action":"Add 4 sets of direct calves work to two sessions a week. Put it at the start of a session, not tacked onto the end where it gets dropped.","metrics":[{"label":"Current","value":"0/wk"},{"label":"Target","value":"12/wk"},{"label":"Gap","value":"100%"}],"weight":100},{"id":"plateau:back_squat","kind":"plateau","severity":"warn","headline":"Back Squat has stopped progressing","preview":"No new best in 7 sessions — 52 days.","detail":["Your best estimated 1RM on Back Squat is 127kg, set 52 days and 7 sessions ago.","Only this lift is stalled — the rest are still moving, which usually means the problem is specific to how this movement is being loaded rather than systemic.","A plateau at four-plus sessions is not bad luck. It is the point where the stimulus has stopped being novel enough, the load is being pushed past what technique supports, or recovery is not keeping up."],"action":"Drop Back Squat to 90% of your stuck load and rebuild with strict double progression, or swap to a close variation for four weeks and come back to it.","metrics":[{"label":"Best e1RM","value":"127kg"},{"label":"Sessions since","value":"7"},{"label":"Stalled lifts","value":"1"}],"weight":80},{"id":"ratio:delts","kind":"imbalance","severity":"warn","headline":"Your rear delts are being left behind your front delts","preview":"Front-to-rear delt work is at roughly 2.7:1.","detail":["Front delts: 324 sets. Rear delts: 120 sets.","Front delts are hit by every press you do, so they accumulate volume whether you plan it or not. Rear delts get almost nothing unless you deliberately train them.","This is the most common imbalance in people who train hard, and it is the one that most visibly changes how a physique reads from the side — plus it is a direct contributor to impingement."],"action":"Two dedicated rear-delt sets at the start of every upper-body session. Reverse flyes or face pulls, 12–20 reps, taken close to failure — this is not a movement to go heavy on.","metrics":[{"label":"Front","value":"324"},{"label":"Rear","value":"120"},{"label":"Ratio","value":"2.7:1"}],"weight":75},{"id":"neglect:posterior","kind":"neglect","severity":"warn","headline":"Hams / Glutes is falling behind","preview":"4.8 sets/week — roughly 27% of what this region needs.","detail":["You are averaging 4.8 sets per week on hams / glutes, against a growth target of about 18 sets.","Below roughly a third of target, a muscle group is at or under maintenance — you are holding position at best, and more likely losing size and strength there over a training block.","Left alone this becomes a visible asymmetry and, for the posterior chain and rear delts specifically, a shoulder and lower-back injury risk as the trained side keeps getting stronger."],"action":"Add 4 sets of direct hams / glutes work to two sessions a week. Put it at the start of a session, not tacked onto the end where it gets dropped.","metrics":[{"label":"Current","value":"4.8/wk"},{"label":"Target","value":"18/wk"},{"label":"Gap","value":"73%"}],"weight":73},{"id":"ratio:legs","kind":"imbalance","severity":"watch","headline":"Quad-dominant leg training","preview":"Quads to hamstrings is running 2.9:1.","detail":["Quads: 240 sets. Hamstrings: 84 sets.","Squats and presses cover the quads thoroughly and the hamstrings barely at all — hamstrings need their own hinge and curl work to grow.","A weak posterior chain caps how much you can squat and deadlift long before your quads become the limit, and hamstring strength relative to quad strength is one of the better-supported knee-injury predictors."],"action":"Add a dedicated hinge (Romanian deadlift or good morning) plus a curl variation twice a week — around 78 sets.","metrics":[{"label":"Quads","value":"240"},{"label":"Hams","value":"84"},{"label":"Ratio","value":"2.9:1"}],"weight":55},{"id":"progress:lateral_raise","kind":"progress","severity":"good","headline":"Dumbbell Lateral Raise is your fastest-moving lift","preview":"Estimated 1RM up 9kg (60%) across 24 sessions.","detail":["15kg to 24kg estimated 1RM over 24 logged sessions — 60% in this period.","Your best working set was 16kg × 15.","16 tracked lifts improved in this window. The gap between your fastest and slowest mover is where your programming is uneven."],"action":"Do not change anything about how you are running Dumbbell Lateral Raise. Copy its set and rep scheme onto whichever lift the plateau analysis flagged.","metrics":[{"label":"Gain","value":"+9kg"},{"label":"Change","value":"+60%"},{"label":"Sessions","value":"24"}],"weight":30},{"id":"records","kind":"records","severity":"good","headline":"328 personal records in this period","preview":"Most recent: Incline Barbell Press at 69kg × 8.","detail":["328 lifts beat their previous best estimated 1RM in this window.","Incline Barbell Press — 69kg × 8 (e1RM 87kg, up 1.3kg).","Seated Cable Row — 69kg × 10 (e1RM 92kg, up 1.3kg).","Dumbbell Lateral Raise — 16kg × 15 (e1RM 24kg, up 0.8kg)."],"action":"Records cluster around lifts you are running well. Note which of these share a rep range and use it as the default for lifts that are stuck.","metrics":[{"label":"PRs","value":"328"},{"label":"Best gain","value":"+1.5kg"}],"weight":28},{"id":"consistency:streak","kind":"consistency","severity":"good","headline":"25 weeks trained without a gap","preview":"Averaging 1.8 sessions a week over this period.","detail":["25 consecutive weeks with at least one session — your longest run is 25.","You hit your 4-day target in 100% of the last eight weeks.","Consistency compounds in a way that programme design does not. The lifter who trains three times a week for two years beats the one who trains six times a week for three months, every time."],"action":"Protect the streak over the individual session. A short session beats a skipped one.","metrics":[{"label":"Streak","value":"25w"},{"label":"Best","value":"25w"},{"label":"Adherence","value":"100%"}],"weight":25}],"hasEnoughData":true,"balance":[{"region":"chest","label":"Chest","setsPerWeek":6.4,"target":15,"ratio":0.4266666666666667,"status":"light"},{"region":"shoulders","label":"Shoulders","setsPerWeek":11,"target":20,"ratio":0.55,"status":"light"},{"region":"arms","label":"Arms","setsPerWeek":11.7,"target":22,"ratio":0.5318181818181817,"status":"light"},{"region":"core","label":"Core","setsPerWeek":3.7,"target":12,"ratio":0.30833333333333335,"status":"neglected"},{"region":"calves","label":"Calves","setsPerWeek":0,"target":12,"ratio":0,"status":"neglected"},{"region":"posterior","label":"Hams / Glutes","setsPerWeek":4.8,"target":18,"ratio":0.26666666666666666,"status":"neglected"},{"region":"quads","label":"Quads","setsPerWeek":4.6,"target":15,"ratio":0.30666666666666664,"status":"neglected"},{"region":"back","label":"Back","setsPerWeek":9.9,"target":22,"ratio":0.45,"status":"light"}],"balanceScore":36},"movers":[{"exerciseId":"leg_press","name":"Leg Press","sessions":24,"first":{"at":1774454520000,"e1rm":210,"bestWeightKg":150,"bestReps":12},"last":{"at":1788364920000,"e1rm":242,"bestWeightKg":173,"bestReps":12},"deltaKg":32,"deltaPct":15,"sessionsSinceBest":0,"daysSinceBest":3,"stalled":false},{"exerciseId":"lat_pulldown","name":"Lat Pulldown","sessions":24,"first":{"at":1774281720000,"e1rm":80,"bestWeightKg":60,"bestReps":10},"last":{"at":1788192120000,"e1rm":111,"bestWeightKg":83,"bestReps":10},"deltaKg":31,"deltaPct":39,"sessionsSinceBest":0,"daysSinceBest":5,"stalled":false},{"exerciseId":"barbell_bench_press","name":"Barbell Bench Press","sessions":24,"first":{"at":1774195320000,"e1rm":89,"bestWeightKg":70,"bestReps":8},"last":{"at":1788105720000,"e1rm":118,"bestWeightKg":93,"bestReps":8},"deltaKg":29,"deltaPct":33,"sessionsSinceBest":0,"daysSinceBest":6,"stalled":false},{"exerciseId":"leg_extension","name":"Leg Extension","sessions":24,"first":{"at":1774454520000,"e1rm":68,"bestWeightKg":45,"bestReps":15},"last":{"at":1788364920000,"e1rm":89,"bestWeightKg":59,"bestReps":15},"deltaKg":21,"deltaPct":31,"sessionsSinceBest":0,"daysSinceBest":3,"stalled":false},{"exerciseId":"cable_crunch","name":"Cable Crunch","sessions":24,"first":{"at":1774540920000,"e1rm":53,"bestWeightKg":35,"bestReps":15},"last":{"at":1788451320000,"e1rm":74,"bestWeightKg":49,"bestReps":15},"deltaKg":21,"deltaPct":40,"sessionsSinceBest":0,"daysSinceBest":2,"stalled":false}],"weekly":[{"weekStart":1773014400000,"label":"Mar 9","sessions":0,"sets":0,"volumeKg":0},{"weekStart":1773619200000,"label":"Mar 16","sessions":1,"sets":16,"volumeKg":5562},{"weekStart":1774224000000,"label":"Mar 23","sessions":4,"sets":53,"volumeKg":25466},{"weekStart":1774828800000,"label":"Mar 30","sessions":4,"sets":53,"volumeKg":25783.5},{"weekStart":1775433600000,"label":"Apr 6","sessions":4,"sets":53,"volumeKg":26118.5},{"weekStart":1776038400000,"label":"Apr 13","sessions":4,"sets":53,"volumeKg":26538.5},{"weekStart":1776643200000,"label":"Apr 20","sessions":4,"sets":53,"volumeKg":26830},{"weekStart":1777248000000,"label":"Apr 27","sessions":4,"sets":53,"volumeKg":27147.5},{"weekStart":1777852800000,"label":"May 4","sessions":4,"sets":53,"volumeKg":27439},{"weekStart":1778457600000,"label":"May 11","sessions":4,"sets":53,"volumeKg":27800},{"weekStart":1779062400000,"label":"May 18","sessions":4,"sets":53,"volumeKg":28194},{"weekStart":1779667200000,"label":"May 25","sessions":4,"sets":53,"volumeKg":28511.5},{"weekStart":1780272000000,"label":"Jun 1","sessions":4,"sets":53,"volumeKg":28803},{"weekStart":1780876800000,"label":"Jun 8","sessions":4,"sets":53,"volumeKg":29120.5},{"weekStart":1781481600000,"label":"Jun 15","sessions":4,"sets":53,"volumeKg":29455.5},{"weekStart":1782086400000,"label":"Jun 22","sessions":4,"sets":53,"volumeKg":29875.5},{"weekStart":1782691200000,"label":"Jun 29","sessions":4,"sets":53,"volumeKg":30167},{"weekStart":1783296000000,"label":"Jul 6","sessions":4,"sets":53,"volumeKg":30484.5},{"weekStart":1783900800000,"label":"Jul 13","sessions":4,"sets":53,"volumeKg":30776},{"weekStart":1784505600000,"label":"Jul 20","sessions":4,"sets":53,"volumeKg":31115},{"weekStart":1785110400000,"label":"Jul 27","sessions":4,"sets":53,"volumeKg":31487},{"weekStart":1785715200000,"label":"Aug 3","sessions":4,"sets":53,"volumeKg":31782.5},{"weekStart":1786320000000,"label":"Aug 10","sessions":4,"sets":53,"volumeKg":32052},{"weekStart":1786924800000,"label":"Aug 17","sessions":4,"sets":53,"volumeKg":32347.5},{"weekStart":1787529600000,"label":"Aug 24","sessions":4,"sets":53,"volumeKg":32660.5},{"weekStart":1788134400000,"label":"Aug 31","sessions":3,"sets":37,"volumeKg":25269}],"prs":[{"at":1788451320000,"exerciseId":"incline_barbell_press","name":"Incline Barbell Press","weightKg":69,"reps":8,"e1rm":87,"gainKg":1.3},{"at":1788451320000,"exerciseId":"seated_cable_row","name":"Seated Cable Row","weightKg":69,"reps":10,"e1rm":92,"gainKg":1.3},{"at":1788451320000,"exerciseId":"lateral_raise","name":"Dumbbell Lateral Raise","weightKg":16,"reps":15,"e1rm":24,"gainKg":0.8},{"at":1788451320000,"exerciseId":"cable_crunch","name":"Cable Crunch","weightKg":49,"reps":15,"e1rm":74,"gainKg":1.5},{"at":1788364920000,"exerciseId":"leg_press","name":"Leg Press","weightKg":173,"reps":12,"e1rm":242,"gainKg":1.4},{"at":1788364920000,"exerciseId":"leg_extension","name":"Leg Extension","weightKg":59,"reps":15,"e1rm":89,"gainKg":1.5}],"landmarks":[{"muscle":"chest","label":"Chest","sets":6.4,"maintenance":6,"growth":[10,20]},{"muscle":"front_delts","label":"Front Delts","sets":6.2,"maintenance":4,"growth":[6,16]},{"muscle":"biceps","label":"Biceps","sets":5.1,"maintenance":5,"growth":[8,20]},{"muscle":"lats","label":"Lats","sets":4.6,"maintenance":8,"growth":[10,22]},{"muscle":"triceps","label":"Triceps","sets":4.6,"maintenance":5,"growth":[8,20]},{"muscle":"quads","label":"Quads","sets":4.6,"maintenance":6,"growth":[10,20]},{"muscle":"traps","label":"Traps","sets":3.7,"maintenance":4,"growth":[8,20]},{"muscle":"glutes","label":"Glutes","sets":3.2,"maintenance":0,"growth":[6,16]},{"muscle":"abs","label":"Abs","sets":3,"maintenance":0,"growth":[6,20]},{"muscle":"side_delts","label":"Side Delts","sets":2.5,"maintenance":6,"growth":[12,26]},{"muscle":"rear_delts","label":"Rear Delts","sets":2.3,"maintenance":4,"growth":[10,24]},{"muscle":"forearms","label":"Forearms","sets":2.1,"maintenance":2,"growth":[4,16]},{"muscle":"lower_back","label":"Lower Back","sets":1.6,"maintenance":2,"growth":[4,12]},{"muscle":"hamstrings","label":"Hamstrings","sets":1.6,"maintenance":4,"growth":[8,16]},{"muscle":"obliques","label":"Obliques","sets":0.7,"maintenance":0,"growth":[4,16]},{"muscle":"calves","label":"Calves","sets":0,"maintenance":6,"growth":[8,20]}],"lifts":[{"id":"barbell_bench_press","name":"Barbell Bench Press","series":[{"at":1774195320000,"e1rm":89,"bestWeightKg":70,"bestReps":8},{"at":1774800120000,"e1rm":90,"bestWeightKg":71,"bestReps":8},{"at":1775404920000,"e1rm":91,"bestWeightKg":72,"bestReps":8},{"at":1776009720000,"e1rm":92,"bestWeightKg":73,"bestReps":8},{"at":1776614520000,"e1rm":94,"bestWeightKg":74,"bestReps":8},{"at":1777219320000,"e1rm":95,"bestWeightKg":75,"bestReps":8},{"at":1777824120000,"e1rm":96,"bestWeightKg":76,"bestReps":8},{"at":1778428920000,"e1rm":98,"bestWeightKg":77,"bestReps":8},{"at":1779033720000,"e1rm":99,"bestWeightKg":78,"bestReps":8},{"at":1779638520000,"e1rm":100,"bestWeightKg":79,"bestReps":8},{"at":1780243320000,"e1rm":101,"bestWeightKg":80,"bestReps":8},{"at":1780848120000,"e1rm":103,"bestWeightKg":81,"bestReps":8},{"at":1781452920000,"e1rm":104,"bestWeightKg":82,"bestReps":8},{"at":1782057720000,"e1rm":105,"bestWeightKg":83,"bestReps":8},{"at":1782662520000,"e1rm":106,"bestWeightKg":84,"bestReps":8},{"at":1783267320000,"e1rm":108,"bestWeightKg":85,"bestReps":8},{"at":1783872120000,"e1rm":109,"bestWeightKg":86,"bestReps":8},{"at":1784476920000,"e1rm":110,"bestWeightKg":87,"bestReps":8},{"at":1785081720000,"e1rm":111,"bestWeightKg":88,"bestReps":8},{"at":1785686520000,"e1rm":113,"bestWeightKg":89,"bestReps":8},{"at":1786291320000,"e1rm":114,"bestWeightKg":90,"bestReps":8},{"at":1786896120000,"e1rm":115,"bestWeightKg":91,"bestReps":8},{"at":1787500920000,"e1rm":117,"bestWeightKg":92,"bestReps":8},{"at":1788105720000,"e1rm":118,"bestWeightKg":93,"bestReps":8}]},{"id":"incline_db_press","name":"Incline Dumbbell Press","series":[{"at":1774195320000,"e1rm":35,"bestWeightKg":26,"bestReps":10},{"at":1774800120000,"e1rm":35,"bestWeightKg":26.5,"bestReps":10},{"at":1775404920000,"e1rm":36,"bestWeightKg":27,"bestReps":10},{"at":1776009720000,"e1rm":37,"bestWeightKg":28,"bestReps":10},{"at":1776614520000,"e1rm":38,"bestWeightKg":28.5,"bestReps":10},{"at":1777219320000,"e1rm":39,"bestWeightKg":29,"bestReps":10},{"at":1777824120000,"e1rm":39,"bestWeightKg":29.5,"bestReps":10},{"at":1778428920000,"e1rm":40,"bestWeightKg":30,"bestReps":10},{"at":1779033720000,"e1rm":41,"bestWeightKg":31,"bestReps":10},{"at":1779638520000,"e1rm":42,"bestWeightKg":31.5,"bestReps":10},{"at":1780243320000,"e1rm":43,"bestWeightKg":32,"bestReps":10},{"at":1780848120000,"e1rm":43,"bestWeightKg":32.5,"bestReps":10},{"at":1781452920000,"e1rm":44,"bestWeightKg":33,"bestReps":10},{"at":1782057720000,"e1rm":45,"bestWeightKg":34,"bestReps":10},{"at":1782662520000,"e1rm":46,"bestWeightKg":34.5,"bestReps":10},{"at":1783267320000,"e1rm":47,"bestWeightKg":35,"bestReps":10},{"at":1783872120000,"e1rm":47,"bestWeightKg":35.5,"bestReps":10},{"at":1784476920000,"e1rm":48,"bestWeightKg":36,"bestReps":10},{"at":1785081720000,"e1rm":49,"bestWeightKg":37,"bestReps":10},{"at":1785686520000,"e1rm":50,"bestWeightKg":37.5,"bestReps":10},{"at":1786291320000,"e1rm":51,"bestWeightKg":38,"bestReps":10},{"at":1786896120000,"e1rm":51,"bestWeightKg":38.5,"bestReps":10},{"at":1787500920000,"e1rm":52,"bestWeightKg":39,"bestReps":10},{"at":1788105720000,"e1rm":53,"bestWeightKg":40,"bestReps":10}]},{"id":"overhead_press","name":"Standing Overhead Press","series":[{"at":1774195320000,"e1rm":51,"bestWeightKg":40,"bestReps":8},{"at":1774800120000,"e1rm":51,"bestWeightKg":40.5,"bestReps":8},{"at":1775404920000,"e1rm":52,"bestWeightKg":41,"bestReps":8},{"at":1776009720000,"e1rm":53,"bestWeightKg":42,"bestReps":8},{"at":1776614520000,"e1rm":54,"bestWeightKg":42.5,"bestReps":8},{"at":1777219320000,"e1rm":54,"bestWeightKg":43,"bestReps":8},{"at":1777824120000,"e1rm":55,"bestWeightKg":43.5,"bestReps":8},{"at":1778428920000,"e1rm":56,"bestWeightKg":44,"bestReps":8},{"at":1779033720000,"e1rm":57,"bestWeightKg":45,"bestReps":8},{"at":1779638520000,"e1rm":58,"bestWeightKg":45.5,"bestReps":8},{"at":1780243320000,"e1rm":58,"bestWeightKg":46,"bestReps":8},{"at":1780848120000,"e1rm":59,"bestWeightKg":46.5,"bestReps":8},{"at":1781452920000,"e1rm":60,"bestWeightKg":47,"bestReps":8},{"at":1782057720000,"e1rm":61,"bestWeightKg":48,"bestReps":8},{"at":1782662520000,"e1rm":61,"bestWeightKg":48.5,"bestReps":8},{"at":1783267320000,"e1rm":62,"bestWeightKg":49,"bestReps":8},{"at":1783872120000,"e1rm":63,"bestWeightKg":49.5,"bestReps":8},{"at":1784476920000,"e1rm":63,"bestWeightKg":50,"bestReps":8},{"at":1785081720000,"e1rm":65,"bestWeightKg":51,"bestReps":8},{"at":1785686520000,"e1rm":65,"bestWeightKg":51.5,"bestReps":8},{"at":1786291320000,"e1rm":66,"bestWeightKg":52,"bestReps":8},{"at":1786896120000,"e1rm":67,"bestWeightKg":52.5,"bestReps":8},{"at":1787500920000,"e1rm":67,"bestWeightKg":53,"bestReps":8},{"at":1788105720000,"e1rm":68,"bestWeightKg":54,"bestReps":8}]},{"id":"cable_fly","name":"Cable Fly","series":[{"at":1774195320000,"e1rm":26,"bestWeightKg":18,"bestReps":14},{"at":1774800120000,"e1rm":27,"bestWeightKg":18.5,"bestReps":14},{"at":1775404920000,"e1rm":27,"bestWeightKg":18.5,"bestReps":14},{"at":1776009720000,"e1rm":28,"bestWeightKg":19,"bestReps":14},{"at":1776614520000,"e1rm":28,"bestWeightKg":19,"bestReps":14},{"at":1777219320000,"e1rm":29,"bestWeightKg":19.5,"bestReps":14},{"at":1777824120000,"e1rm":29,"bestWeightKg":19.5,"bestReps":14},{"at":1778428920000,"e1rm":29,"bestWeightKg":20,"bestReps":14},{"at":1779033720000,"e1rm":29,"bestWeightKg":20,"bestReps":14},{"at":1779638520000,"e1rm":30,"bestWeightKg":20.5,"bestReps":14},{"at":1780243320000,"e1rm":30,"bestWeightKg":20.5,"bestReps":14},{"at":1780848120000,"e1rm":31,"bestWeightKg":21,"bestReps":14},{"at":1781452920000,"e1rm":31,"bestWeightKg":21,"bestReps":14},{"at":1782057720000,"e1rm":32,"bestWeightKg":21.5,"bestReps":14},{"at":1782662520000,"e1rm":32,"bestWeightKg":21.5,"bestReps":14},{"at":1783267320000,"e1rm":32,"bestWeightKg":22,"bestReps":14},{"at":1783872120000,"e1rm":32,"bestWeightKg":22,"bestReps":14},{"at":1784476920000,"e1rm":33,"bestWeightKg":22.5,"bestReps":14},{"at":1785081720000,"e1rm":33,"bestWeightKg":22.5,"bestReps":14},{"at":1785686520000,"e1rm":34,"bestWeightKg":23,"bestReps":14},{"at":1786291320000,"e1rm":34,"bestWeightKg":23,"bestReps":14},{"at":1786896120000,"e1rm":34,"bestWeightKg":23.5,"bestReps":14},{"at":1787500920000,"e1rm":34,"bestWeightKg":23.5,"bestReps":14},{"at":1788105720000,"e1rm":35,"bestWeightKg":24,"bestReps":14}]},{"id":"triceps_pushdown","name":"Triceps Pushdown","series":[{"at":1774195320000,"e1rm":42,"bestWeightKg":30,"bestReps":12},{"at":1774800120000,"e1rm":43,"bestWeightKg":30.5,"bestReps":12},{"at":1775404920000,"e1rm":43,"bestWeightKg":31,"bestReps":12},{"at":1776009720000,"e1rm":45,"bestWeightKg":32,"bestReps":12},{"at":1776614520000,"e1rm":46,"bestWeightKg":32.5,"bestReps":12},{"at":1777219320000,"e1rm":46,"bestWeightKg":33,"bestReps":12},{"at":1777824120000,"e1rm":47,"bestWeightKg":33.5,"bestReps":12},{"at":1778428920000,"e1rm":48,"bestWeightKg":34,"bestReps":12},{"at":1779033720000,"e1rm":49,"bestWeightKg":35,"bestReps":12},{"at":1779638520000,"e1rm":50,"bestWeightKg":35.5,"bestReps":12},{"at":1780243320000,"e1rm":50,"bestWeightKg":36,"bestReps":12},{"at":1780848120000,"e1rm":51,"bestWeightKg":36.5,"bestReps":12},{"at":1781452920000,"e1rm":52,"bestWeightKg":37,"bestReps":12},{"at":1782057720000,"e1rm":53,"bestWeightKg":38,"bestReps":12},{"at":1782662520000,"e1rm":54,"bestWeightKg":38.5,"bestReps":12},{"at":1783267320000,"e1rm":55,"bestWeightKg":39,"bestReps":12},{"at":1783872120000,"e1rm":55,"bestWeightKg":39.5,"bestReps":12},{"at":1784476920000,"e1rm":56,"bestWeightKg":40,"bestReps":12},{"at":1785081720000,"e1rm":57,"bestWeightKg":41,"bestReps":12},{"at":1785686520000,"e1rm":58,"bestWeightKg":41.5,"bestReps":12},{"at":1786291320000,"e1rm":59,"bestWeightKg":42,"bestReps":12},{"at":1786896120000,"e1rm":59,"bestWeightKg":42.5,"bestReps":12},{"at":1787500920000,"e1rm":60,"bestWeightKg":43,"bestReps":12},{"at":1788105720000,"e1rm":62,"bestWeightKg":44,"bestReps":12}]},{"id":"lat_pulldown","name":"Lat Pulldown","series":[{"at":1774281720000,"e1rm":80,"bestWeightKg":60,"bestReps":10},{"at":1774886520000,"e1rm":81,"bestWeightKg":61,"bestReps":10},{"at":1775491320000,"e1rm":83,"bestWeightKg":62,"bestReps":10},{"at":1776096120000,"e1rm":84,"bestWeightKg":63,"bestReps":10},{"at":1776700920000,"e1rm":85,"bestWeightKg":64,"bestReps":10},{"at":1777305720000,"e1rm":87,"bestWeightKg":65,"bestReps":10},{"at":1777910520000,"e1rm":88,"bestWeightKg":66,"bestReps":10},{"at":1778515320000,"e1rm":89,"bestWeightKg":67,"bestReps":10},{"at":1779120120000,"e1rm":91,"bestWeightKg":68,"bestReps":10},{"at":1779724920000,"e1rm":92,"bestWeightKg":69,"bestReps":10},{"at":1780329720000,"e1rm":93,"bestWeightKg":70,"bestReps":10},{"at":1780934520000,"e1rm":95,"bestWeightKg":71,"bestReps":10},{"at":1781539320000,"e1rm":96,"bestWeightKg":72,"bestReps":10},{"at":1782144120000,"e1rm":97,"bestWeightKg":73,"bestReps":10},{"at":1782748920000,"e1rm":99,"bestWeightKg":74,"bestReps":10},{"at":1783353720000,"e1rm":100,"bestWeightKg":75,"bestReps":10},{"at":1783958520000,"e1rm":101,"bestWeightKg":76,"bestReps":10},{"at":1784563320000,"e1rm":103,"bestWeightKg":77,"bestReps":10},{"at":1785168120000,"e1rm":104,"bestWeightKg":78,"bestReps":10},{"at":1785772920000,"e1rm":105,"bestWeightKg":79,"bestReps":10},{"at":1786377720000,"e1rm":107,"bestWeightKg":80,"bestReps":10},{"at":1786982520000,"e1rm":108,"bestWeightKg":81,"bestReps":10},{"at":1787587320000,"e1rm":109,"bestWeightKg":82,"bestReps":10},{"at":1788192120000,"e1rm":111,"bestWeightKg":83,"bestReps":10}]},{"id":"barbell_row","name":"Barbell Row","series":[{"at":1774281720000,"e1rm":73,"bestWeightKg":55,"bestReps":10},{"at":1774886520000,"e1rm":74,"bestWeightKg":55.5,"bestReps":10},{"at":1775491320000,"e1rm":75,"bestWeightKg":56,"bestReps":10},{"at":1776096120000,"e1rm":76,"bestWeightKg":57,"bestReps":10},{"at":1776700920000,"e1rm":77,"bestWeightKg":57.5,"bestReps":10},{"at":1777305720000,"e1rm":77,"bestWeightKg":58,"bestReps":10},{"at":1777910520000,"e1rm":78,"bestWeightKg":58.5,"bestReps":10},{"at":1778515320000,"e1rm":79,"bestWeightKg":59,"bestReps":10},{"at":1779120120000,"e1rm":80,"bestWeightKg":60,"bestReps":10},{"at":1779724920000,"e1rm":81,"bestWeightKg":60.5,"bestReps":10},{"at":1780329720000,"e1rm":81,"bestWeightKg":61,"bestReps":10},{"at":1780934520000,"e1rm":82,"bestWeightKg":61.5,"bestReps":10},{"at":1781539320000,"e1rm":83,"bestWeightKg":62,"bestReps":10},{"at":1782144120000,"e1rm":84,"bestWeightKg":63,"bestReps":10},{"at":1782748920000,"e1rm":85,"bestWeightKg":63.5,"bestReps":10},{"at":1783353720000,"e1rm":85,"bestWeightKg":64,"bestReps":10},{"at":1783958520000,"e1rm":86,"bestWeightKg":64.5,"bestReps":10},{"at":1784563320000,"e1rm":87,"bestWeightKg":65,"bestReps":10},{"at":1785168120000,"e1rm":88,"bestWeightKg":66,"bestReps":10},{"at":1785772920000,"e1rm":89,"bestWeightKg":66.5,"bestReps":10},{"at":1786377720000,"e1rm":89,"bestWeightKg":67,"bestReps":10},{"at":1786982520000,"e1rm":90,"bestWeightKg":67.5,"bestReps":10},{"at":1787587320000,"e1rm":91,"bestWeightKg":68,"bestReps":10},{"at":1788192120000,"e1rm":92,"bestWeightKg":69,"bestReps":10}]},{"id":"barbell_curl","name":"Barbell Curl","series":[{"at":1774281720000,"e1rm":40,"bestWeightKg":30,"bestReps":10},{"at":1774886520000,"e1rm":41,"bestWeightKg":30.5,"bestReps":10},{"at":1775491320000,"e1rm":41,"bestWeightKg":31,"bestReps":10},{"at":1776096120000,"e1rm":43,"bestWeightKg":32,"bestReps":10},{"at":1776700920000,"e1rm":43,"bestWeightKg":32.5,"bestReps":10},{"at":1777305720000,"e1rm":44,"bestWeightKg":33,"bestReps":10},{"at":1777910520000,"e1rm":45,"bestWeightKg":33.5,"bestReps":10},{"at":1778515320000,"e1rm":45,"bestWeightKg":34,"bestReps":10},{"at":1779120120000,"e1rm":47,"bestWeightKg":35,"bestReps":10},{"at":1779724920000,"e1rm":47,"bestWeightKg":35.5,"bestReps":10},{"at":1780329720000,"e1rm":48,"bestWeightKg":36,"bestReps":10},{"at":1780934520000,"e1rm":49,"bestWeightKg":36.5,"bestReps":10},{"at":1781539320000,"e1rm":49,"bestWeightKg":37,"bestReps":10},{"at":1782144120000,"e1rm":51,"bestWeightKg":38,"bestReps":10},{"at":1782748920000,"e1rm":51,"bestWeightKg":38.5,"bestReps":10},{"at":1783353720000,"e1rm":52,"bestWeightKg":39,"bestReps":10},{"at":1783958520000,"e1rm":53,"bestWeightKg":39.5,"bestReps":10},{"at":1784563320000,"e1rm":53,"bestWeightKg":40,"bestReps":10},{"at":1785168120000,"e1rm":55,"bestWeightKg":41,"bestReps":10},{"at":1785772920000,"e1rm":55,"bestWeightKg":41.5,"bestReps":10},{"at":1786377720000,"e1rm":56,"bestWeightKg":42,"bestReps":10},{"at":1786982520000,"e1rm":57,"bestWeightKg":42.5,"bestReps":10},{"at":1787587320000,"e1rm":57,"bestWeightKg":43,"bestReps":10},{"at":1788192120000,"e1rm":59,"bestWeightKg":44,"bestReps":10}]}],"variety":{"distinctExercises":16,"top5SharePct":38,"compoundSharePct":58}},"ALL":{"metrics":{"window":{"from":1774195320000,"to":1788631200000,"days":167.08194444444445},"sessionCount":96,"totalSets":1272,"totalReps":13224,"totalVolumeKg":700786,"activeDays":96,"sessionsPerWeek":4,"avgSetsPerSession":13.3,"avgVolumePerSession":7300,"avgDurationMin":62,"topSet":{"exerciseId":"leg_press","weightKg":173,"reps":12,"at":1788364920000}},"deltas":{"volume":12500,"sets":7850},"balance":[{"region":"chest","label":"Chest","setsPerWeek":14.1,"target":15,"ratio":0.94,"status":"on_target"},{"region":"shoulders","label":"Shoulders","setsPerWeek":24.1,"target":20,"ratio":1.205,"status":"on_target"},{"region":"arms","label":"Arms","setsPerWeek":25.6,"target":22,"ratio":1.1636363636363638,"status":"on_target"},{"region":"core","label":"Core","setsPerWeek":8,"target":12,"ratio":0.6666666666666666,"status":"light"},{"region":"calves","label":"Calves","setsPerWeek":0,"target":12,"ratio":0,"status":"neglected"},{"region":"posterior","label":"Hams / Glutes","setsPerWeek":10.6,"target":18,"ratio":0.5888888888888889,"status":"light"},{"region":"quads","label":"Quads","setsPerWeek":10.1,"target":15,"ratio":0.6733333333333333,"status":"light"},{"region":"back","label":"Back","setsPerWeek":21.6,"target":22,"ratio":0.9818181818181819,"status":"on_target"}],"balanceScore":71,"radar":{"size":272,"cx":136,"cy":136,"radius":90,"axes":[{"x":136,"y":46,"labelX":136,"labelY":37,"anchor":"middle","angle":-1.5707963267948966},{"x":199.64,"y":72.36,"labelX":206,"labelY":66,"anchor":"start","angle":-0.7853981633974483},{"x":226,"y":136,"labelX":235,"labelY":136,"anchor":"start","angle":0},{"x":199.64,"y":199.64,"labelX":206,"labelY":206,"anchor":"start","angle":0.7853981633974483},{"x":136,"y":226,"labelX":136,"labelY":235,"anchor":"middle","angle":1.5707963267948966},{"x":72.36,"y":199.64,"labelX":66,"labelY":206,"anchor":"end","angle":2.356194490192345},{"x":46,"y":136,"labelX":37,"labelY":136,"anchor":"end","angle":3.141592653589793},{"x":72.36,"y":72.36,"labelX":66,"labelY":66,"anchor":"end","angle":3.9269908169872414}],"rings":[{"value":0.5,"points":"136,106 157.21,114.79 166,136 157.21,157.21 136,166 114.79,157.21 106,136 114.79,114.79"},{"value":1,"points":"136,76 178.43,93.57 196,136 178.43,178.43 136,196 93.57,178.43 76,136 93.57,93.57"},{"value":1.5,"points":"136,46 199.64,72.36 226,136 199.64,199.64 136,226 72.36,199.64 46,136 72.36,72.36"}],"valuePoints":[{"x":136,"y":79.6},{"x":187.12,"y":84.88},{"x":205.82,"y":136},{"x":164.28,"y":164.28},{"x":136,"y":136},{"x":111.02,"y":160.98},{"x":95.6,"y":136},{"x":94.34,"y":94.34}],"polygon":"136,79.6 187.12,84.88 205.82,136 164.28,164.28 136,136 111.02,160.98 95.6,136 94.34,94.34","plotted":[0.94,1.205,1.1636363636363638,0.6666666666666666,0,0.5888888888888889,0.6733333333333333,0.9818181818181819]},"insights":{"headline":{"praise":"Dumbbell Lateral Raise is your fastest-moving lift","tease":"ATLAS found 4 things in your training that are holding you back.","findingCount":4},"free":[{"id":"neglect:calves","kind":"neglect","severity":"warn","headline":"Calves is falling behind","preview":"No direct calves work logged in this period.","detail":["You are averaging 0 sets per week on calves, against a growth target of about 12 sets.","Below roughly a third of target, a muscle group is at or under maintenance — you are holding position at best, and more likely losing size and strength there over a training block.","Left alone this becomes a visible asymmetry and, for the posterior chain and rear delts specifically, a shoulder and lower-back injury risk as the trained side keeps getting stronger."],"action":"Add 4 sets of direct calves work to two sessions a week. Put it at the start of a session, not tacked onto the end where it gets dropped.","metrics":[{"label":"Current","value":"0/wk"},{"label":"Target","value":"12/wk"},{"label":"Gap","value":"100%"}],"weight":100},{"id":"progress:lateral_raise","kind":"progress","severity":"good","headline":"Dumbbell Lateral Raise is your fastest-moving lift","preview":"Estimated 1RM up 9kg (60%) across 24 sessions.","detail":["15kg to 24kg estimated 1RM over 24 logged sessions — 60% in this period.","Your best working set was 16kg × 15.","16 tracked lifts improved in this window. The gap between your fastest and slowest mover is where your programming is uneven."],"action":"Do not change anything about how you are running Dumbbell Lateral Raise. Copy its set and rep scheme onto whichever lift the plateau analysis flagged.","metrics":[{"label":"Gain","value":"+9kg"},{"label":"Change","value":"+60%"},{"label":"Sessions","value":"24"}],"weight":30},{"id":"records","kind":"records","severity":"good","headline":"328 personal records in this period","preview":"Most recent: Incline Barbell Press at 69kg × 8.","detail":["328 lifts beat their previous best estimated 1RM in this window.","Incline Barbell Press — 69kg × 8 (e1RM 87kg, up 1.3kg).","Seated Cable Row — 69kg × 10 (e1RM 92kg, up 1.3kg).","Dumbbell Lateral Raise — 16kg × 15 (e1RM 24kg, up 0.8kg)."],"action":"Records cluster around lifts you are running well. Note which of these share a rep range and use it as the default for lifts that are stuck.","metrics":[{"label":"PRs","value":"328"},{"label":"Best gain","value":"+1.5kg"}],"weight":28},{"id":"consistency:streak","kind":"consistency","severity":"good","headline":"25 weeks trained without a gap","preview":"Averaging 4 sessions a week over this period.","detail":["25 consecutive weeks with at least one session — your longest run is 25.","You hit your 4-day target in 100% of the last eight weeks.","Consistency compounds in a way that programme design does not. The lifter who trains three times a week for two years beats the one who trains six times a week for three months, every time."],"action":"Protect the streak over the individual session. A short session beats a skipped one.","metrics":[{"label":"Streak","value":"25w"},{"label":"Best","value":"25w"},{"label":"Adherence","value":"100%"}],"weight":25}],"locked":[{"id":"plateau:back_squat","kind":"plateau","severity":"warn","headline":"Back Squat has stopped progressing","preview":"No new best in 7 sessions — 52 days.","detail":["Your best estimated 1RM on Back Squat is 127kg, set 52 days and 7 sessions ago.","Only this lift is stalled — the rest are still moving, which usually means the problem is specific to how this movement is being loaded rather than systemic.","A plateau at four-plus sessions is not bad luck. It is the point where the stimulus has stopped being novel enough, the load is being pushed past what technique supports, or recovery is not keeping up."],"action":"Drop Back Squat to 90% of your stuck load and rebuild with strict double progression, or swap to a close variation for four weeks and come back to it.","metrics":[{"label":"Best e1RM","value":"127kg"},{"label":"Sessions since","value":"7"},{"label":"Stalled lifts","value":"1"}],"weight":80},{"id":"ratio:delts","kind":"imbalance","severity":"warn","headline":"Your rear delts are being left behind your front delts","preview":"Front-to-rear delt work is at roughly 2.7:1.","detail":["Front delts: 324 sets. Rear delts: 120 sets.","Front delts are hit by every press you do, so they accumulate volume whether you plan it or not. Rear delts get almost nothing unless you deliberately train them.","This is the most common imbalance in people who train hard, and it is the one that most visibly changes how a physique reads from the side — plus it is a direct contributor to impingement."],"action":"Two dedicated rear-delt sets at the start of every upper-body session. Reverse flyes or face pulls, 12–20 reps, taken close to failure — this is not a movement to go heavy on.","metrics":[{"label":"Front","value":"324"},{"label":"Rear","value":"120"},{"label":"Ratio","value":"2.7:1"}],"weight":75},{"id":"ratio:legs","kind":"imbalance","severity":"watch","headline":"Quad-dominant leg training","preview":"Quads to hamstrings is running 2.9:1.","detail":["Quads: 240 sets. Hamstrings: 84 sets.","Squats and presses cover the quads thoroughly and the hamstrings barely at all — hamstrings need their own hinge and curl work to grow.","A weak posterior chain caps how much you can squat and deadlift long before your quads become the limit, and hamstring strength relative to quad strength is one of the better-supported knee-injury predictors."],"action":"Add a dedicated hinge (Romanian deadlift or good morning) plus a curl variation twice a week — around 78 sets.","metrics":[{"label":"Quads","value":"240"},{"label":"Hams","value":"84"},{"label":"Ratio","value":"2.9:1"}],"weight":55}],"all":[{"id":"neglect:calves","kind":"neglect","severity":"warn","headline":"Calves is falling behind","preview":"No direct calves work logged in this period.","detail":["You are averaging 0 sets per week on calves, against a growth target of about 12 sets.","Below roughly a third of target, a muscle group is at or under maintenance — you are holding position at best, and more likely losing size and strength there over a training block.","Left alone this becomes a visible asymmetry and, for the posterior chain and rear delts specifically, a shoulder and lower-back injury risk as the trained side keeps getting stronger."],"action":"Add 4 sets of direct calves work to two sessions a week. Put it at the start of a session, not tacked onto the end where it gets dropped.","metrics":[{"label":"Current","value":"0/wk"},{"label":"Target","value":"12/wk"},{"label":"Gap","value":"100%"}],"weight":100},{"id":"plateau:back_squat","kind":"plateau","severity":"warn","headline":"Back Squat has stopped progressing","preview":"No new best in 7 sessions — 52 days.","detail":["Your best estimated 1RM on Back Squat is 127kg, set 52 days and 7 sessions ago.","Only this lift is stalled — the rest are still moving, which usually means the problem is specific to how this movement is being loaded rather than systemic.","A plateau at four-plus sessions is not bad luck. It is the point where the stimulus has stopped being novel enough, the load is being pushed past what technique supports, or recovery is not keeping up."],"action":"Drop Back Squat to 90% of your stuck load and rebuild with strict double progression, or swap to a close variation for four weeks and come back to it.","metrics":[{"label":"Best e1RM","value":"127kg"},{"label":"Sessions since","value":"7"},{"label":"Stalled lifts","value":"1"}],"weight":80},{"id":"ratio:delts","kind":"imbalance","severity":"warn","headline":"Your rear delts are being left behind your front delts","preview":"Front-to-rear delt work is at roughly 2.7:1.","detail":["Front delts: 324 sets. Rear delts: 120 sets.","Front delts are hit by every press you do, so they accumulate volume whether you plan it or not. Rear delts get almost nothing unless you deliberately train them.","This is the most common imbalance in people who train hard, and it is the one that most visibly changes how a physique reads from the side — plus it is a direct contributor to impingement."],"action":"Two dedicated rear-delt sets at the start of every upper-body session. Reverse flyes or face pulls, 12–20 reps, taken close to failure — this is not a movement to go heavy on.","metrics":[{"label":"Front","value":"324"},{"label":"Rear","value":"120"},{"label":"Ratio","value":"2.7:1"}],"weight":75},{"id":"ratio:legs","kind":"imbalance","severity":"watch","headline":"Quad-dominant leg training","preview":"Quads to hamstrings is running 2.9:1.","detail":["Quads: 240 sets. Hamstrings: 84 sets.","Squats and presses cover the quads thoroughly and the hamstrings barely at all — hamstrings need their own hinge and curl work to grow.","A weak posterior chain caps how much you can squat and deadlift long before your quads become the limit, and hamstring strength relative to quad strength is one of the better-supported knee-injury predictors."],"action":"Add a dedicated hinge (Romanian deadlift or good morning) plus a curl variation twice a week — around 78 sets.","metrics":[{"label":"Quads","value":"240"},{"label":"Hams","value":"84"},{"label":"Ratio","value":"2.9:1"}],"weight":55},{"id":"progress:lateral_raise","kind":"progress","severity":"good","headline":"Dumbbell Lateral Raise is your fastest-moving lift","preview":"Estimated 1RM up 9kg (60%) across 24 sessions.","detail":["15kg to 24kg estimated 1RM over 24 logged sessions — 60% in this period.","Your best working set was 16kg × 15.","16 tracked lifts improved in this window. The gap between your fastest and slowest mover is where your programming is uneven."],"action":"Do not change anything about how you are running Dumbbell Lateral Raise. Copy its set and rep scheme onto whichever lift the plateau analysis flagged.","metrics":[{"label":"Gain","value":"+9kg"},{"label":"Change","value":"+60%"},{"label":"Sessions","value":"24"}],"weight":30},{"id":"records","kind":"records","severity":"good","headline":"328 personal records in this period","preview":"Most recent: Incline Barbell Press at 69kg × 8.","detail":["328 lifts beat their previous best estimated 1RM in this window.","Incline Barbell Press — 69kg × 8 (e1RM 87kg, up 1.3kg).","Seated Cable Row — 69kg × 10 (e1RM 92kg, up 1.3kg).","Dumbbell Lateral Raise — 16kg × 15 (e1RM 24kg, up 0.8kg)."],"action":"Records cluster around lifts you are running well. Note which of these share a rep range and use it as the default for lifts that are stuck.","metrics":[{"label":"PRs","value":"328"},{"label":"Best gain","value":"+1.5kg"}],"weight":28},{"id":"consistency:streak","kind":"consistency","severity":"good","headline":"25 weeks trained without a gap","preview":"Averaging 4 sessions a week over this period.","detail":["25 consecutive weeks with at least one session — your longest run is 25.","You hit your 4-day target in 100% of the last eight weeks.","Consistency compounds in a way that programme design does not. The lifter who trains three times a week for two years beats the one who trains six times a week for three months, every time."],"action":"Protect the streak over the individual session. A short session beats a skipped one.","metrics":[{"label":"Streak","value":"25w"},{"label":"Best","value":"25w"},{"label":"Adherence","value":"100%"}],"weight":25}],"hasEnoughData":true,"balance":[{"region":"chest","label":"Chest","setsPerWeek":14.1,"target":15,"ratio":0.94,"status":"on_target"},{"region":"shoulders","label":"Shoulders","setsPerWeek":24.1,"target":20,"ratio":1.205,"status":"on_target"},{"region":"arms","label":"Arms","setsPerWeek":25.6,"target":22,"ratio":1.1636363636363638,"status":"on_target"},{"region":"core","label":"Core","setsPerWeek":8,"target":12,"ratio":0.6666666666666666,"status":"light"},{"region":"calves","label":"Calves","setsPerWeek":0,"target":12,"ratio":0,"status":"neglected"},{"region":"posterior","label":"Hams / Glutes","setsPerWeek":10.6,"target":18,"ratio":0.5888888888888889,"status":"light"},{"region":"quads","label":"Quads","setsPerWeek":10.1,"target":15,"ratio":0.6733333333333333,"status":"light"},{"region":"back","label":"Back","setsPerWeek":21.6,"target":22,"ratio":0.9818181818181819,"status":"on_target"}],"balanceScore":71},"movers":[{"exerciseId":"leg_press","name":"Leg Press","sessions":24,"first":{"at":1774454520000,"e1rm":210,"bestWeightKg":150,"bestReps":12},"last":{"at":1788364920000,"e1rm":242,"bestWeightKg":173,"bestReps":12},"deltaKg":32,"deltaPct":15,"sessionsSinceBest":0,"daysSinceBest":3,"stalled":false},{"exerciseId":"lat_pulldown","name":"Lat Pulldown","sessions":24,"first":{"at":1774281720000,"e1rm":80,"bestWeightKg":60,"bestReps":10},"last":{"at":1788192120000,"e1rm":111,"bestWeightKg":83,"bestReps":10},"deltaKg":31,"deltaPct":39,"sessionsSinceBest":0,"daysSinceBest":5,"stalled":false},{"exerciseId":"barbell_bench_press","name":"Barbell Bench Press","sessions":24,"first":{"at":1774195320000,"e1rm":89,"bestWeightKg":70,"bestReps":8},"last":{"at":1788105720000,"e1rm":118,"bestWeightKg":93,"bestReps":8},"deltaKg":29,"deltaPct":33,"sessionsSinceBest":0,"daysSinceBest":6,"stalled":false},{"exerciseId":"leg_extension","name":"Leg Extension","sessions":24,"first":{"at":1774454520000,"e1rm":68,"bestWeightKg":45,"bestReps":15},"last":{"at":1788364920000,"e1rm":89,"bestWeightKg":59,"bestReps":15},"deltaKg":21,"deltaPct":31,"sessionsSinceBest":0,"daysSinceBest":3,"stalled":false},{"exerciseId":"cable_crunch","name":"Cable Crunch","sessions":24,"first":{"at":1774540920000,"e1rm":53,"bestWeightKg":35,"bestReps":15},"last":{"at":1788451320000,"e1rm":74,"bestWeightKg":49,"bestReps":15},"deltaKg":21,"deltaPct":40,"sessionsSinceBest":0,"daysSinceBest":2,"stalled":false}],"weekly":[{"weekStart":1773619200000,"label":"Mar 16","sessions":1,"sets":16,"volumeKg":5562},{"weekStart":1774224000000,"label":"Mar 23","sessions":4,"sets":53,"volumeKg":25466},{"weekStart":1774828800000,"label":"Mar 30","sessions":4,"sets":53,"volumeKg":25783.5},{"weekStart":1775433600000,"label":"Apr 6","sessions":4,"sets":53,"volumeKg":26118.5},{"weekStart":1776038400000,"label":"Apr 13","sessions":4,"sets":53,"volumeKg":26538.5},{"weekStart":1776643200000,"label":"Apr 20","sessions":4,"sets":53,"volumeKg":26830},{"weekStart":1777248000000,"label":"Apr 27","sessions":4,"sets":53,"volumeKg":27147.5},{"weekStart":1777852800000,"label":"May 4","sessions":4,"sets":53,"volumeKg":27439},{"weekStart":1778457600000,"label":"May 11","sessions":4,"sets":53,"volumeKg":27800},{"weekStart":1779062400000,"label":"May 18","sessions":4,"sets":53,"volumeKg":28194},{"weekStart":1779667200000,"label":"May 25","sessions":4,"sets":53,"volumeKg":28511.5},{"weekStart":1780272000000,"label":"Jun 1","sessions":4,"sets":53,"volumeKg":28803},{"weekStart":1780876800000,"label":"Jun 8","sessions":4,"sets":53,"volumeKg":29120.5},{"weekStart":1781481600000,"label":"Jun 15","sessions":4,"sets":53,"volumeKg":29455.5},{"weekStart":1782086400000,"label":"Jun 22","sessions":4,"sets":53,"volumeKg":29875.5},{"weekStart":1782691200000,"label":"Jun 29","sessions":4,"sets":53,"volumeKg":30167},{"weekStart":1783296000000,"label":"Jul 6","sessions":4,"sets":53,"volumeKg":30484.5},{"weekStart":1783900800000,"label":"Jul 13","sessions":4,"sets":53,"volumeKg":30776},{"weekStart":1784505600000,"label":"Jul 20","sessions":4,"sets":53,"volumeKg":31115},{"weekStart":1785110400000,"label":"Jul 27","sessions":4,"sets":53,"volumeKg":31487},{"weekStart":1785715200000,"label":"Aug 3","sessions":4,"sets":53,"volumeKg":31782.5},{"weekStart":1786320000000,"label":"Aug 10","sessions":4,"sets":53,"volumeKg":32052},{"weekStart":1786924800000,"label":"Aug 17","sessions":4,"sets":53,"volumeKg":32347.5},{"weekStart":1787529600000,"label":"Aug 24","sessions":4,"sets":53,"volumeKg":32660.5},{"weekStart":1788134400000,"label":"Aug 31","sessions":3,"sets":37,"volumeKg":25269}],"prs":[{"at":1788451320000,"exerciseId":"incline_barbell_press","name":"Incline Barbell Press","weightKg":69,"reps":8,"e1rm":87,"gainKg":1.3},{"at":1788451320000,"exerciseId":"seated_cable_row","name":"Seated Cable Row","weightKg":69,"reps":10,"e1rm":92,"gainKg":1.3},{"at":1788451320000,"exerciseId":"lateral_raise","name":"Dumbbell Lateral Raise","weightKg":16,"reps":15,"e1rm":24,"gainKg":0.8},{"at":1788451320000,"exerciseId":"cable_crunch","name":"Cable Crunch","weightKg":49,"reps":15,"e1rm":74,"gainKg":1.5},{"at":1788364920000,"exerciseId":"leg_press","name":"Leg Press","weightKg":173,"reps":12,"e1rm":242,"gainKg":1.4},{"at":1788364920000,"exerciseId":"leg_extension","name":"Leg Extension","weightKg":59,"reps":15,"e1rm":89,"gainKg":1.5}],"landmarks":[{"muscle":"chest","label":"Chest","sets":14.1,"maintenance":6,"growth":[10,20]},{"muscle":"front_delts","label":"Front Delts","sets":13.6,"maintenance":4,"growth":[6,16]},{"muscle":"biceps","label":"Biceps","sets":11.1,"maintenance":5,"growth":[8,20]},{"muscle":"lats","label":"Lats","sets":10.1,"maintenance":8,"growth":[10,22]},{"muscle":"triceps","label":"Triceps","sets":10.1,"maintenance":5,"growth":[8,20]},{"muscle":"quads","label":"Quads","sets":10.1,"maintenance":6,"growth":[10,20]},{"muscle":"traps","label":"Traps","sets":8,"maintenance":4,"growth":[8,20]},{"muscle":"glutes","label":"Glutes","sets":7,"maintenance":0,"growth":[6,16]},{"muscle":"abs","label":"Abs","sets":6.5,"maintenance":0,"growth":[6,20]},{"muscle":"side_delts","label":"Side Delts","sets":5.5,"maintenance":6,"growth":[12,26]},{"muscle":"rear_delts","label":"Rear Delts","sets":5,"maintenance":4,"growth":[10,24]},{"muscle":"forearms","label":"Forearms","sets":4.5,"maintenance":2,"growth":[4,16]},{"muscle":"lower_back","label":"Lower Back","sets":3.5,"maintenance":2,"growth":[4,12]},{"muscle":"hamstrings","label":"Hamstrings","sets":3.5,"maintenance":4,"growth":[8,16]},{"muscle":"obliques","label":"Obliques","sets":1.5,"maintenance":0,"growth":[4,16]},{"muscle":"calves","label":"Calves","sets":0,"maintenance":6,"growth":[8,20]}],"lifts":[{"id":"barbell_bench_press","name":"Barbell Bench Press","series":[{"at":1774195320000,"e1rm":89,"bestWeightKg":70,"bestReps":8},{"at":1774800120000,"e1rm":90,"bestWeightKg":71,"bestReps":8},{"at":1775404920000,"e1rm":91,"bestWeightKg":72,"bestReps":8},{"at":1776009720000,"e1rm":92,"bestWeightKg":73,"bestReps":8},{"at":1776614520000,"e1rm":94,"bestWeightKg":74,"bestReps":8},{"at":1777219320000,"e1rm":95,"bestWeightKg":75,"bestReps":8},{"at":1777824120000,"e1rm":96,"bestWeightKg":76,"bestReps":8},{"at":1778428920000,"e1rm":98,"bestWeightKg":77,"bestReps":8},{"at":1779033720000,"e1rm":99,"bestWeightKg":78,"bestReps":8},{"at":1779638520000,"e1rm":100,"bestWeightKg":79,"bestReps":8},{"at":1780243320000,"e1rm":101,"bestWeightKg":80,"bestReps":8},{"at":1780848120000,"e1rm":103,"bestWeightKg":81,"bestReps":8},{"at":1781452920000,"e1rm":104,"bestWeightKg":82,"bestReps":8},{"at":1782057720000,"e1rm":105,"bestWeightKg":83,"bestReps":8},{"at":1782662520000,"e1rm":106,"bestWeightKg":84,"bestReps":8},{"at":1783267320000,"e1rm":108,"bestWeightKg":85,"bestReps":8},{"at":1783872120000,"e1rm":109,"bestWeightKg":86,"bestReps":8},{"at":1784476920000,"e1rm":110,"bestWeightKg":87,"bestReps":8},{"at":1785081720000,"e1rm":111,"bestWeightKg":88,"bestReps":8},{"at":1785686520000,"e1rm":113,"bestWeightKg":89,"bestReps":8},{"at":1786291320000,"e1rm":114,"bestWeightKg":90,"bestReps":8},{"at":1786896120000,"e1rm":115,"bestWeightKg":91,"bestReps":8},{"at":1787500920000,"e1rm":117,"bestWeightKg":92,"bestReps":8},{"at":1788105720000,"e1rm":118,"bestWeightKg":93,"bestReps":8}]},{"id":"incline_db_press","name":"Incline Dumbbell Press","series":[{"at":1774195320000,"e1rm":35,"bestWeightKg":26,"bestReps":10},{"at":1774800120000,"e1rm":35,"bestWeightKg":26.5,"bestReps":10},{"at":1775404920000,"e1rm":36,"bestWeightKg":27,"bestReps":10},{"at":1776009720000,"e1rm":37,"bestWeightKg":28,"bestReps":10},{"at":1776614520000,"e1rm":38,"bestWeightKg":28.5,"bestReps":10},{"at":1777219320000,"e1rm":39,"bestWeightKg":29,"bestReps":10},{"at":1777824120000,"e1rm":39,"bestWeightKg":29.5,"bestReps":10},{"at":1778428920000,"e1rm":40,"bestWeightKg":30,"bestReps":10},{"at":1779033720000,"e1rm":41,"bestWeightKg":31,"bestReps":10},{"at":1779638520000,"e1rm":42,"bestWeightKg":31.5,"bestReps":10},{"at":1780243320000,"e1rm":43,"bestWeightKg":32,"bestReps":10},{"at":1780848120000,"e1rm":43,"bestWeightKg":32.5,"bestReps":10},{"at":1781452920000,"e1rm":44,"bestWeightKg":33,"bestReps":10},{"at":1782057720000,"e1rm":45,"bestWeightKg":34,"bestReps":10},{"at":1782662520000,"e1rm":46,"bestWeightKg":34.5,"bestReps":10},{"at":1783267320000,"e1rm":47,"bestWeightKg":35,"bestReps":10},{"at":1783872120000,"e1rm":47,"bestWeightKg":35.5,"bestReps":10},{"at":1784476920000,"e1rm":48,"bestWeightKg":36,"bestReps":10},{"at":1785081720000,"e1rm":49,"bestWeightKg":37,"bestReps":10},{"at":1785686520000,"e1rm":50,"bestWeightKg":37.5,"bestReps":10},{"at":1786291320000,"e1rm":51,"bestWeightKg":38,"bestReps":10},{"at":1786896120000,"e1rm":51,"bestWeightKg":38.5,"bestReps":10},{"at":1787500920000,"e1rm":52,"bestWeightKg":39,"bestReps":10},{"at":1788105720000,"e1rm":53,"bestWeightKg":40,"bestReps":10}]},{"id":"overhead_press","name":"Standing Overhead Press","series":[{"at":1774195320000,"e1rm":51,"bestWeightKg":40,"bestReps":8},{"at":1774800120000,"e1rm":51,"bestWeightKg":40.5,"bestReps":8},{"at":1775404920000,"e1rm":52,"bestWeightKg":41,"bestReps":8},{"at":1776009720000,"e1rm":53,"bestWeightKg":42,"bestReps":8},{"at":1776614520000,"e1rm":54,"bestWeightKg":42.5,"bestReps":8},{"at":1777219320000,"e1rm":54,"bestWeightKg":43,"bestReps":8},{"at":1777824120000,"e1rm":55,"bestWeightKg":43.5,"bestReps":8},{"at":1778428920000,"e1rm":56,"bestWeightKg":44,"bestReps":8},{"at":1779033720000,"e1rm":57,"bestWeightKg":45,"bestReps":8},{"at":1779638520000,"e1rm":58,"bestWeightKg":45.5,"bestReps":8},{"at":1780243320000,"e1rm":58,"bestWeightKg":46,"bestReps":8},{"at":1780848120000,"e1rm":59,"bestWeightKg":46.5,"bestReps":8},{"at":1781452920000,"e1rm":60,"bestWeightKg":47,"bestReps":8},{"at":1782057720000,"e1rm":61,"bestWeightKg":48,"bestReps":8},{"at":1782662520000,"e1rm":61,"bestWeightKg":48.5,"bestReps":8},{"at":1783267320000,"e1rm":62,"bestWeightKg":49,"bestReps":8},{"at":1783872120000,"e1rm":63,"bestWeightKg":49.5,"bestReps":8},{"at":1784476920000,"e1rm":63,"bestWeightKg":50,"bestReps":8},{"at":1785081720000,"e1rm":65,"bestWeightKg":51,"bestReps":8},{"at":1785686520000,"e1rm":65,"bestWeightKg":51.5,"bestReps":8},{"at":1786291320000,"e1rm":66,"bestWeightKg":52,"bestReps":8},{"at":1786896120000,"e1rm":67,"bestWeightKg":52.5,"bestReps":8},{"at":1787500920000,"e1rm":67,"bestWeightKg":53,"bestReps":8},{"at":1788105720000,"e1rm":68,"bestWeightKg":54,"bestReps":8}]},{"id":"cable_fly","name":"Cable Fly","series":[{"at":1774195320000,"e1rm":26,"bestWeightKg":18,"bestReps":14},{"at":1774800120000,"e1rm":27,"bestWeightKg":18.5,"bestReps":14},{"at":1775404920000,"e1rm":27,"bestWeightKg":18.5,"bestReps":14},{"at":1776009720000,"e1rm":28,"bestWeightKg":19,"bestReps":14},{"at":1776614520000,"e1rm":28,"bestWeightKg":19,"bestReps":14},{"at":1777219320000,"e1rm":29,"bestWeightKg":19.5,"bestReps":14},{"at":1777824120000,"e1rm":29,"bestWeightKg":19.5,"bestReps":14},{"at":1778428920000,"e1rm":29,"bestWeightKg":20,"bestReps":14},{"at":1779033720000,"e1rm":29,"bestWeightKg":20,"bestReps":14},{"at":1779638520000,"e1rm":30,"bestWeightKg":20.5,"bestReps":14},{"at":1780243320000,"e1rm":30,"bestWeightKg":20.5,"bestReps":14},{"at":1780848120000,"e1rm":31,"bestWeightKg":21,"bestReps":14},{"at":1781452920000,"e1rm":31,"bestWeightKg":21,"bestReps":14},{"at":1782057720000,"e1rm":32,"bestWeightKg":21.5,"bestReps":14},{"at":1782662520000,"e1rm":32,"bestWeightKg":21.5,"bestReps":14},{"at":1783267320000,"e1rm":32,"bestWeightKg":22,"bestReps":14},{"at":1783872120000,"e1rm":32,"bestWeightKg":22,"bestReps":14},{"at":1784476920000,"e1rm":33,"bestWeightKg":22.5,"bestReps":14},{"at":1785081720000,"e1rm":33,"bestWeightKg":22.5,"bestReps":14},{"at":1785686520000,"e1rm":34,"bestWeightKg":23,"bestReps":14},{"at":1786291320000,"e1rm":34,"bestWeightKg":23,"bestReps":14},{"at":1786896120000,"e1rm":34,"bestWeightKg":23.5,"bestReps":14},{"at":1787500920000,"e1rm":34,"bestWeightKg":23.5,"bestReps":14},{"at":1788105720000,"e1rm":35,"bestWeightKg":24,"bestReps":14}]},{"id":"triceps_pushdown","name":"Triceps Pushdown","series":[{"at":1774195320000,"e1rm":42,"bestWeightKg":30,"bestReps":12},{"at":1774800120000,"e1rm":43,"bestWeightKg":30.5,"bestReps":12},{"at":1775404920000,"e1rm":43,"bestWeightKg":31,"bestReps":12},{"at":1776009720000,"e1rm":45,"bestWeightKg":32,"bestReps":12},{"at":1776614520000,"e1rm":46,"bestWeightKg":32.5,"bestReps":12},{"at":1777219320000,"e1rm":46,"bestWeightKg":33,"bestReps":12},{"at":1777824120000,"e1rm":47,"bestWeightKg":33.5,"bestReps":12},{"at":1778428920000,"e1rm":48,"bestWeightKg":34,"bestReps":12},{"at":1779033720000,"e1rm":49,"bestWeightKg":35,"bestReps":12},{"at":1779638520000,"e1rm":50,"bestWeightKg":35.5,"bestReps":12},{"at":1780243320000,"e1rm":50,"bestWeightKg":36,"bestReps":12},{"at":1780848120000,"e1rm":51,"bestWeightKg":36.5,"bestReps":12},{"at":1781452920000,"e1rm":52,"bestWeightKg":37,"bestReps":12},{"at":1782057720000,"e1rm":53,"bestWeightKg":38,"bestReps":12},{"at":1782662520000,"e1rm":54,"bestWeightKg":38.5,"bestReps":12},{"at":1783267320000,"e1rm":55,"bestWeightKg":39,"bestReps":12},{"at":1783872120000,"e1rm":55,"bestWeightKg":39.5,"bestReps":12},{"at":1784476920000,"e1rm":56,"bestWeightKg":40,"bestReps":12},{"at":1785081720000,"e1rm":57,"bestWeightKg":41,"bestReps":12},{"at":1785686520000,"e1rm":58,"bestWeightKg":41.5,"bestReps":12},{"at":1786291320000,"e1rm":59,"bestWeightKg":42,"bestReps":12},{"at":1786896120000,"e1rm":59,"bestWeightKg":42.5,"bestReps":12},{"at":1787500920000,"e1rm":60,"bestWeightKg":43,"bestReps":12},{"at":1788105720000,"e1rm":62,"bestWeightKg":44,"bestReps":12}]},{"id":"lat_pulldown","name":"Lat Pulldown","series":[{"at":1774281720000,"e1rm":80,"bestWeightKg":60,"bestReps":10},{"at":1774886520000,"e1rm":81,"bestWeightKg":61,"bestReps":10},{"at":1775491320000,"e1rm":83,"bestWeightKg":62,"bestReps":10},{"at":1776096120000,"e1rm":84,"bestWeightKg":63,"bestReps":10},{"at":1776700920000,"e1rm":85,"bestWeightKg":64,"bestReps":10},{"at":1777305720000,"e1rm":87,"bestWeightKg":65,"bestReps":10},{"at":1777910520000,"e1rm":88,"bestWeightKg":66,"bestReps":10},{"at":1778515320000,"e1rm":89,"bestWeightKg":67,"bestReps":10},{"at":1779120120000,"e1rm":91,"bestWeightKg":68,"bestReps":10},{"at":1779724920000,"e1rm":92,"bestWeightKg":69,"bestReps":10},{"at":1780329720000,"e1rm":93,"bestWeightKg":70,"bestReps":10},{"at":1780934520000,"e1rm":95,"bestWeightKg":71,"bestReps":10},{"at":1781539320000,"e1rm":96,"bestWeightKg":72,"bestReps":10},{"at":1782144120000,"e1rm":97,"bestWeightKg":73,"bestReps":10},{"at":1782748920000,"e1rm":99,"bestWeightKg":74,"bestReps":10},{"at":1783353720000,"e1rm":100,"bestWeightKg":75,"bestReps":10},{"at":1783958520000,"e1rm":101,"bestWeightKg":76,"bestReps":10},{"at":1784563320000,"e1rm":103,"bestWeightKg":77,"bestReps":10},{"at":1785168120000,"e1rm":104,"bestWeightKg":78,"bestReps":10},{"at":1785772920000,"e1rm":105,"bestWeightKg":79,"bestReps":10},{"at":1786377720000,"e1rm":107,"bestWeightKg":80,"bestReps":10},{"at":1786982520000,"e1rm":108,"bestWeightKg":81,"bestReps":10},{"at":1787587320000,"e1rm":109,"bestWeightKg":82,"bestReps":10},{"at":1788192120000,"e1rm":111,"bestWeightKg":83,"bestReps":10}]},{"id":"barbell_row","name":"Barbell Row","series":[{"at":1774281720000,"e1rm":73,"bestWeightKg":55,"bestReps":10},{"at":1774886520000,"e1rm":74,"bestWeightKg":55.5,"bestReps":10},{"at":1775491320000,"e1rm":75,"bestWeightKg":56,"bestReps":10},{"at":1776096120000,"e1rm":76,"bestWeightKg":57,"bestReps":10},{"at":1776700920000,"e1rm":77,"bestWeightKg":57.5,"bestReps":10},{"at":1777305720000,"e1rm":77,"bestWeightKg":58,"bestReps":10},{"at":1777910520000,"e1rm":78,"bestWeightKg":58.5,"bestReps":10},{"at":1778515320000,"e1rm":79,"bestWeightKg":59,"bestReps":10},{"at":1779120120000,"e1rm":80,"bestWeightKg":60,"bestReps":10},{"at":1779724920000,"e1rm":81,"bestWeightKg":60.5,"bestReps":10},{"at":1780329720000,"e1rm":81,"bestWeightKg":61,"bestReps":10},{"at":1780934520000,"e1rm":82,"bestWeightKg":61.5,"bestReps":10},{"at":1781539320000,"e1rm":83,"bestWeightKg":62,"bestReps":10},{"at":1782144120000,"e1rm":84,"bestWeightKg":63,"bestReps":10},{"at":1782748920000,"e1rm":85,"bestWeightKg":63.5,"bestReps":10},{"at":1783353720000,"e1rm":85,"bestWeightKg":64,"bestReps":10},{"at":1783958520000,"e1rm":86,"bestWeightKg":64.5,"bestReps":10},{"at":1784563320000,"e1rm":87,"bestWeightKg":65,"bestReps":10},{"at":1785168120000,"e1rm":88,"bestWeightKg":66,"bestReps":10},{"at":1785772920000,"e1rm":89,"bestWeightKg":66.5,"bestReps":10},{"at":1786377720000,"e1rm":89,"bestWeightKg":67,"bestReps":10},{"at":1786982520000,"e1rm":90,"bestWeightKg":67.5,"bestReps":10},{"at":1787587320000,"e1rm":91,"bestWeightKg":68,"bestReps":10},{"at":1788192120000,"e1rm":92,"bestWeightKg":69,"bestReps":10}]},{"id":"barbell_curl","name":"Barbell Curl","series":[{"at":1774281720000,"e1rm":40,"bestWeightKg":30,"bestReps":10},{"at":1774886520000,"e1rm":41,"bestWeightKg":30.5,"bestReps":10},{"at":1775491320000,"e1rm":41,"bestWeightKg":31,"bestReps":10},{"at":1776096120000,"e1rm":43,"bestWeightKg":32,"bestReps":10},{"at":1776700920000,"e1rm":43,"bestWeightKg":32.5,"bestReps":10},{"at":1777305720000,"e1rm":44,"bestWeightKg":33,"bestReps":10},{"at":1777910520000,"e1rm":45,"bestWeightKg":33.5,"bestReps":10},{"at":1778515320000,"e1rm":45,"bestWeightKg":34,"bestReps":10},{"at":1779120120000,"e1rm":47,"bestWeightKg":35,"bestReps":10},{"at":1779724920000,"e1rm":47,"bestWeightKg":35.5,"bestReps":10},{"at":1780329720000,"e1rm":48,"bestWeightKg":36,"bestReps":10},{"at":1780934520000,"e1rm":49,"bestWeightKg":36.5,"bestReps":10},{"at":1781539320000,"e1rm":49,"bestWeightKg":37,"bestReps":10},{"at":1782144120000,"e1rm":51,"bestWeightKg":38,"bestReps":10},{"at":1782748920000,"e1rm":51,"bestWeightKg":38.5,"bestReps":10},{"at":1783353720000,"e1rm":52,"bestWeightKg":39,"bestReps":10},{"at":1783958520000,"e1rm":53,"bestWeightKg":39.5,"bestReps":10},{"at":1784563320000,"e1rm":53,"bestWeightKg":40,"bestReps":10},{"at":1785168120000,"e1rm":55,"bestWeightKg":41,"bestReps":10},{"at":1785772920000,"e1rm":55,"bestWeightKg":41.5,"bestReps":10},{"at":1786377720000,"e1rm":56,"bestWeightKg":42,"bestReps":10},{"at":1786982520000,"e1rm":57,"bestWeightKg":42.5,"bestReps":10},{"at":1787587320000,"e1rm":57,"bestWeightKg":43,"bestReps":10},{"at":1788192120000,"e1rm":59,"bestWeightKg":44,"bestReps":10}]}],"variety":{"distinctExercises":16,"top5SharePct":38,"compoundSharePct":58}}}}</script>
+<script>
+(function () {
+  'use strict';
+
+  var C = {
+    accent: '#B4472F', bronze: '#C08A3E', marbleLight: '#EDEAE3', marbleMid: '#C9C5BC',
+    border: '#2A2825', borderStrong: '#38352F', textDim: '#8C887F', textFaint: '#5A5750',
+    text: '#F0EEE9', cardAlt: '#1F1E1C'
+  };
+
+  var DATA = JSON.parse(document.getElementById('atlas-data').textContent);
+  var state = { range: '30D', pro: false, lift: null, open: {} };
+
+  var esc = function (s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  };
+  var num = function (n) { return Math.round(n).toLocaleString('en-GB'); };
+
+  var ICON = {
+    sparkle: 'M12,3 L13.6,9.1 L19.5,10.8 L13.6,12.5 L12,18.6 L10.4,12.5 L4.5,10.8 L10.4,9.1 Z M18.5,16 L19.2,18.3 L21.5,19 L19.2,19.7 L18.5,22 L17.8,19.7 L15.5,19 L17.8,18.3 Z',
+    lock: 'M7,10.5 V7.5 C7,4.7 9.2,2.5 12,2.5 C14.8,2.5 17,4.7 17,7.5 V10.5 M5.5,10.5 H18.5 C19.3,10.5 20,11.2 20,12 V19.5 C20,20.3 19.3,21 18.5,21 H5.5 C4.7,21 4,20.3 4,19.5 V12 C4,11.2 4.7,10.5 5.5,10.5 Z M12,14.5 V17',
+    chevron: 'M9,5 L16,12 L9,19'
+  };
+
+  function icon(name, size, color, sw, rotate) {
+    return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" ' +
+      'stroke="' + color + '" stroke-width="' + sw + '" stroke-linecap="round" stroke-linejoin="round"' +
+      (rotate ? ' style="transform:rotate(' + rotate + 'deg)"' : '') + '>' +
+      '<path d="' + ICON[name] + '"/></svg>';
+  }
+
+  /* ---------------- charts ---------------- */
+
+  function radarSvg(radar, balance) {
+    var s = radar.size;
+    var parts = ['<svg width="' + s + '" height="' + s + '" viewBox="0 0 ' + s + ' ' + s + '" role="img" aria-label="Muscle balance by region">'];
+    parts.push('<defs><radialGradient id="rg" cx="50%" cy="50%" r="50%">' +
+      '<stop offset="0%" stop-color="' + C.marbleLight + '" stop-opacity="0.26"/>' +
+      '<stop offset="100%" stop-color="' + C.marbleMid + '" stop-opacity="0.08"/></radialGradient></defs>');
+
+    radar.rings.forEach(function (r) {
+      var on = r.value === 1;
+      parts.push('<polygon points="' + r.points + '" fill="none" stroke="' + (on ? C.bronze : C.border) +
+        '" stroke-width="' + (on ? 1.1 : 1) + '"' + (on ? ' stroke-dasharray="3 4" opacity="0.75"' : '') + '/>');
+    });
+    radar.axes.forEach(function (a) {
+      parts.push('<line x1="' + radar.cx + '" y1="' + radar.cy + '" x2="' + a.x + '" y2="' + a.y + '" stroke="' + C.border + '"/>');
+    });
+    parts.push('<polygon points="' + radar.polygon + '" fill="url(#rg)" stroke="' + C.marbleLight +
+      '" stroke-width="1.8" stroke-linejoin="round"/>');
+    radar.valuePoints.forEach(function (p, i) {
+      var st = balance[i].status;
+      var tone = st === 'neglected' ? C.accent : st === 'high' ? C.bronze : C.marbleLight;
+      parts.push('<circle cx="' + p.x + '" cy="' + p.y + '" r="3.2" fill="' + tone + '"/>');
+    });
+    radar.axes.forEach(function (a, i) {
+      var neglected = balance[i].status === 'neglected';
+      parts.push('<text x="' + a.labelX + '" y="' + (a.labelY + 3.5) + '" fill="' +
+        (neglected ? C.accent : C.textDim) + '" font-size="9.5" font-weight="700" ' +
+        'font-family="' + '-apple-system, system-ui, sans-serif' + '" text-anchor="' + a.anchor + '">' +
+        esc(DATA.regionShort[balance[i].region]) + '</text>');
+    });
+    parts.push('</svg>');
+    return parts.join('');
+  }
+
+  function trendSvg(series) {
+    if (!series || series.length < 2) {
+      return '<div class="card" style="height:130px;display:flex;align-items:center;justify-content:center;background:' +
+        C.cardAlt + ';border:0"><span class="note" style="text-align:center">Log this lift at least twice to see a trend.</span></div>';
+    }
+    var w = 313, h = 130, pad = 10;
+    var vals = series.map(function (p) { return p.e1rm; });
+    var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
+    var span = (max - min) || 1;
+    var x = function (i) { return pad + (i / (series.length - 1)) * (w - pad * 2); };
+    var y = function (v) { return h - pad - ((v - min) / span) * (h - pad * 2); };
+    var poly = series.map(function (p, i) { return x(i).toFixed(1) + ',' + y(p.e1rm).toFixed(1); }).join(' ');
+    var dots = series.map(function (p, i) {
+      var last = i === series.length - 1;
+      return '<circle cx="' + x(i).toFixed(1) + '" cy="' + y(p.e1rm).toFixed(1) + '" r="' + (last ? 4 : 2.5) +
+        '" fill="' + (last ? C.accent : C.bronze) + '"/>';
+    }).join('');
+    var delta = vals[vals.length - 1] - vals[0];
+
+    return '<svg width="' + w + '" height="' + h + '" role="img" aria-label="Estimated one-rep max over time">' +
+      '<line x1="' + pad + '" y1="' + (h - pad) + '" x2="' + (w - pad) + '" y2="' + (h - pad) + '" stroke="' + C.border + '"/>' +
+      '<polyline points="' + poly + '" fill="none" stroke="' + C.bronze + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>' +
+      dots + '</svg>' +
+      '<div class="trend-foot"><span class="range-txt">' + min + 'kg – ' + max + 'kg</span>' +
+      '<span class="delta" style="color:' + (delta >= 0 ? C.bronze : C.textDim) + '">' +
+      (delta >= 0 ? '+' : '') + delta + 'kg over ' + series.length + ' sessions</span></div>';
+  }
+
+  function barsHtml(weekly) {
+    if (!weekly.length) return '<p class="note">Not enough history yet.</p>';
+    var shown = weekly.slice(-14);
+    var max = Math.max.apply(null, shown.map(function (b) { return b.volumeKg; }).concat([1]));
+    var bars = shown.map(function (b, i) {
+      var hgt = Math.max(2, (b.volumeKg / max) * 92);
+      return '<div><i class="' + (i === shown.length - 1 ? 'last' : '') + '" style="height:' + hgt.toFixed(1) + 'px"></i></div>';
+    }).join('');
+    return '<div class="bars">' + bars + '</div><div class="bar-axis"><span>' +
+      esc(shown[0].label) + '</span><span>peak ' + num(max) + 'kg</span><span>' +
+      esc(shown[shown.length - 1].label) + '</span></div>';
+  }
+
+  function gridHtml(days) {
+    var maxSets = Math.max.apply(null, days.map(function (d) { return d.sets; }).concat([1]));
+    var cols = [];
+    for (var i = 0; i < days.length; i += 7) cols.push(days.slice(i, i + 7));
+    var html = cols.map(function (week) {
+      return '<div class="grid-col">' + week.map(function (d) {
+        if (!d.sets) return '<i></i>';
+        var o = 0.28 + (d.sets / maxSets) * 0.72;
+        return '<i style="background:' + C.marbleLight + ';opacity:' + o.toFixed(2) + '"></i>';
+      }).join('') + '</div>';
+    }).join('');
+    var trained = days.filter(function (d) { return d.sets > 0; }).length;
+    return '<div class="grid">' + html + '</div><div class="grid-caption">Last ' + cols.length +
+      ' weeks · ' + trained + ' sessions</div>';
+  }
+
+  function volumeBars(landmarks) {
+    return landmarks.map(function (m) {
+      var scaleMax = Math.max(m.growth[1] * 1.15, m.sets * 1.1, 1);
+      var pct = function (v) { return Math.min(100, (v / scaleMax) * 100).toFixed(1) + '%'; };
+      var status = m.sets < m.maintenance ? 'under' : m.sets > m.growth[1] ? 'over' : m.sets < m.growth[0] ? 'light' : 'in';
+      var tone = status === 'over' ? C.accent : status === 'in' ? C.bronze : C.textDim;
+      return '<div class="vol"><span class="l">' + esc(m.label) + '</span>' +
+        '<span class="track"><i class="window" style="left:' + pct(m.growth[0]) + ';width:' +
+        pct(m.growth[1] - m.growth[0]) + '"></i>' +
+        '<i class="fill" style="width:' + pct(m.sets) + ';background:' + tone + '"></i></span>' +
+        '<span class="n" style="color:' + tone + '">' + m.sets + '</span></div>';
+    }).join('');
+  }
+
+  /* ---------------- insights ---------------- */
+
+  var SEV_TONE = { good: C.bronze, watch: '#A8A49B', warn: C.accent };
+  var SEV_LABEL = { good: 'WORKING', watch: 'WATCH', warn: 'ACTION' };
+
+  function insightHtml(ins, unlocked) {
+    var open = unlocked && state.open[ins.id];
+    var tone = SEV_TONE[ins.severity];
+    var h = ['<button type="button" class="insight" data-insight="' + esc(ins.id) + '">'];
+    h.push('<div class="insight-top"><i class="dot" style="background:' + tone + '"></i>' +
+      '<span class="sev" style="color:' + tone + '">' + SEV_LABEL[ins.severity] + '</span>' +
+      '<span class="grow"></span>' +
+      (unlocked ? icon('chevron', 14, C.textFaint, 1.8, open ? 90 : 0) : icon('lock', 14, C.textFaint, 1.6)) +
+      '</div>');
+    h.push('<h3>' + esc(ins.headline) + '</h3>');
+    h.push('<p class="preview">' + esc(ins.preview) + '</p>');
+
+    if (open) {
+      h.push('<div class="body">');
+      if (ins.metrics.length) {
+        h.push('<div class="metrics">' + ins.metrics.map(function (m) {
+          return '<div><div class="mv">' + esc(m.value) + '</div><div class="ml">' + esc(m.label) + '</div></div>';
+        }).join('') + '</div>');
+      }
+      ins.detail.forEach(function (d) { h.push('<p>' + esc(d) + '</p>'); });
+      h.push('<div class="action"><div class="k">DO THIS</div><p>' + esc(ins.action) + '</p></div>');
+      h.push('</div>');
+    }
+
+    if (!unlocked) {
+      h.push('<div class="locked-foot"><span>Diagnosis and fix</span><span class="pill">PREMIUM</span></div>');
+    }
+    h.push('</button>');
+    return h.join('');
+  }
+
+  function gate(title, blurb) {
+    return '<button type="button" class="gate" data-paywall="1">' +
+      '<div class="gate-row">' + icon('lock', 18, C.bronze, 1.7) +
+      '<h3>' + esc(title) + '</h3><span class="pill">PREMIUM</span></div>' +
+      '<p class="blurb">' + esc(blurb) + '</p>' +
+      '<div class="unlock">Unlock with Premium</div></button>';
+  }
+
+  /* ---------------- screen ---------------- */
+
+  function render() {
+    var r = DATA.byRange[state.range];
+    var m = r.metrics;
+    var rep = r.insights;
+    var pro = state.pro;
+
+    if (!state.lift || !r.lifts.some(function (l) { return l.id === state.lift; })) {
+      state.lift = r.lifts.length ? r.lifts[0].id : null;
+    }
+    var lift = r.lifts.filter(function (l) { return l.id === state.lift; })[0];
+
+    var out = [];
+    out.push('<h1 class="title">Progress</h1>');
+
+    out.push('<div class="range" role="group" aria-label="Time range">' + DATA.ranges.map(function (x) {
+      return '<button type="button" data-range="' + x + '" aria-pressed="' + (x === state.range) + '">' +
+        esc(DATA.rangeLabels[x]) + '</button>';
+    }).join('') + '</div>');
+
+    /* headline numbers */
+    var volDisplay = m.totalVolumeKg >= 10000 ? Math.round(m.totalVolumeKg / 1000) + 'k' : num(m.totalVolumeKg);
+    out.push('<div class="card" style="margin-top:16px"><div class="stats">' +
+      '<div class="stat"><div class="v">' + m.sessionCount + '</div><div class="l">Sessions</div></div>' +
+      '<div class="stat"><div class="v">' + m.totalSets + '</div><div class="l">Sets</div></div>' +
+      '<div class="stat"><div class="v">' + volDisplay + '<small>kg</small></div><div class="l">Volume</div></div>' +
+      '</div><div class="deltas">' +
+      deltaHtml(r.deltas.volume, 'volume') + deltaHtml(r.deltas.sets, 'sets') +
+      '<span class="spacer"></span><span class="vs">vs previous ' + esc(DATA.rangeLabels[state.range].toLowerCase()) + '</span>' +
+      '</div></div>');
+
+    /* insights */
+    out.push('<div class="section"><div class="section-head"><span class="section-title">ATLAS Insights</span></div>');
+    if (rep.hasEnoughData) {
+      out.push('<div class="headline"><div class="kicker">' + icon('sparkle', 15, C.bronze, 1.5) +
+        'ATLAS READ YOUR LAST BLOCK</div>' +
+        '<div class="praise">' + esc(rep.headline.praise) + '.</div>' +
+        (rep.headline.findingCount ? '<div class="tease">However — ' + esc(rep.headline.tease) + '</div>' : '') +
+        (!pro && rep.headline.findingCount
+          ? '<button type="button" class="cta" data-paywall="1">See what ATLAS found' + icon('chevron', 15, '#F5F2EC', 2) + '</button>'
+          : '') +
+        '</div>');
+
+      out.push('<div class="insights">');
+      rep.all.forEach(function (i) {
+        var free = rep.free.some(function (f) { return f.id === i.id; });
+        out.push(insightHtml(i, pro || free));
+      });
+      out.push('</div>');
+
+      if (!pro && rep.locked.length) {
+        out.push('<button type="button" class="footer-cta" data-paywall="1">Unlock ' +
+          rep.locked.length + ' more findings with Premium</button>');
+      }
+    } else {
+      out.push('<div class="card"><p class="note">Log a few more sessions and ATLAS will start reading your training.</p></div>');
+    }
+    out.push('</div>');
+
+    /* muscle balance */
+    var neglected = r.balance.filter(function (b) { return b.status === 'neglected'; });
+    var high = r.balance.filter(function (b) { return b.status === 'high'; });
+    var onTarget = r.balance.filter(function (b) { return b.status === 'on_target'; }).length;
+    out.push('<div class="section"><div class="section-head"><span class="section-title">Muscle Balance</span></div>' +
+      '<div class="card"><p class="note">Each spoke is one region as a share of its own weekly set target. ' +
+      'The dashed ring is on target.</p>' +
+      '<div class="radar-wrap">' + radarSvg(r.radar, r.balance) + '</div>' +
+      '<div class="score-row"><div class="n">' + r.balanceScore + '</div><div>' +
+      '<div class="lbl">BALANCE SCORE</div><div class="hint">' + onTarget + ' of ' + r.balance.length +
+      ' regions inside their weekly range</div></div></div>' +
+      '<div class="keys">' +
+      '<span class="key"><i style="background:' + C.marbleLight + '"></i>On target</span>' +
+      '<span class="key"><i style="background:' + C.bronze + '"></i>High</span>' +
+      '<span class="key"><i style="background:' + C.accent + '"></i>Neglected</span></div>' +
+      (neglected.length || high.length
+        ? '<p class="legend-note">' +
+          (neglected.length ? 'Lowest: ' + neglected.slice().sort(function (a, b) { return a.ratio - b.ratio; })
+            .slice(0, 2).map(function (b) { return esc(b.label) + ' ' + b.setsPerWeek + '/wk'; }).join(', ') + '.' : '') +
+          (neglected.length && high.length ? '&nbsp; ' : '') +
+          (high.length ? 'Highest: ' + high.slice().sort(function (a, b) { return b.ratio - a.ratio; })
+            .slice(0, 1).map(function (b) { return esc(b.label) + ' ' + b.setsPerWeek + '/wk'; })[0] + '.' : '') +
+          '</p>'
+        : '') +
+      '</div></div>');
+
+    /* strength trend */
+    out.push('<div class="section"><div class="section-head"><span class="section-title">Strength Trend</span></div>');
+    if (!pro) {
+      out.push(gate('Strength & Volume Charts',
+        'Estimated 1RM trends per lift and weekly volume broken down by muscle.'));
+    } else {
+      out.push('<div class="card"><div class="chips">' + r.lifts.map(function (l) {
+        return '<button type="button" class="chip" data-lift="' + esc(l.id) + '" aria-pressed="' +
+          (l.id === state.lift) + '">' + esc(l.name) + '</button>';
+      }).join('') + '</div><div style="margin-top:12px">' + trendSvg(lift ? lift.series : []) + '</div></div>');
+    }
+    out.push('</div>');
+
+    /* movers */
+    if (r.movers.length) {
+      out.push('<div class="section"><div class="section-head"><span class="section-title">Biggest Movers</span></div><div class="card">' +
+        r.movers.map(function (mv, i) {
+          var tone = mv.deltaKg > 0 ? C.bronze : mv.deltaKg < 0 ? C.accent : C.textDim;
+          return '<div class="rank"><span class="i">' + (i + 1) + '</span><span class="t"><b>' + esc(mv.name) +
+            '</b><small>' + mv.sessions + ' sessions · best ' + mv.last.bestWeightKg + 'kg × ' + mv.last.bestReps +
+            (mv.stalled ? ' · stalled' : '') + '</small></span>' +
+            '<span class="v" style="color:' + tone + '">' + (mv.deltaKg >= 0 ? '+' : '') + mv.deltaKg + 'kg</span></div>';
+        }).join('') + '</div></div>');
+    }
+
+    /* volume by week */
+    out.push('<div class="section"><div class="section-head"><span class="section-title">Volume by Week</span></div>' +
+      '<div class="card">' + barsHtml(r.weekly) +
+      '<p class="note" style="margin-top:12px">' + num(m.avgVolumePerSession) + 'kg average per session · ' +
+      m.avgSetsPerSession + ' sets · ' + (m.avgDurationMin || '—') + ' min</p></div></div>');
+
+    /* consistency */
+    var c = DATA.consistency;
+    out.push('<div class="section"><div class="section-head"><span class="section-title">Consistency</span></div>' +
+      '<div class="card"><div class="stats" style="margin-bottom:16px">' +
+      '<div class="stat"><div class="v">' + c.weekStreak + '</div><div class="l">Week streak</div></div>' +
+      '<div class="stat"><div class="v">' + c.longestWeekStreak + 'w</div><div class="l">Best run</div></div>' +
+      '<div class="stat"><div class="v">' + c.adherencePct + '%</div><div class="l">Adherence</div></div>' +
+      '</div>' + gridHtml(DATA.trainingDays) + '</div></div>');
+
+    /* landmarks */
+    out.push('<div class="section"><div class="section-head"><span class="section-title">Volume Landmarks</span></div>');
+    if (!pro) {
+      out.push(gate('Volume Landmarks',
+        'Weekly sets per muscle measured against maintenance and growth targets.'));
+    } else {
+      out.push('<div class="card"><p class="note">Working sets per muscle per week. The shaded band is the ' +
+        'range most lifters grow in; below it is maintenance.</p><div style="margin-top:8px">' +
+        volumeBars(r.landmarks) + '</div></div>');
+    }
+    out.push('</div>');
+
+    /* records */
+    out.push('<div class="section"><div class="section-head"><span class="section-title">Records</span></div><div class="card">');
+    if (!r.prs.length) {
+      out.push('<p class="note">No new personal records in this period. Records are counted when a lift beats its own best estimated 1RM.</p>');
+    } else {
+      out.push(r.prs.map(function (e) {
+        var d = new Date(e.at);
+        var when = d.getDate() + ' ' + ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()];
+        return '<div class="rank"><span class="t"><b>' + esc(e.name) + '</b><small>' + e.weightKg + 'kg × ' +
+          e.reps + ' · ' + when + '</small></span><span class="v" style="color:' + C.bronze + '">+' + e.gainKg + 'kg</span></div>';
+      }).join(''));
+    }
+    out.push('</div></div>');
+
+    /* bodyweight + export, to show the screen actually ends */
+    out.push('<div class="section"><div class="section-head"><span class="section-title">Bodyweight</span>' +
+      '<span class="section-action">Log</span></div><div class="card"><p class="note">' +
+      'No readings yet. Weigh in first thing, same conditions each day.</p></div></div>');
+
+    var screen = document.getElementById('screen');
+    var top = screen.scrollTop;
+    screen.innerHTML = out.join('');
+    screen.scrollTop = top;
+  }
+
+  function deltaHtml(pct, label) {
+    if (pct === null || pct === undefined) return '';
+    var tone = pct > 0 ? C.bronze : pct < 0 ? C.accent : C.textDim;
+    return '<span style="color:' + tone + '">' + (pct > 0 ? '+' : '') + pct + '% ' + label + '</span>';
+  }
+
+  /* ---------------- events ---------------- */
+
+  document.getElementById('screen').addEventListener('click', function (e) {
+    var el = e.target.closest('[data-range],[data-insight],[data-lift],[data-paywall]');
+    if (!el) return;
+
+    if (el.dataset.range) { state.range = el.dataset.range; state.open = {}; render(); return; }
+    if (el.dataset.lift) { state.lift = el.dataset.lift; render(); return; }
+    if (el.dataset.paywall) { setTier(true); return; }
+    if (el.dataset.insight) {
+      var rep = DATA.byRange[state.range].insights;
+      var isFree = rep.free.some(function (i) { return i.id === el.dataset.insight; });
+      if (!state.pro && !isFree) { setTier(true); return; }
+      state.open[el.dataset.insight] = !state.open[el.dataset.insight];
+      render();
+    }
+  });
+
+  function setTier(pro) {
+    state.pro = pro;
+    document.querySelectorAll('[data-tier]').forEach(function (b) {
+      b.setAttribute('aria-pressed', String((b.dataset.tier === 'pro') === pro));
+    });
+    render();
+  }
+
+  document.querySelectorAll('[data-tier]').forEach(function (b) {
+    b.addEventListener('click', function () { setTier(b.dataset.tier === 'pro'); });
+  });
+
+  render();
+})();
+</script>

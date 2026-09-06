@@ -1,0 +1,11 @@
+node_modules/
+.expo/
+dist/
+web-build/
+.env
+.env.local
+
+# Downloaded museum photographs. Fetched, not committed — run
+#   npx tsx tools/fetch-artwork.ts
+# to populate. See src/share/artwork.ts for provenance and licensing.
+assets/artwork/*.jpg

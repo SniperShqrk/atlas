@@ -1,0 +1,517 @@
+<title>What ATLAS Should Steal</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+  /* ------------------------------------------------------------------
+     Palette is ATLAS's own (app/src/theme/theme.ts) so the research reads
+     in the product's voice. The product is deliberately dark-only, so this
+     page commits to that ground and paints every colour explicitly rather
+     than inheriting anything from the host.
+     ------------------------------------------------------------------ */
+  :root {
+    --bg: #0D0D0E;
+    --surface: #181715;
+    --surface-2: #1F1E1C;
+    --line: #2A2825;
+    --line-strong: #38352F;
+
+    --ink: #F0EEE9;
+    --ink-2: #A8A49B;
+    --ink-3: #8C887F;
+    --ink-4: #5A5750;
+
+    --terracotta: #B4472F;
+    --bronze: #C08A3E;
+    --marble: #EDEAE3;
+
+    --serif: "Newsreader", Georgia, "Times New Roman", serif;
+    --sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink-2);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.68;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 760px; margin: 0 auto; padding: 56px 24px 96px; }
+
+  /* ---------- masthead ---------- */
+  .eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2.4px;
+    text-transform: uppercase;
+    color: var(--bronze);
+    margin: 0;
+  }
+
+  h1 {
+    font-family: var(--serif);
+    font-size: clamp(38px, 6vw, 56px);
+    font-weight: 500;
+    line-height: 1.08;
+    letter-spacing: -.5px;
+    color: var(--ink);
+    margin: 18px 0 0;
+    text-wrap: balance;
+  }
+
+  .standfirst {
+    font-family: var(--serif);
+    font-size: 20px;
+    line-height: 1.55;
+    color: var(--ink-2);
+    margin: 20px 0 0;
+    max-width: 60ch;
+  }
+
+  .byline {
+    margin-top: 26px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    font-size: 13px;
+    color: var(--ink-4);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 20px;
+  }
+
+  /* ---------- positioning panel ---------- */
+  .gap {
+    margin-top: 48px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: var(--surface);
+    padding: 26px 28px;
+  }
+  .gap h2 { margin-top: 0; }
+
+  .versus {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    margin-top: 22px;
+  }
+  .versus > div { background: var(--surface); padding: 16px 18px; }
+  .versus .who {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: var(--ink-4);
+  }
+  .versus .what { font-size: 14.5px; line-height: 1.5; margin-top: 8px; color: var(--ink-2); }
+  .versus .atlas .who { color: var(--bronze); }
+  .versus .atlas .what { color: var(--ink); }
+
+  /* ---------- section headings ---------- */
+  h2 {
+    font-family: var(--serif);
+    font-size: 27px;
+    font-weight: 500;
+    line-height: 1.25;
+    color: var(--ink);
+    margin: 56px 0 0;
+    letter-spacing: -.2px;
+    text-wrap: balance;
+  }
+
+  h3 {
+    font-family: var(--serif);
+    font-size: 21px;
+    font-weight: 500;
+    color: var(--ink);
+    margin: 0;
+    line-height: 1.3;
+    letter-spacing: -.1px;
+    text-wrap: balance;
+  }
+
+  p { margin: 14px 0 0; max-width: 66ch; }
+
+  a { color: var(--bronze); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--marble); }
+  a:focus-visible { outline: 2px solid var(--bronze); outline-offset: 3px; border-radius: 2px; }
+
+  /* ---------- findings ---------- */
+  .finding {
+    margin-top: 40px;
+    padding-left: 22px;
+    border-left: 1px solid var(--line-strong);
+  }
+  .finding:first-of-type { margin-top: 32px; }
+
+  .evidence {
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--ink-3);
+    margin-top: 14px;
+    padding: 14px 16px;
+    background: var(--surface-2);
+    border-radius: 3px;
+  }
+  .evidence b { color: var(--marble); font-weight: 600; }
+  .evidence .src { display: block; margin-top: 8px; font-size: 11.5px; color: var(--ink-4); }
+
+  .decision {
+    margin-top: 16px;
+    padding: 16px 18px;
+    background: var(--surface);
+    border-left: 2px solid var(--bronze);
+    border-radius: 0 3px 3px 0;
+  }
+  .decision .k {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+    color: var(--bronze);
+  }
+  .decision p { margin-top: 7px; color: var(--ink); font-size: 15.5px; }
+
+  .decision.open { border-left-color: var(--terracotta); }
+  .decision.open .k { color: var(--terracotta); }
+
+  /* ---------- pricing table ---------- */
+  .table-scroll { overflow-x: auto; margin-top: 22px; }
+  table { border-collapse: collapse; width: 100%; min-width: 520px; font-size: 14.5px; }
+  th, td {
+    text-align: left;
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  thead th {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: var(--ink-4);
+    font-weight: 500;
+    border-bottom-color: var(--line-strong);
+  }
+  td { color: var(--ink-2); }
+  td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--ink); }
+  tr.us td { color: var(--ink); }
+  tr.us td:first-child { color: var(--bronze); font-weight: 600; }
+
+  /* ---------- open questions ---------- */
+  .asks { margin-top: 22px; display: flex; flex-direction: column; gap: 14px; }
+  .ask {
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 18px 20px;
+    background: var(--surface);
+  }
+  .ask h3 { font-family: var(--sans); font-size: 16px; font-weight: 600; }
+  .ask p { margin-top: 8px; font-size: 15px; }
+  .ask .rec {
+    margin-top: 12px;
+    font-size: 14px;
+    color: var(--bronze);
+    font-weight: 500;
+  }
+
+  ul { margin: 14px 0 0; padding-left: 20px; max-width: 66ch; }
+  li { margin-top: 7px; }
+  li::marker { color: var(--ink-4); }
+
+  code {
+    font-family: var(--mono);
+    font-size: .88em;
+    color: var(--marble);
+    background: var(--surface-2);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  footer {
+    margin-top: 64px;
+    padding-top: 22px;
+    border-top: 1px solid var(--line);
+    font-size: 13.5px;
+    color: var(--ink-4);
+  }
+  footer ol { padding-left: 20px; margin: 12px 0 0; }
+  footer li { margin-top: 5px; }
+
+  @media (max-width: 620px) {
+    .wrap { padding: 36px 18px 64px; }
+    .versus { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">ATLAS · Design research</p>
+  <h1>What ATLAS should steal, and what it should refuse</h1>
+  <p class="standfirst">
+    Six findings from the competitive field and the mobile-subscription data, each with the
+    decision it forces. Principles and evidence only — no borrowed layouts, no borrowed copy.
+  </p>
+  <p class="byline">
+    <span>September 2026</span>
+    <span>Inputs: Hevy · Strong · Fitbod · subscription benchmarks</span>
+  </p>
+
+  <div class="gap">
+    <h2 style="margin-top:0">The gap ATLAS sits in</h2>
+    <p>
+      The two apps serious lifters actually use split the problem cleanly, and neither side
+      picks up what the other drops. That split is the opening.
+    </p>
+    <div class="versus">
+      <div>
+        <div class="who">Hevy</div>
+        <div class="what">Logging is fast and the interface is clean. Analytics are thin.</div>
+      </div>
+      <div>
+        <div class="who">Strong</div>
+        <div class="what">Deeper analytics and more graph types. Steeper to learn, more to hold.</div>
+      </div>
+      <div class="atlas">
+        <div class="who">ATLAS</div>
+        <div class="what">
+          Hevy's logging speed, analytics past Strong's, and the one thing neither ships:
+          a reading of what the numbers <em>mean</em>.
+        </div>
+      </div>
+    </div>
+    <p>
+      Both competitors present data and stop. Charts are the raw material of an answer, not the
+      answer. ATLAS's insight engine is the differentiator, so every other decision below is
+      judged by whether it gets a user to the point where that engine has something to say.
+    </p>
+  </div>
+
+  <h2>Six findings</h2>
+
+  <div class="finding">
+    <h3>1. Speed of logging is the whole product</h3>
+    <p>
+      The most consistent thing lifters ask for is minimal tapping between sets. Everything else
+      is negotiable; this is not. An app that is slow mid-session gets abandoned mid-session.
+    </p>
+    <div class="evidence">
+      Users value apps that minimise <b>"time tapping between sets."</b> Hevy's stated strength is
+      exactly this: <b>"Add a set, record reps and weight, and move on."</b>
+      <span class="src">Setgraph, Reddit gym-app synthesis · Setgraph, Hevy vs Strong</span>
+    </div>
+    <div class="decision">
+      <div class="k">Decision</div>
+      <p>
+        The workout screen is frozen as a speed surface. Nothing decorative, nothing informational,
+        nothing that costs a tap gets added to it — the marble textures and statue artwork in the
+        visual identity work go everywhere <em>except</em> here. This retroactively justifies
+        stripping it to monochrome, and it becomes a standing rule rather than a one-off fix.
+      </p>
+    </div>
+  </div>
+
+  <div class="finding">
+    <h3>2. The first fourteen days decide everything</h3>
+    <p>
+      Churn is not spread evenly across the life of an account. It is concentrated almost entirely
+      at the start, and the threshold is low enough to design against directly.
+    </p>
+    <div class="evidence">
+      Users who complete fewer than <b>three workouts in their first 14 days churn at 3–4×</b>
+      the rate of those who establish a weekly habit. The top cancellation reason across fitness
+      subscriptions is <b>loss of motivation, at 38%</b>.
+      <span class="src">RetentionCheck, fitness app churn benchmarks 2026</span>
+    </div>
+    <div class="decision">
+      <div class="k">Decision</div>
+      <p>
+        ATLAS gets an explicit first-fortnight goal: get the user to three logged sessions. That is
+        a concrete, measurable design target, not a vague onboarding improvement — a visible
+        "3 sessions to your first reading" marker, and a home screen that states plainly what
+        unlocks at three.
+      </p>
+    </div>
+  </div>
+
+  <div class="finding">
+    <h3>3. The cold start is where AI fitness apps die</h3>
+    <p>
+      This is the most important finding for ATLAS specifically, because it describes a failure
+      mode the app currently walks straight into.
+    </p>
+    <div class="evidence">
+      On Fitbod, users <b>"probably decide it's not worth it before the algorithm has enough
+      data"</b> — the value only becomes clear after <b>4+ weeks</b> of consistent use, by which
+      point a monthly subscriber has already cancelled.
+      <span class="src">Fitness Tools Reviewed, Fitbod review</span>
+    </div>
+    <div class="decision">
+      <div class="k">Decision</div>
+      <p>
+        ATLAS currently shows nothing until three sessions are logged
+        (<code>sessionsUntilInsights</code>), which is the same trap. The fix is that the empty
+        state must itself demonstrate the product: show a real worked example on sample data,
+        clearly labelled as an example, so a day-one user sees exactly what ATLAS will say about
+        <em>them</em>. The insight engine is deterministic, so this costs nothing to generate and
+        cannot misrepresent what the real thing does.
+      </p>
+    </div>
+  </div>
+
+  <div class="finding">
+    <h3>4. Free-tier caps are the most-hated pattern, and soft paywalls convert better anyway</h3>
+    <p>
+      The instinct to restrict logging is both the thing users complain about most and, on the
+      numbers, the weaker commercial choice for an app whose pitch is analysis.
+    </p>
+    <div class="evidence">
+      Paywall complaints across the field are about <b>capped functionality on the free tier</b>.
+      Meanwhile <b>soft paywalls convert roughly 50% better</b> than hard ones, while hard paywalls
+      produce <b>21% higher LTV</b> — the trade only favours hard walls when the product is
+      valuable on day one.
+      <span class="src">Setgraph, Reddit synthesis · Adapty, high-performing paywalls 2026</span>
+    </div>
+    <div class="decision">
+      <div class="k">Decision</div>
+      <p>
+        Hold the existing line — logging, history, the recovery map and the exercise library stay
+        uncapped forever. ATLAS is not valuable on day one by construction (finding 3), so the
+        hard-paywall LTV premium is not available to us regardless. The soft wall is both the
+        honest choice and the correct one.
+      </p>
+    </div>
+  </div>
+
+  <div class="finding">
+    <h3>5. Purchases happen on day zero, which fights our own product</h3>
+    <p>
+      The subscription data is unambiguous about timing, and it points in the opposite direction
+      from finding 3. This tension is the central design problem of ATLAS's monetisation.
+    </p>
+    <div class="evidence">
+      <b>44.5% of all purchases happen on Day 0</b> and <b>90% of trial starts</b> do too.
+      Onboarding paywalls convert at <b>1.35% versus 0.89%</b> in-app. In Health &amp; Fitness
+      specifically, <b>trials increase LTV</b>, and a trial on the annual plan is the structure
+      top apps converge on.
+      <span class="src">Adapty, high-performing paywalls 2026</span>
+    </div>
+    <div class="decision">
+      <div class="k">Decision</div>
+      <p>
+        Two shots, not one. An onboarding paywall that sells the promise concretely — the worked
+        example from finding 3, not a feature list — with a trial on the annual plan. Then the
+        contextual moment already built: the first real "ATLAS found 3 things" card, which lands
+        around session three and is the honest, earned pitch. The Day-0 attempt captures the
+        buyers who decide fast; the in-app moment captures the ones who need proof.
+      </p>
+    </div>
+  </div>
+
+  <div class="finding">
+    <h3>6. ATLAS is priced too low, and the lifetime tier is cannibalising it</h3>
+    <p>
+      The current price list was set by intuition. The benchmarks say intuition was wrong in a
+      specific and correctable direction.
+    </p>
+    <div class="evidence">
+      In Health &amp; Fitness, <b>expensive annual plans generate 4.5× more LTV</b>, and
+      <b>nine in ten subscriptions sell at full price</b>. Price increases win <b>45.5%</b> of LTV
+      tests. Fitbod charges <b>£12.99/month or £79.99/year</b>.
+      <span class="src">Adapty · Fitness Tools Reviewed</span>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th>Plan</th><th>ATLAS now</th><th>Fitbod</th><th>Proposed</th></tr>
+        </thead>
+        <tbody>
+          <tr class="us"><td>Monthly</td><td class="num">€4.99</td><td class="num">≈€15</td><td class="num">€7.99</td></tr>
+          <tr class="us"><td>Annual</td><td class="num">€29.99</td><td class="num">≈€92</td><td class="num">€49.99 + 7-day trial</td></tr>
+          <tr class="us"><td>Lifetime</td><td class="num">€79.99</td><td class="num">≈€138</td><td class="num">remove, or €149</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="decision open">
+      <div class="k">Needs your call</div>
+      <p>
+        A €79.99 lifetime against a €29.99 annual tells your most committed users to pay once and
+        never again — it caps LTV at two and a half years for exactly the cohort that would have
+        stayed longest. Either remove the tier or price it where it stops being the obvious buy.
+      </p>
+    </div>
+  </div>
+
+  <h2>What this means for the visual identity work</h2>
+  <p>
+    Item 4 is next, and the research constrains it more than it liberates it. Three rules carried
+    forward:
+  </p>
+  <ul>
+    <li>
+      <strong>Texture goes on the reading surfaces, never the working ones.</strong> Home,
+      Progress, Profile, milestones and the paywall get marble, stone and statuary. The workout
+      logger and the exercise library stay flat, fast and quiet.
+    </li>
+    <li>
+      <strong>Themes must not change information design.</strong> Marble, Obsidian, Bronze and
+      Stone swap tokens only. Terracotta means fatigued or neglected in every theme; bronze means
+      recovering, complete, or Premium in every theme. A theme that re-teaches the colour language
+      is a bug.
+    </li>
+    <li>
+      <strong>Legibility is the acceptance test.</strong> A light Marble theme has to hold the
+      same contrast on the recovery heatmap and the balance radar as the dark ones. If a theme
+      cannot carry the data, it does not ship.
+    </li>
+  </ul>
+
+  <h2>Three decisions I need from you</h2>
+  <div class="asks">
+    <div class="ask">
+      <h3>Pricing</h3>
+      <p>
+        Raise the tiers as proposed, and remove or reprice lifetime? This is the single highest-
+        leverage change on the list and it costs nothing to implement.
+      </p>
+      <p class="rec">My recommendation: raise, and remove lifetime entirely before launch.</p>
+    </div>
+    <div class="ask">
+      <h3>Onboarding paywall</h3>
+      <p>
+        Day-0 paywall with a worked example and a 7-day trial on annual, or stay purely
+        contextual and let the insight moment do all the selling?
+      </p>
+      <p class="rec">My recommendation: both, as described in finding 5.</p>
+    </div>
+    <div class="ask">
+      <h3>Social features</h3>
+      <p>
+        Challenges, leaderboards and friend connections correlate with 20–35% lower monthly churn,
+        but they are a large build and they pull ATLAS toward being a feed.
+      </p>
+      <p class="rec">
+        My recommendation: skip for v1. Shareable progress cards get most of the reach without
+        any of the social infrastructure — and they double as the marketing asset in item 10.
+      </p>
+    </div>
+  </div>
+
+  <footer>
+    <strong style="color:var(--ink-3)">Sources</strong>
+    <ol>
+      <li><a href="https://setgraph.app/ai-blog/best-gym-app-reddit">Setgraph — Best gym app Reddit users recommend</a></li>
+      <li><a href="https://setgraph.app/ai-blog/hevy-vs-strong-app-comparison-2026">Setgraph — Hevy vs Strong (2026)</a></li>
+      <li><a href="https://retentioncheck.com/churn-benchmarks/fitness-apps">RetentionCheck — Fitness app retention &amp; churn 2026</a></li>
+      <li><a href="https://adapty.io/blog/high-performing-paywall-2026/">Adapty — What a high-performing paywall looks like in 2026</a></li>
+      <li><a href="https://fitnesstoolsreviewed.com/app-reviews/fitbod-review-is-the-ai-gym-app-worth-it/">Fitness Tools Reviewed — Fitbod review</a></li>
+    </ol>
+  </footer>
+
+</div>
