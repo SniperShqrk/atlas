@@ -111,13 +111,52 @@ This is what "share your progress" should have looked like from the start.
 
 ---
 
-## Posting order (if you want a sequence rather than posting all 6 at once)
+## 7. `video-atmosphere.mp4` — Reel/TikTok, ~8.8s, new style: atmosphere open + UI reveal
 
-1. `video-recovery.mp4` — the hook, leads with the diagnosis
-2. `post-diagnosis.png` — reinforces the same claim as a static, for feed
-3. `post-balance-card.png` — second diagnosis angle, different metric
-4. `video-pr.mp4` — introduces the growth-loop mechanic (share cards)
-5. `post-pr-card.png` — same mechanic, static
-6. `post-quote.png` — pure identity/brand post, breaks up the run of UI screenshots
+Based on watching Hevy's TikTok (25K followers, 713K likes) — their best-performing content opens on something atmospheric or relatable, never the app itself, and the UI only shows up as the payoff. This clip copies that structure: opens on the bronze cuirass artwork (standing in for "stock" b-roll — no real gym footage/people used, so nothing here needed a license), bold native-TikTok caption text (not the elegant serif from the batch 1 videos — this is deliberately the blunt, thick, black-outlined white text style TikTok's own captions use), then hard-cuts to the real Home screen as the reveal.
 
-Spacing these over 1–2 weeks (rather than dumping all 6 same-day) gives each one room to be judged on its own, and lets you see which angle (diagnosis vs. growth-loop vs. identity) actually gets traction before the next batch.
+**Hook:**
+"Nobody tells you which muscles are still fatigued."
+
+**Caption:**
+Nobody tells you which muscles are still fatigued after a session — you just guess, or you skip a body part for a week "to be safe."
+
+ATLAS reads your actual logs and tells you. Built it myself.
+
+**Hashtags:**
+`#gymtok #fitnessapp #recoveryday #naturalbodybuilding #liftingtok #buildinpublic #gymtech #strengthtraining`
+
+**Platform notes:** This is the closest of the batch to what's actually charting on gym-app TikTok right now — lead with this one if you're only posting one video this week.
+
+---
+
+## 8. `video-pov.mp4` — Reel/TikTok, ~8.4s, new style: plain-text POV hook + UI payoff
+
+The "POV: ___" plain-text-on-black format is one of the most reliable hook conventions on TikTok generally, not just fitness — it works because there's zero setup cost, the text itself is the entire first impression. This version: black screen, POV text hook, hard cut to a tight crop of the muscle map (legs visibly amber/fatigued) as the punchline, short reaction line, end card.
+
+**Hook:**
+"POV: you finally see which muscles never recovered from leg day"
+
+**Caption:**
+POV: you finally see which muscles never recovered from leg day 😅
+
+This is why I built a recovery map that reads your actual training instead of guessing.
+
+**Hashtags:**
+`#pov #gymtok #legday #fitnessapp #liftingtok #naturalbodybuilding #buildinpublic #gymhumor`
+
+**Platform notes:** The humor/relatable angle (vs. the straight "diagnosis" framing of the rest of the batch) — good one to test against `video-atmosphere.mp4` to see whether your audience responds better to the earnest angle or the joke angle.
+
+---
+
+## Posting order (if you want a sequence rather than posting all 6-8 at once)
+
+1. `video-atmosphere.mp4` or `video-pov.mp4` — pick one as the opening hook (see note above on testing which lands)
+2. `video-recovery.mp4` — the original diagnosis-style video, reinforces the same claim in the branded voice
+3. `post-diagnosis.png` — same claim again, static, for feed
+4. `post-balance-card.png` — second diagnosis angle, different metric
+5. `video-pr.mp4` — introduces the growth-loop mechanic (share cards)
+6. `post-pr-card.png` — same mechanic, static
+7. `post-quote.png` — pure identity/brand post, breaks up the run of UI screenshots
+
+Spacing these over 1–2 weeks (rather than dumping them all same-day) gives each one room to be judged on its own, and lets you see which angle — diagnosis, growth-loop, identity, or humor — actually gets traction before the next batch. If `video-atmosphere.mp4` and `video-pov.mp4` are close in style-testing intent, post them a few days apart rather than back-to-back so they don't split the same audience moment.
