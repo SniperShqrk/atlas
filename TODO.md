@@ -128,7 +128,7 @@ are in `backend/DEPLOY.md` — short version: push to GitHub, point Render at `b
 
 ---
 
-## 8. Set up Friends & Groups (accounts, shared leaderboards)  ·  optional, holds its own screen
+## ✅ 8. Set up Friends & Groups — DONE
 
 New: Profile → Friends & Groups. Add friends by username, build a group with an invite code,
 compare lifts head-to-head (1RM / heaviest weight / best set volume, like the Strong-style
