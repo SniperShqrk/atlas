@@ -105,7 +105,7 @@ means no crash reporting, which is fine to ship without.
 
 ---
 
-## 6. Deploy the backend  ·  needed for the AI Workout Planner to work on a real phone
+## ✅ 6. Deploy the backend — DONE
 
 It only runs on `localhost:4000` right now, which is unreachable from a real device. Full steps
 are in `backend/DEPLOY.md` — short version: push to GitHub, point Render at `backend/render.yaml`

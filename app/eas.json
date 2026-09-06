@@ -23,7 +23,7 @@
       },
       "channel": "preview",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://REPLACE-WITH-YOUR-DEPLOYED-BACKEND-URL",
+        "EXPO_PUBLIC_API_URL": "https://atlas-backend-8zgz.onrender.com",
         "EXPO_PUBLIC_SUPABASE_URL": "https://REPLACE-WITH-YOUR-SUPABASE-PROJECT.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "REPLACE-WITH-YOUR-SUPABASE-ANON-KEY",
         "EXPO_PUBLIC_SENTRY_DSN": "https://15e5de94b5f2673230a388ac9244a0ef@o4512040047542272.ingest.de.sentry.io/4512040055865424"
@@ -33,7 +33,7 @@
       "autoIncrement": true,
       "channel": "production",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://REPLACE-WITH-YOUR-DEPLOYED-BACKEND-URL",
+        "EXPO_PUBLIC_API_URL": "https://atlas-backend-8zgz.onrender.com",
         "EXPO_PUBLIC_SUPABASE_URL": "https://REPLACE-WITH-YOUR-SUPABASE-PROJECT.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "REPLACE-WITH-YOUR-SUPABASE-ANON-KEY",
         "EXPO_PUBLIC_SENTRY_DSN": "https://15e5de94b5f2673230a388ac9244a0ef@o4512040047542272.ingest.de.sentry.io/4512040055865424"
