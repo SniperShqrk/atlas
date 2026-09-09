@@ -13,7 +13,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.hugosheehan.atlasapp",
-      "buildNumber": "1",
+      "buildNumber": "2",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -33,11 +33,9 @@
       ],
       "@sentry/react-native"
     ],
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
+    "runtimeVersion": "1.0.0",
     "updates": {
-      "url": "https://u.expo.dev/2d214153-8a3e-46ae-9db9-19a0595bf288"
+      "url": "https://u.expo.dev/1cc7a731-6826-4637-9609-fa9e13840e23"
     },
     "extra": {
       "eas": {
