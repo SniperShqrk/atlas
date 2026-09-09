@@ -12,8 +12,11 @@
     ],
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.hugosheehan.atlas",
-      "buildNumber": "1"
+      "bundleIdentifier": "com.hugosheehan.atlasapp",
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.hugosheehan.atlas",
@@ -29,6 +32,17 @@
         }
       ],
       "@sentry/react-native"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "2d214153-8a3e-46ae-9db9-19a0595bf288"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/2d214153-8a3e-46ae-9db9-19a0595bf288"
+    }
   }
 }
