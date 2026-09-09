@@ -40,13 +40,13 @@
       }
     }
   },
-  "submit": {
-    "production": {
-      "ios": {
-        "appleId": "REPLACE-WITH-YOUR-APPLE-ID-EMAIL",
-        "ascAppId": "REPLACE-WITH-YOUR-APP-STORE-CONNECT-APP-ID",
-        "appleTeamId": "REPLACE-WITH-YOUR-APPLE-TEAM-ID"
-      }
+"submit": {
+  "production": {
+    "ios": {
+      "appleId": "davidksheehan@gmail.com",
+      "ascAppId": "6810396164",
+      "appleTeamId": "BWW8RDJAX6"
     }
   }
+}
 }
