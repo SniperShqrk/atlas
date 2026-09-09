@@ -12,9 +12,11 @@
     ],
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.hugosheehan.atlas",
+      "bundleIdentifier": "com.hugosheehan.atlasapp",
       "buildNumber": "1",
-      "usesAppleSignIn": true
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.hugosheehan.atlas",
@@ -29,16 +31,18 @@
           "backgroundColor": "#0D0D0E"
         }
       ],
-      "@sentry/react-native",
-      [
-        "expo-image-picker",
-        {
-          "photosPermission": "ATLAS uses your photos to read a workout plan you already have and turn it into a routine.",
-          "cameraPermission": "ATLAS uses the camera to read a workout plan you already have and turn it into a routine."
-        }
-      ],
-      "expo-live-activity",
-      "expo-apple-authentication"
-    ]
+      "@sentry/react-native"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "2d214153-8a3e-46ae-9db9-19a0595bf288"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/2d214153-8a3e-46ae-9db9-19a0595bf288"
+    }
   }
 }
