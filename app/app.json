@@ -33,16 +33,17 @@
       ],
       "@sentry/react-native"
     ],
-    "extra": {
-      "eas": {
-        "projectId": "2d214153-8a3e-46ae-9db9-19a0595bf288"
-      }
-    },
     "runtimeVersion": {
       "policy": "appVersion"
     },
     "updates": {
       "url": "https://u.expo.dev/2d214153-8a3e-46ae-9db9-19a0595bf288"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "1cc7a731-6826-4637-9609-fa9e13840e23"
+      }
+    },
+    "owner": "snipershqrk"
   }
 }
