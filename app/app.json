@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "ATLAS",
+    "slug": "atlas-fitness",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#0D0D0E",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.hugosheehan.atlas",
+      "buildNumber": "1",
+      "usesAppleSignIn": true
+    },
+    "android": {
+      "package": "com.hugosheehan.atlas",
+      "versionCode": 1
+    },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/icon.png",
+          "imageWidth": 180,
+          "backgroundColor": "#0D0D0E"
+        }
+      ],
+      "@sentry/react-native",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "ATLAS uses your photos to read a workout plan you already have and turn it into a routine.",
+          "cameraPermission": "ATLAS uses the camera to read a workout plan you already have and turn it into a routine."
+        }
+      ],
+      "expo-live-activity",
+      "expo-apple-authentication"
+    ]
+  }
+}

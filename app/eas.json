@@ -1,0 +1,52 @@
+{
+  "cli": {
+    "version": ">= 12.0.0",
+    "appVersionSource": "local"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "resourceClass": "m-medium"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "http://localhost:4000",
+        "EXPO_PUBLIC_SENTRY_DSN": "https://15e5de94b5f2673230a388ac9244a0ef@o4512040047542272.ingest.de.sentry.io/4512040055865424"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "ios": {
+        "resourceClass": "m-medium",
+        "simulator": false
+      },
+      "channel": "preview",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://atlas-backend-8zgz.onrender.com",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://xgxlielnqrshybqmfzwc.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_1anOttxJU_RiRNcuSNTmyw_pVGUxv9C",
+        "EXPO_PUBLIC_SENTRY_DSN": "https://15e5de94b5f2673230a388ac9244a0ef@o4512040047542272.ingest.de.sentry.io/4512040055865424"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "channel": "production",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://atlas-backend-8zgz.onrender.com",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://xgxlielnqrshybqmfzwc.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_1anOttxJU_RiRNcuSNTmyw_pVGUxv9C",
+        "EXPO_PUBLIC_SENTRY_DSN": "https://15e5de94b5f2673230a388ac9244a0ef@o4512040047542272.ingest.de.sentry.io/4512040055865424"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "REPLACE-WITH-YOUR-APPLE-ID-EMAIL",
+        "ascAppId": "REPLACE-WITH-YOUR-APP-STORE-CONNECT-APP-ID",
+        "appleTeamId": "REPLACE-WITH-YOUR-APPLE-TEAM-ID"
+      }
+    }
+  }
+}

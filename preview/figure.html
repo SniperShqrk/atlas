@@ -1,0 +1,61 @@
+<!doctype html><html><head><meta charset="utf-8"><title>body map</title>
+<style>body{background:#0D0D0E;margin:0;padding:26px;display:flex;gap:28px;align-items:flex-start;
+font-family:system-ui,sans-serif;color:#8C887F}.c{text-align:center}
+.cap{font-size:11px;letter-spacing:1px;text-transform:uppercase;margin-top:8px}</style></head><body>
+<div class="c"><svg id="a" height="620"></svg><div class="cap">Front · recovery</div></div>
+<div class="c"><svg id="b" height="620"></svg><div class="cap">Back · recovery</div></div>
+<div class="c"><svg id="c" height="620"></svg><div class="cap">Front · lateral raise</div></div>
+<div class="c"><svg id="d" height="620"></svg><div class="cap">Back · lateral raise</div></div>
+<script src="body-data.js"></script>
+<script>
+const NS='http://www.w3.org/2000/svg';
+const el=(t,a)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e;};
+const C={base:'#35322E',muscle:'#5E5A54',line:'#141312',
+  fresh:'#EDEAE3',ready:'#C9C5BC',moderate:'#C08A3E',fatigued:'#B4472F',untrained:'#5E5A54',
+  primary:'#B4472F',secondary:'#C08A3E'};
+const SLUG={chest:'chest',abs:'abs',obliques:'obliques',biceps:'biceps',triceps:'triceps',
+  forearm:'forearms',trapezius:'traps','upper-back':'lats','lower-back':'lower_back',
+  gluteal:'glutes',hamstring:'hamstrings',adductors:'hamstrings',quadriceps:'quads',
+  calves:'calves',tibialis:'calves',neck:null,head:null,hair:null,hands:null,feet:null,knees:null,ankles:null};
+const REC={chest:'fatigued',abs:'ready',obliques:'ready',biceps:'fresh',triceps:'moderate',
+  front_delts:'moderate',side_delts:'fatigued',rear_delts:'ready',traps:'moderate',lats:'ready',
+  lower_back:'fatigued',quads:'fatigued',hamstrings:'moderate',glutes:'moderate',
+  calves:'fresh',forearms:'fresh'};
+
+function draw(svg,view,mode,primary,secondary){
+  svg.innerHTML='';
+  const B=window.BODY;
+  const front=view==='front';
+  const vb=front?B.FRONT_VIEW_BOX:B.BACK_VIEW_BOX;
+  svg.setAttribute('viewBox',vb);
+  const regions=front?B.FRONT_REGIONS:B.BACK_REGIONS;
+  const colorFor=(m)=> mode==='recovery' ? (C[REC[m]]||C.untrained)
+    : primary.includes(m)?C.primary : (secondary||[]).includes(m)?C.secondary : C.muscle;
+  const fillSlug=(s)=>{const m=SLUG[s]; return m?colorFor(m):C.base;};
+
+  for(const r of regions){
+    if(r.slug==='deltoids')continue;
+    for(const d of [...r.left,...r.right])
+      svg.appendChild(el('path',{d,fill:fillSlug(r.slug),stroke:C.line,'stroke-width':1.4,'stroke-linejoin':'round'}));
+  }
+  const split=front?B.DELTOID_SPLIT.front:B.DELTOID_SPLIT.back;
+  const delt=regions.find(r=>r.slug==='deltoids');
+  const inner=front?'front_delts':'rear_delts';
+  for(const side of ['left','right']){
+    const box=split[side], paths=delt[side], hi=side==='left';
+    const innerR=hi?{x:box.cut,w:box.x+box.w-box.cut}:{x:box.x,w:box.cut-box.x};
+    const outerR=hi?{x:box.x-2,w:box.cut-box.x+2}:{x:box.cut,w:box.x+box.w-box.cut+2};
+    const defs=el('defs',{});
+    const mk=(id,r)=>{const cp=el('clipPath',{id});cp.appendChild(el('rect',{x:r.x,y:box.y-4,width:r.w,height:box.h+8}));defs.appendChild(cp);};
+    const i1=`di-${view}-${side}-${svg.id}`, i2=`do-${view}-${side}-${svg.id}`;
+    mk(i1,innerR); mk(i2,outerR); svg.appendChild(defs);
+    const g1=el('g',{'clip-path':`url(#${i1})`}); paths.forEach(d=>g1.appendChild(el('path',{d,fill:colorFor(inner)}))); svg.appendChild(g1);
+    const g2=el('g',{'clip-path':`url(#${i2})`}); paths.forEach(d=>g2.appendChild(el('path',{d,fill:colorFor('side_delts')}))); svg.appendChild(g2);
+    paths.forEach(d=>svg.appendChild(el('path',{d,fill:'none',stroke:C.line,'stroke-width':1.4,'stroke-linejoin':'round'})));
+  }
+}
+draw(document.getElementById('a'),'front','recovery');
+draw(document.getElementById('b'),'back','recovery');
+draw(document.getElementById('c'),'front','target',['side_delts'],['traps']);
+draw(document.getElementById('d'),'back','target',['side_delts'],['traps']);
+</script></body></html>

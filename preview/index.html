@@ -1,0 +1,703 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Flux Fitness — Design Preview</title>
+<style>
+  :root {
+    --bg:#0D0D0E; --bgElevated:#141415; --card:#181715; --cardAlt:#1F1E1C;
+    --border:#2A2825; --text:#F0EEE9; --textSecondary:#A8A49B; --textDim:#8C887F; --textFaint:#5A5750;
+    --accent:#B4472F; --accentSoft:rgba(180,71,47,0.15);
+    --bronze:#C08A3E; --bronzeSoft:rgba(192,138,62,0.15);
+    --onAccent:#F5F2EC;
+    --bodyBase:#35322E; --bodyMuscle:#5E5A54; --bodyLine:#141312;
+    --marbleLight:#EDEAE3; --marbleMid:#C9C5BC;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#08080A;color:var(--text);
+       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;padding:34px 22px 70px}
+  h1{font-size:26px;letter-spacing:-.5px;margin:0 0 8px}
+  .lede{color:var(--textDim);font-size:15px;line-height:1.6;max-width:820px;margin:0 0 12px}
+  h2{font-size:12px;letter-spacing:1.4px;text-transform:uppercase;color:var(--textFaint);margin:42px 0 16px}
+
+  .anatomy{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:22px;
+           display:flex;gap:30px;flex-wrap:wrap;align-items:flex-start}
+  .fig{text-align:center}
+  .figcap{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--textFaint);margin-top:7px}
+  .note{flex:1;min-width:270px;color:var(--textSecondary);font-size:14px;line-height:1.65}
+  .note b{color:var(--text)}
+  .legend{display:flex;gap:15px;flex-wrap:wrap;margin-top:14px}
+  .legend span{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--textDim)}
+  .sw{width:12px;height:12px;border-radius:3px;display:inline-block}
+
+  .phones{display:flex;gap:26px;overflow-x:auto;padding:6px 2px 20px}
+  .phone{flex:0 0 auto;width:330px;height:700px;background:var(--bg);border:8px solid #1b1a18;
+         border-radius:40px;overflow:hidden;display:flex;flex-direction:column;position:relative;
+         box-shadow:0 18px 50px rgba(0,0,0,.6)}
+  .statusbar{height:48px;flex:0 0 auto;display:flex;align-items:flex-end;justify-content:space-between;
+             padding:0 22px 6px;position:relative;z-index:3}
+  .statusbar .time{font-size:13px;font-weight:600;color:var(--text)}
+  .statusbar .right{display:flex;gap:5px;align-items:center;color:var(--text);font-size:11px}
+  .island{position:absolute;top:9px;left:50%;transform:translateX(-50%);
+          width:104px;height:29px;background:#000;border-radius:20px;z-index:4}
+  .homebar{height:22px;flex:0 0 auto;display:flex;align-items:center;justify-content:center}
+  .homebar i{display:block;width:120px;height:4px;border-radius:2px;background:#3A3733}
+  .plabel{text-align:center;font-size:12px;color:var(--textDim);margin-top:9px}
+  .screen{flex:1;overflow:hidden;display:flex;flex-direction:column}
+  .body{flex:1;overflow-y:auto;padding:14px 16px 8px}
+  .body::-webkit-scrollbar{width:0}
+
+  .hero{font-size:27px;font-weight:700;letter-spacing:-.6px}
+  .sub{font-size:14px;color:var(--textDim);margin-top:2px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;margin-top:14px}
+  .statrow{display:flex}.stat{flex:1}
+  .stat .v{font-size:22px;font-weight:700;letter-spacing:-.4px}
+  .stat .l{font-size:12px;color:var(--textDim);margin-top:1px}
+  .btn{display:block;width:100%;text-align:center;background:var(--accent);color:var(--onAccent);
+       font-weight:700;font-size:15px;padding:14px;border-radius:12px;margin-top:14px;border:none}
+  .btn.bronze{background:var(--bronze)}
+  .btn.sec{background:var(--cardAlt);color:var(--text);border:1px solid var(--border)}
+  .btn.sm{width:auto;padding:8px 18px;font-size:13px;border-radius:10px}
+  .sech{display:flex;justify-content:space-between;align-items:center;margin-top:22px}
+  .sech h3{font-size:16px;margin:0;font-weight:600;letter-spacing:-.2px}
+  .sech a{font-size:13px;color:var(--accent);text-decoration:none;font-weight:600}
+  .toggle{display:inline-flex;background:var(--cardAlt);border-radius:999px;padding:3px;margin-bottom:10px}
+  .toggle button{border:none;background:transparent;color:var(--textSecondary);font-size:13px;
+                 font-weight:600;padding:7px 20px;border-radius:999px;cursor:pointer}
+  .toggle button.on{background:var(--accent);color:var(--onAccent)}
+  .mrow{display:flex;align-items:center;gap:12px;padding:8px 0}
+  .mrow+.mrow{border-top:1px solid var(--border)}
+  .mname{font-size:14px;width:92px}
+  .mbar{flex:1;height:6px;border-radius:3px;background:var(--cardAlt);overflow:hidden}
+  .mbar i{display:block;height:100%;border-radius:3px}
+  .mpct{font-size:13px;font-weight:700;width:38px;text-align:right}
+
+  .woh{display:flex;justify-content:space-between;align-items:center;padding:12px 16px 6px}
+  .wot{font-size:22px;font-weight:700;letter-spacing:-.4px}
+  .wtm{font-size:13px;color:var(--textDim);margin-top:2px;font-variant-numeric:tabular-nums}
+  .wsum{display:flex;padding:0 16px 12px;border-bottom:1px solid var(--border)}
+  .wsum div{flex:1}.wsum .v{font-size:18px;font-weight:700}.wsum .l{font-size:12px;color:var(--textDim)}
+  .exb{margin-bottom:22px}
+  .exh{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+  .exn{color:var(--text);font-weight:600;font-size:16px}
+  .thr,.sr{display:flex;align-items:center;gap:4px;padding:5px 0}
+  .th{font-size:10px;font-weight:700;letter-spacing:.6px;color:var(--textDim)}
+  .cset{width:34px;display:flex;align-items:center;gap:3px}
+  .cprev{flex:1;font-size:12px;color:var(--textFaint)}
+  .cin{width:56px}.cchk{width:38px;display:flex;justify-content:flex-end}
+  .sr.done{background:rgba(255,255,255,.03);border-radius:8px}
+  .cell{background:var(--cardAlt);border-radius:8px;text-align:center;padding:7px 0;
+        font-size:14px;font-weight:600;color:var(--text)}
+  .sr.done .cell{background:transparent}
+  .chk{width:28px;height:28px;border-radius:8px;background:var(--cardAlt);display:flex;
+       align-items:center;justify-content:center}
+  .chk.on{background:var(--bronze)}
+  .chk.deep{background:#6E4F22}
+  .chk.bare{background:transparent}
+  .addset{text-align:center;background:var(--cardAlt);border-radius:8px;padding:9px;
+          font-size:12px;color:var(--textSecondary);font-weight:600;margin-top:6px}
+  .rest{background:var(--bgElevated);border-top:1px solid var(--border);padding:12px 16px;
+        display:flex;align-items:center;justify-content:space-between;position:relative;overflow:hidden}
+  .rest .fill{position:absolute;inset:0 auto 0 0;background:rgba(255,255,255,.05);width:62%}
+  .rest>*{position:relative}
+  .rest .lab{font-size:10px;letter-spacing:.6px;color:var(--textDim);text-align:center}
+  .rest .time{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;text-align:center}
+  .rest .adj{font-size:13px;font-weight:700;color:var(--textSecondary)}
+  .rest .skip{background:var(--cardAlt);border-radius:999px;padding:6px 12px;font-size:12px;font-weight:600}
+
+  .search{display:flex;align-items:center;gap:8px;background:var(--cardAlt);border-radius:12px;
+          padding:10px 12px;margin:12px 0}
+  .search input{flex:1;background:none;border:none;color:var(--text);font-size:14px;outline:none}
+  .chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:10px}
+  .chip{flex:0 0 auto;border:1px solid var(--border);background:var(--cardAlt);color:var(--textSecondary);
+        font-size:12px;font-weight:600;padding:6px 12px;border-radius:999px}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:var(--onAccent)}
+  .lrow{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+  .thumb{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+         font-weight:700;font-size:14px;border:1px solid}
+  .lb{flex:1;min-width:0}
+  .lt{font-size:14px;font-weight:600}
+  .ls{font-size:12px;color:var(--textSecondary);margin-top:2px}
+  .lm{font-size:12px;color:var(--textFaint);margin-top:2px;text-transform:capitalize}
+
+  .tagrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .ctitle{font-size:11px;font-weight:700;letter-spacing:1.1px;color:var(--textDim);margin-bottom:10px}
+  .step{display:flex;gap:11px;margin-bottom:11px}
+  .stepn{width:21px;height:21px;border-radius:50%;background:var(--accentSoft);color:var(--accent);
+         font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .stept{font-size:14px;color:var(--textSecondary);line-height:1.5}
+  .tip{display:flex;gap:8px;margin-bottom:8px}
+  .tip i{color:var(--bronze);font-style:normal;font-size:11px;margin-top:3px}
+  .tip span{font-size:14px;color:var(--textSecondary);line-height:1.5}
+  .mcols{display:flex;width:100%;gap:10px;margin-top:12px}
+  .mcol{flex:1 1 0;min-width:0}
+  .mcol h4{font-size:11px;letter-spacing:1.1px;color:var(--textDim);margin:0 0 5px;font-weight:700}
+  .mcol p{margin:0 0 3px;font-size:14px;font-weight:600}
+
+  .tabbar{display:flex;background:var(--bgElevated);border-top:1px solid var(--border);padding:9px 0 6px}
+  .tab{flex:1;text-align:center;color:var(--textFaint)}
+  .tab .tl{font-size:10px;font-weight:600;margin-top:3px}
+  .tab.on{color:var(--accent)}
+  .sug{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+  .sug span{font-size:12px;color:var(--textDim)}
+  .crpe{width:38px}
+  .wtag{font-size:12px;font-weight:700;color:var(--textFaint)}
+  .locked{background:var(--card);border:1px solid rgba(192,138,62,.3);border-radius:16px;padding:16px}
+  .lockrow{display:flex;align-items:center;gap:8px}
+  .lockrow h4{margin:0;font-size:16px;font-weight:600;flex:1}
+  .probadge{background:var(--bronzeSoft);border:1px solid rgba(192,138,62,.5);border-radius:8px;
+            padding:2px 6px;font-size:10px;font-weight:700;letter-spacing:1px;color:var(--bronze)}
+  .lockblurb{font-size:14px;color:var(--textDim);margin:8px 0 0;line-height:1.5}
+  .lockcta{font-size:13px;font-weight:700;color:var(--bronze);margin-top:12px}
+  .plan-row{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--border);
+            border-radius:16px;padding:16px;margin-bottom:8px}
+  .plan-row.on{border-color:var(--bronze);background:var(--bronzeSoft)}
+  .feat{display:flex;gap:12px;background:var(--card);border:1px solid var(--border);
+        border-radius:16px;padding:16px;margin-bottom:8px}
+  .feat.hl{border-color:rgba(192,138,62,.45);background:var(--bronzeSoft)}
+  .volrow{display:flex;align-items:center;gap:12px;padding:7px 0}
+  .vollabel{font-size:12px;width:80px}
+  .voltrack{flex:1;height:8px;border-radius:4px;background:var(--cardAlt);overflow:hidden;position:relative}
+  .volwin{position:absolute;top:0;bottom:0;background:rgba(192,138,62,.18)}
+  .volfill{height:100%;border-radius:4px}
+  .volval{font-size:12px;font-weight:700;width:28px;text-align:right}
+</style>
+</head>
+<body>
+
+<h1>Flux Fitness</h1>
+<p class="lede">
+  Marble and stone throughout: the figure and the interface stay black, white and grey, and colour
+  appears only where it carries meaning — terracotta for a fatigued or targeted muscle, bronze for
+  recovering, secondary, and completed. The anatomy is an illustrator-drawn, MIT-licensed asset with
+  the deltoid split into its three heads.
+</p>
+
+<h2>Muscle map</h2>
+<div class="anatomy">
+  <div class="fig">
+    <div class="toggle" id="tg"><button class="on" data-v="front">Front</button><button data-v="back">Back</button></div>
+    <div><svg id="big" height="480"></svg></div>
+    <div class="figcap">Recovery</div>
+  </div>
+  <div class="fig">
+    <div style="display:flex;gap:12px">
+      <div><svg id="tf" height="330"></svg><div class="figcap">Front</div></div>
+      <div><svg id="tb" height="330"></svg><div class="figcap">Back</div></div>
+    </div>
+    <div class="figcap" style="margin-top:10px">Target — lateral raise</div>
+  </div>
+  <div class="note">
+    <p><b>Recovery mode</b> colours every muscle by how recovered it is, from your logged sets. A rested
+    body is pure white marble; a trashed one is visibly marked in terracotta.</p>
+    <div class="legend">
+      <span><i class="sw" style="background:var(--marbleLight)"></i>Fresh</span>
+      <span><i class="sw" style="background:var(--marbleMid)"></i>Ready</span>
+      <span><i class="sw" style="background:var(--bronze)"></i>Recovering</span>
+      <span><i class="sw" style="background:var(--accent)"></i>Fatigued</span>
+      <span><i class="sw" style="background:var(--bodyMuscle)"></i>Untrained</span>
+    </div>
+    <p style="margin-top:18px"><b>Target mode</b> opens from the “i” on any exercise. Shown here on a
+    lateral raise: only the <i>outer</i> head of the deltoid lights terracotta, with traps in bronze as
+    the secondary — the split the upstream asset doesn't have on its own.</p>
+    <div class="legend">
+      <span><i class="sw" style="background:var(--accent)"></i>Primary</span>
+      <span><i class="sw" style="background:var(--bronze)"></i>Secondary</span>
+      <span><i class="sw" style="background:var(--bodyMuscle)"></i>Not targeted</span>
+    </div>
+  </div>
+</div>
+
+<h2>Completed-set treatment — pick one</h2>
+<div class="anatomy" style="gap:22px">
+  <div class="fig">
+    <div style="width:250px">
+      <div class="thr"><span class="th cset">SET</span><span class="th cprev">PREVIOUS</span>
+        <span class="th cin" style="text-align:center">KG</span>
+        <span class="th cin" style="text-align:center">REPS</span><span class="cchk"></span></div>
+      <div class="sr done"><span class="cset">1</span><span class="cprev">60kg × 10</span>
+        <div class="cin"><div class="cell">65</div></div><div class="cin"><div class="cell">8</div></div>
+        <span class="cchk"><span class="chk on" id="dA1"></span></span></div>
+      <div class="sr done"><span class="cset">2</span><span class="cprev">62.5kg × 8</span>
+        <div class="cin"><div class="cell">65</div></div><div class="cin"><div class="cell">8</div></div>
+        <span class="cchk"><span class="chk on" id="dA2"></span></span></div>
+      <div class="sr"><span class="cset">3</span><span class="cprev">62.5kg × 7</span>
+        <div class="cin"><div class="cell" style="color:var(--textFaint)">65</div></div>
+        <div class="cin"><div class="cell" style="color:var(--textFaint)">7</div></div>
+        <span class="cchk"><span class="chk" id="dA3"></span></span></div>
+    </div>
+    <div class="figcap">A · Filled bronze (current)</div>
+  </div>
+
+  <div class="fig">
+    <div style="width:250px">
+      <div class="thr"><span class="th cset">SET</span><span class="th cprev">PREVIOUS</span>
+        <span class="th cin" style="text-align:center">KG</span>
+        <span class="th cin" style="text-align:center">REPS</span><span class="cchk"></span></div>
+      <div class="sr done"><span class="cset">1</span><span class="cprev">60kg × 10</span>
+        <div class="cin"><div class="cell">65</div></div><div class="cin"><div class="cell">8</div></div>
+        <span class="cchk"><span class="chk deep" id="dB1"></span></span></div>
+      <div class="sr done"><span class="cset">2</span><span class="cprev">62.5kg × 8</span>
+        <div class="cin"><div class="cell">65</div></div><div class="cin"><div class="cell">8</div></div>
+        <span class="cchk"><span class="chk deep" id="dB2"></span></span></div>
+      <div class="sr"><span class="cset">3</span><span class="cprev">62.5kg × 7</span>
+        <div class="cin"><div class="cell" style="color:var(--textFaint)">65</div></div>
+        <div class="cin"><div class="cell" style="color:var(--textFaint)">7</div></div>
+        <span class="cchk"><span class="chk" id="dB3"></span></span></div>
+    </div>
+    <div class="figcap">B · Deep bronze, lighter tick</div>
+  </div>
+
+  <div class="fig">
+    <div style="width:250px">
+      <div class="thr"><span class="th cset">SET</span><span class="th cprev">PREVIOUS</span>
+        <span class="th cin" style="text-align:center">KG</span>
+        <span class="th cin" style="text-align:center">REPS</span><span class="cchk"></span></div>
+      <div class="sr done"><span class="cset">1</span><span class="cprev">60kg × 10</span>
+        <div class="cin"><div class="cell">65</div></div><div class="cin"><div class="cell">8</div></div>
+        <span class="cchk"><span class="chk bare" id="dC1"></span></span></div>
+      <div class="sr done"><span class="cset">2</span><span class="cprev">62.5kg × 8</span>
+        <div class="cin"><div class="cell">65</div></div><div class="cin"><div class="cell">8</div></div>
+        <span class="cchk"><span class="chk bare" id="dC2"></span></span></div>
+      <div class="sr"><span class="cset">3</span><span class="cprev">62.5kg × 7</span>
+        <div class="cin"><div class="cell" style="color:var(--textFaint)">65</div></div>
+        <div class="cin"><div class="cell" style="color:var(--textFaint)">7</div></div>
+        <span class="cchk"><span class="chk" id="dC3"></span></span></div>
+    </div>
+    <div class="figcap">C · Tick only, no fill</div>
+  </div>
+
+  <div class="note" style="min-width:220px">
+    <p>The rest of the screen is now monochrome — exercise names, the coaching line, the timer and
+    warm-up markers all sit in marble and grey. These three differ only in how a finished set is
+    marked.</p>
+    <p style="margin-top:14px"><b>A</b> is the loudest and reads fastest across the room.
+    <b>B</b> keeps the button shape but drops the shout. <b>C</b> is quietest — the tick alone,
+    with the row's faint lift doing the rest.</p>
+  </div>
+</div>
+
+<h2>Screens</h2>
+<div class="phones" id="phones"></div>
+
+<script src="body-data.js"></script>
+<script>
+const NS='http://www.w3.org/2000/svg';
+const el=(t,a)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e;};
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+/* ---------- icons: Classical Line ---------- */
+const ICONS={
+  home:'M4,20.5 V11 C4,6.9 7.6,3.5 12,3.5 C16.4,3.5 20,6.9 20,11 V20.5 M4,20.5 H20',
+  plan:'M5,6.5 C5,5.1 6.1,4 7.5,4 C8.9,4 10,5.1 10,6.5 V17.5 C10,18.9 11.1,20 12.5,20 H17 C18.4,20 19.5,18.9 19.5,17.5 V6.5 C19.5,5.1 18.4,4 17,4 H7.5 M12.8,8.5 H16.6 M12.8,12 H16.6 M12.8,15.5 H15.2',
+  workout:'M2.8,9.5 V14.5 M6.3,6 V18 M17.7,6 V18 M21.2,9.5 V14.5 M6.3,12 H17.7',
+  library:'M6.5,6.5 H19.5 M6.5,12 H19.5 M6.5,17.5 H14.5 M3.2,6.5 H3.21 M3.2,12 H3.21 M3.2,17.5 H3.21',
+  profile:'M12,3.8 C14.3,3.8 16.1,5.6 16.1,7.9 C16.1,10.2 14.3,12 12,12 C9.7,12 7.9,10.2 7.9,7.9 C7.9,5.6 9.7,3.8 12,3.8 Z M4.8,20.5 C4.8,16.4 8,13.4 12,13.4 C16,13.4 19.2,16.4 19.2,20.5',
+  info:'M12,3.5 A8.5,8.5 0 1 1 11.99,3.5 Z M12,10.5 V16.5 M12,7.4 H12.01',
+  search:'M11,4 A7,7 0 1 1 10.99,4 Z M16.2,16.2 L20.5,20.5',
+  close:'M6,6 L18,18 M18,6 L6,18',
+  check:'M5,12.5 L9.5,17 L19,7',
+  back:'M14.5,5 L7.5,12 L14.5,19',
+  trophy:'M7.5,4 H16.5 V9 C16.5,11.5 14.5,13.5 12,13.5 C9.5,13.5 7.5,11.5 7.5,9 Z M7.5,5.5 H4.5 V7 C4.5,8.7 5.8,10 7.5,10 M16.5,5.5 H19.5 V7 C19.5,8.7 18.2,10 16.5,10 M12,13.5 V17 M8.5,20 H15.5 M9.5,17 H14.5 L15.5,20 H8.5 Z',
+  lock:'M7,10.5 V7.5 C7,4.7 9.2,2.5 12,2.5 C14.8,2.5 17,4.7 17,7.5 V10.5 M5.5,10.5 H18.5 C19.3,10.5 20,11.2 20,12 V19.5 C20,20.3 19.3,21 18.5,21 H5.5 C4.7,21 4,20.3 4,19.5 V12 C4,11.2 4.7,10.5 5.5,10.5 Z M12,14.5 V17',
+  chart:'M4,20 V4 M4,20 H20 M8,16.5 V12 M12,16.5 V7.5 M16,16.5 V10',
+  scale:'M12,3.5 A8.5,8.5 0 1 1 11.99,3.5 Z M12,12 L15.5,8 M8.5,15.5 H15.5',
+  plates:'M8,4.5 H16 M8,19.5 H16 M6.5,7.5 V16.5 M9.5,5.5 V18.5 M14.5,5.5 V18.5 M17.5,7.5 V16.5 M11.5,4 V20 M12.5,4 V20',
+  sparkle:'M12,3 L13.6,9.1 L19.5,10.8 L13.6,12.5 L12,18.6 L10.4,12.5 L4.5,10.8 L10.4,9.1 Z M18.5,16 L19.2,18.3 L21.5,19 L19.2,19.7 L18.5,22 L17.8,19.7 L15.5,19 L17.8,18.3 Z',
+  calendar:'M4.5,6 H19.5 V20 H4.5 Z M8,3.5 V7.5 M16,3.5 V7.5 M4.5,10.5 H19.5',
+  flame:'M12,21.5 C8.4,21.5 5.5,18.8 5.5,15.2 C5.5,11 9.5,8.5 10.5,4 C13.5,6 14.5,9 14.5,11 C15.5,10.5 16,9.5 16,8.5 C17.6,10.3 18.5,12.7 18.5,15.2 C18.5,18.8 15.6,21.5 12,21.5 Z',
+  edit:'M4,20 L4.8,16.2 L16.3,4.7 C17.1,3.9 18.3,3.9 19.1,4.7 C19.9,5.5 19.9,6.7 19.1,7.5 L7.6,19 Z',
+  chevron:'M9,5 L16,12 L9,19',
+};
+function icon(name,size,color,sw){
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" style="display:block">
+    <path d="${ICONS[name]}" fill="none" stroke="${color}" stroke-width="${sw||1.6}"
+      stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
+
+/* ---------- body map ---------- */
+const SLUG={chest:'chest',abs:'abs',obliques:'obliques',biceps:'biceps',triceps:'triceps',
+  forearm:'forearms',trapezius:'traps','upper-back':'lats','lower-back':'lower_back',
+  gluteal:'glutes',hamstring:'hamstrings',adductors:'hamstrings',quadriceps:'quads',
+  calves:'calves',tibialis:'calves',neck:null,head:null,hair:null,hands:null,feet:null,knees:null,ankles:null};
+const REC={chest:20,abs:74,obliques:80,biceps:92,triceps:38,front_delts:52,side_delts:18,
+  rear_delts:88,traps:58,lats:66,lower_back:30,quads:16,hamstrings:36,glutes:46,calves:95,forearms:96};
+function recColor(p){return p>=88?css('--marbleLight'):p>=65?css('--marbleMid'):p>=35?css('--bronze'):css('--accent');}
+
+function drawBody(svg,view,mode,primary,secondary){
+  svg.innerHTML='';
+  const B=window.BODY, front=view==='front';
+  svg.setAttribute('viewBox',front?B.FRONT_VIEW_BOX:B.BACK_VIEW_BOX);
+  const regions=front?B.FRONT_REGIONS:B.BACK_REGIONS;
+  const colorFor=m=> mode==='recovery' ? recColor(REC[m]??100)
+    : primary.includes(m)?css('--accent') : (secondary||[]).includes(m)?css('--bronze') : css('--bodyMuscle');
+  const line=css('--bodyLine');
+
+  for(const r of regions){
+    if(r.slug==='deltoids')continue;
+    const m=SLUG[r.slug];
+    const fill=m?colorFor(m):css('--bodyBase');
+    for(const d of [...r.left,...r.right])
+      svg.appendChild(el('path',{d,fill,stroke:line,'stroke-width':1.4,'stroke-linejoin':'round'}));
+  }
+  const split=front?B.DELTOID_SPLIT.front:B.DELTOID_SPLIT.back;
+  const delt=regions.find(r=>r.slug==='deltoids');
+  const inner=front?'front_delts':'rear_delts';
+  for(const side of ['left','right']){
+    const box=split[side],paths=delt[side],hi=side==='left';
+    const inR=hi?{x:box.cut,w:box.x+box.w-box.cut}:{x:box.x,w:box.cut-box.x};
+    const outR=hi?{x:box.x-2,w:box.cut-box.x+2}:{x:box.cut,w:box.x+box.w-box.cut+2};
+    const defs=el('defs',{});
+    const mk=(id,r)=>{const cp=el('clipPath',{id});cp.appendChild(el('rect',{x:r.x,y:box.y-4,width:r.w,height:box.h+8}));defs.appendChild(cp);};
+    const i1=`di-${view}-${side}-${svg.id}`,i2=`do-${view}-${side}-${svg.id}`;
+    mk(i1,inR);mk(i2,outR);svg.appendChild(defs);
+    const g1=el('g',{'clip-path':`url(#${i1})`});paths.forEach(d=>g1.appendChild(el('path',{d,fill:colorFor(inner)})));svg.appendChild(g1);
+    const g2=el('g',{'clip-path':`url(#${i2})`});paths.forEach(d=>g2.appendChild(el('path',{d,fill:colorFor('side_delts')})));svg.appendChild(g2);
+    paths.forEach(d=>svg.appendChild(el('path',{d,fill:'none',stroke:line,'stroke-width':1.4,'stroke-linejoin':'round'})));
+  }
+}
+
+let bigView='front';
+drawBody(document.getElementById('big'),'front','recovery');
+drawBody(document.getElementById('tf'),'front','target',['side_delts'],['traps']);
+drawBody(document.getElementById('tb'),'back','target',['side_delts'],['traps']);
+document.querySelectorAll('#tg button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#tg button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); bigView=b.dataset.v;
+  drawBody(document.getElementById('big'),bigView,'recovery');
+});
+
+/* ---------- phone screens ---------- */
+const LAB={quads:'Quads',chest:'Chest',side_delts:'Side Delts',lower_back:'Lower Back'};
+const rows=['side_delts','quads','chest','lower_back'].map(m=>{
+  const p=REC[m];
+  return `<div class="mrow"><span class="mname">${LAB[m]}</span>
+    <span class="mbar"><i style="width:${p}%;background:${recColor(p)}"></i></span>
+    <span class="mpct" style="color:${recColor(p)}">${p}%</span></div>`;
+}).join('');
+
+const tabbar=(active)=>`<div class="tabbar">${
+  [['home','Home'],['plan','Plan'],['workout','Workout'],['chart','Progress'],['profile','Profile']]
+  .map(([k,l])=>`<div class="tab${k===active?' on':''}">
+    <div style="display:flex;justify-content:center">${icon(k,22,k===active?css('--accent'):css('--textFaint'),k===active?1.9:1.6)}</div>
+    <div class="tl">${l}</div></div>`).join('')}</div>`;
+
+const CAT={chest:'#B4472F',back:'#7A6E5E',shoulders:'#C08A3E',arms:'#8C7A62',legs:'#6E7A63',core:'#9A8C6A'};
+const lib=[
+  ['Barbell Bench Press','chest','Chest','Barbell','compound'],
+  ['Incline Dumbbell Press','chest','Chest · Front Delts','Dumbbell','compound'],
+  ['Pull-Up','back','Lats','Bodyweight','compound'],
+  ['Barbell Row','back','Lats · Traps','Barbell','compound'],
+  ['Lateral Raise','shoulders','Side Delts','Dumbbell','isolation'],
+  ['Barbell Curl','arms','Biceps','Barbell','isolation'],
+  ['Back Squat','legs','Quads · Glutes','Barbell','compound'],
+].map(([n,c,m,e,mech])=>{
+  const col=CAT[c];
+  const ini=n.split(' ').filter(w=>w.length>2).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+  return `<div class="lrow">
+    <div class="thumb" style="background:${col}22;border-color:${col}55;color:${col}">${ini}</div>
+    <div class="lb"><div class="lt">${n}</div><div class="ls">${m}</div><div class="lm">${e} • ${mech}</div></div>
+    ${icon('info',22,css('--textDim'),1.5)}</div>`;
+}).join('');
+
+const setRow=(n,prev,kg,reps,rpe,done,pr,warm)=>`<div class="sr${done?' done':''}">
+  <span class="cset">${warm?'<span class="wtag">W</span>':n}${pr?`<span style="display:inline-block">${icon('trophy',11,css('--bronze'),2)}</span>`:''}</span>
+  <span class="cprev">${prev}</span>
+  <div class="cin"><div class="cell"${done?'':' style="color:var(--textFaint)"'}>${kg}</div></div>
+  <div class="cin"><div class="cell"${done?'':' style="color:var(--textFaint)"'}>${reps}</div></div>
+  <div class="crpe"><div class="cell" style="font-size:13px${done?'':';color:var(--textFaint)'}">${rpe}</div></div>
+  <span class="cchk"><span class="chk${done?' on':''}">${icon('check',15,done?css('--onAccent'):css('--textFaint'),2.4)}</span></span></div>`;
+const sug=(t)=>`<div class="sug">${icon('sparkle',12,css('--textFaint'),1.5)}<span>${t}</span></div>`;
+const thead=()=>`<div class="thr"><span class="th cset">SET</span><span class="th cprev">PREVIOUS</span>
+  <span class="th cin" style="text-align:center">KG</span>
+  <span class="th cin" style="text-align:center">REPS</span>
+  <span class="th crpe" style="text-align:center">RPE</span><span class="cchk"></span></div>`;
+
+const SCREENS=[
+  {label:'Home — recovery dashboard', html:`
+    <div class="screen"><div class="body">
+      <div class="hero">Hey Hugo</div><div class="sub">3 of 4 sessions this week</div>
+      <div class="card"><div class="statrow">
+        <div class="stat"><div class="v">3</div><div class="l">Workouts</div></div>
+        <div class="stat"><div class="v">47</div><div class="l">Sets</div></div>
+        <div class="stat"><div class="v">28,340</div><div class="l">Volume</div></div></div></div>
+      <button class="btn">Start Workout</button>
+      <div class="sech"><h3>Muscle Recovery</h3></div>
+      <div class="card" style="display:flex;flex-direction:column;align-items:center">
+        <div class="toggle"><button class="on">Front</button><button>Back</button></div>
+        <svg id="homeBody" height="330"></svg></div>
+      <div class="sech"><h3>Still Recovering</h3></div>
+      <div class="card">${rows}</div>
+      <div class="sech"><h3>Last Workout</h3><a href="#">See all</a></div>
+      <div class="card"><div style="font-weight:600;font-size:16px">Evening Workout</div>
+        <div style="font-size:12px;color:var(--accent);margin-top:3px">18 sets · 9,240kg</div>
+        <div style="font-size:12px;color:var(--textDim);margin-top:6px;line-height:1.5">
+          Barbell Bench Press · Incline Dumbbell Press · Cable Fly · Triceps Pushdown</div></div>
+      <div style="height:20px"></div>
+    </div>${tabbar('home')}</div>`},
+
+  {label:'Workout — progression + RPE + plates', html:`
+    <div class="screen">
+      <div class="woh"><div><div class="wot">Upper A</div><div class="wtm">24:18</div></div>
+        <button class="btn bronze sm">Finish</button></div>
+      <div class="wsum"><div><div class="v">7</div><div class="l">Sets</div></div>
+        <div><div class="v">4,180</div><div class="l">Volume (kg)</div></div>
+        <div><div class="v">2</div><div class="l">Exercises</div></div></div>
+      <div class="body">
+        <div class="exb"><div class="exh"><span class="exn">Barbell Bench Press</span>
+          <div style="display:flex;gap:10px;align-items:center">${icon('info',22,css('--textDim'),1.5)}${icon('close',18,css('--textDim'),1.6)}</div></div>
+          ${sug('You cleared 10 reps on every set — go up to 67.5kg')}
+          ${thead()}
+          ${setRow(1,'—',40,10,'–',true,false,true)}
+          ${setRow(1,'60kg × 10',65,8,'8',true,false,false)}
+          ${setRow(2,'62.5kg × 8',65,8,'9',true,true,false)}
+          ${setRow(3,'62.5kg × 7',65,7,'',false,false,false)}
+          <div style="display:flex;gap:8px;margin-top:6px">
+            <div class="addset" style="flex:1">+ Add Set</div>
+            <div class="addset" style="width:44px;display:flex;align-items:center;justify-content:center">
+              ${icon('plates',16,css('--textSecondary'),1.6)}</div>
+          </div></div>
+        <div class="exb"><div class="exh"><span class="exn">Incline Dumbbell Press</span>
+          <div style="display:flex;gap:10px;align-items:center">${icon('info',22,css('--textDim'),1.5)}${icon('close',18,css('--textDim'),1.6)}</div></div>
+          ${sug('Aim for 12 reps at 24kg')}
+          ${thead()}
+          ${setRow(1,'24kg × 12',24,12,'8',true,false,false)}
+          ${setRow(2,'24kg × 11',24,11,'',false,false,false)}
+          <div class="addset">+ Add Set</div></div>
+        <button class="btn sec">+ Add Exercise</button><div style="height:16px"></div>
+      </div>
+      <div class="rest"><div class="fill"></div><span class="adj">−15s</span>
+        <div><div class="lab">REST</div><div class="time">1:47</div></div>
+        <span class="adj">+15s</span><span class="skip">Skip</span></div>
+    </div>`},
+
+  {label:'Exercise library — 162 exercises', html:`
+    <div class="screen"><div class="body">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div class="hero">Exercises</div><span style="font-size:12px;color:var(--textDim)">162 of 162</span></div>
+      <div class="search">${icon('search',17,css('--textDim'),1.6)}
+        <input placeholder="Search exercise, muscle or equipment" /></div>
+      <div class="chips"><span class="chip on">All</span><span class="chip">Chest</span>
+        <span class="chip">Back</span><span class="chip">Shoulders</span><span class="chip">Arms</span></div>
+      <div class="chips"><span class="chip on">Any Equipment</span><span class="chip">Barbell</span>
+        <span class="chip">Dumbbell</span><span class="chip">Cable</span></div>
+      ${lib}
+    </div>${tabbar('chart')}</div>`},
+
+  {label:'Plan — AI planner, Pro-gated', html:`
+    <div class="screen"><div class="body">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="hero">Plan</div><span class="probadge">PRO</span></div>
+      <div class="sub">4 days · 45 min · build muscle</div>
+
+      <div style="display:flex;align-items:center;gap:8px;margin-top:16px;background:var(--cardAlt);
+                  border-radius:12px;padding:12px 16px">
+        ${icon('edit',16,css('--textSecondary'),1.6)}
+        <span style="font-size:13px;font-weight:600;color:var(--textSecondary);flex:1">Planner settings</span>
+        ${icon('chevron',16,css('--textDim'),1.7)}</div>
+
+      <div class="card">
+        <div class="ctitle">SESSION LENGTH</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <span class="chip">30m</span><span class="chip on">45m</span><span class="chip">60m</span>
+          <span class="chip">75m</span><span class="chip">90m</span></div>
+        <div class="ctitle" style="margin-top:16px">SPLIT STYLE</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <span class="chip">Let it choose</span><span class="chip on">Upper / Lower</span>
+          <span class="chip">Push Pull Legs</span></div>
+        <div class="ctitle" style="margin-top:16px">EMPHASIS · PICK UP TO 3</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <span class="chip on">Side Delts</span><span class="chip on">Lats</span>
+          <span class="chip">Chest</span><span class="chip">Quads</span></div>
+        <div class="ctitle" style="margin-top:16px">INJURIES / THINGS TO AVOID</div>
+        <div style="background:var(--bgElevated);border:1px solid var(--border);border-radius:12px;
+                    padding:12px;font-size:14px;color:var(--textSecondary);min-height:52px">
+          dodgy left shoulder, no overhead pressing</div>
+      </div>
+
+      <div style="margin-top:16px">
+        <div class="locked">
+          <div class="lockrow">${icon('lock',18,css('--bronze'),1.7)}
+            <h4>AI Workout Planner</h4><span class="probadge">PRO</span></div>
+          <p class="lockblurb">Builds a split around your goal, equipment, schedule, injuries and current recovery.</p>
+          <div class="lockcta">Unlock with Pro</div>
+        </div>
+      </div>
+
+      <div style="height:20px"></div>
+    </div>${tabbar('plan')}</div>`},
+
+  {label:'Paywall — what free keeps', html:`
+    <div class="screen"><div class="body">
+      <div style="display:flex;align-items:center;gap:4px;color:var(--accent);font-size:15px;font-weight:600">
+        ${icon('back',18,css('--accent'),1.8)} Back</div>
+      <div style="text-align:center;padding:16px 0 8px">
+        <div style="display:flex;justify-content:center;margin-bottom:8px">${icon('sparkle',30,css('--bronze'),1.5)}</div>
+        <div class="hero">Flux Pro</div>
+        <div class="sub" style="padding:0 12px">Everything you need to train is free, forever. Pro adds the thinking.</div>
+      </div>
+
+      <div class="feat hl">${icon('sparkle',22,css('--bronze'),1.6)}
+        <div><div style="font-size:16px;font-weight:600">AI Workout Planner</div>
+        <div style="font-size:13px;color:var(--textDim);margin-top:3px;line-height:1.45">Builds a split around your goal, equipment, schedule, injuries and current recovery.</div></div></div>
+      <div class="feat">${icon('chart',22,css('--bronze'),1.6)}
+        <div><div style="font-size:16px;font-weight:600">Strength &amp; Volume Charts</div>
+        <div style="font-size:13px;color:var(--textDim);margin-top:3px;line-height:1.45">Estimated 1RM trends per lift and weekly volume by muscle.</div></div></div>
+      <div class="feat">${icon('plan',22,css('--bronze'),1.6)}
+        <div><div style="font-size:16px;font-weight:600">Unlimited Routines</div>
+        <div style="font-size:13px;color:var(--textDim);margin-top:3px;line-height:1.45">Save as many as you like. Free includes three.</div></div></div>
+
+      <div class="ctitle" style="margin-top:22px">ALWAYS FREE</div>
+      <div style="background:var(--cardAlt);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:8px">
+        ${['Unlimited workout logging — no session caps','All 162 exercises with full instructions',
+           'Muscle recovery map and full history','Rest timer, PR detection, plate calculator',
+           'Progression suggestions on every lift']
+          .map(t=>`<div style="display:flex;gap:8px;align-items:flex-start">${icon('check',16,css('--textDim'),2.2)}
+            <span style="font-size:13px;color:var(--textSecondary);line-height:1.45;flex:1">${t}</span></div>`).join('')}
+      </div>
+
+      <div class="ctitle" style="margin-top:22px">CHOOSE A PLAN</div>
+      <div class="plan-row"><div style="flex:1"><div style="font-size:15px;font-weight:600">Monthly</div>
+        <div style="font-size:12px;color:var(--textDim)">per month</div></div>
+        <div style="font-size:16px;font-weight:600">€4.99</div></div>
+      <div class="plan-row on"><div style="flex:1"><div style="font-size:15px;font-weight:600">Yearly</div>
+        <div style="font-size:12px;color:var(--textDim)">per year</div></div>
+        <span style="background:var(--accentSoft);border-radius:8px;padding:3px 7px;font-size:10px;
+                     font-weight:700;color:var(--accent);letter-spacing:1px">SAVE 50%</span>
+        <div style="font-size:16px;font-weight:600;color:var(--bronze)">€29.99</div></div>
+      <div class="plan-row"><div style="flex:1"><div style="font-size:15px;font-weight:600">Lifetime</div>
+        <div style="font-size:12px;color:var(--textDim)">once</div></div>
+        <div style="font-size:16px;font-weight:600">€79.99</div></div>
+
+      <button class="btn">Start 7-Day Free Trial</button>
+      <div style="font-size:12px;color:var(--textFaint);text-align:center;margin-top:12px;line-height:1.5">
+        Cancel any time. Your logged workouts stay yours whether you subscribe or not.</div>
+      <div style="height:24px"></div>
+    </div></div>`},
+
+  {label:'Progress — charts and volume', html:`
+    <div class="screen"><div class="body">
+      <div class="hero">Progress</div>
+      <div class="card"><div class="statrow">
+        <div class="stat"><div class="v">28</div><div class="l">Workouts</div></div>
+        <div class="stat"><div class="v">412</div><div class="l">Total sets</div></div>
+        <div class="stat"><div class="v">184k</div><div class="l">Volume</div></div></div></div>
+
+      <div class="sech"><h3>Strength Trend</h3></div>
+      <div class="card">
+        <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px">
+          <span class="chip on">Barbell Bench Press</span><span class="chip">Back Squat</span>
+          <span class="chip">Deadlift</span></div>
+        <svg width="270" height="120" style="margin-top:12px">
+          <line x1="10" y1="110" x2="260" y2="110" stroke="${css('--border')}" stroke-width="1"/>
+          <polyline points="10,95 52,88 94,84 136,66 178,58 220,44 258,30" fill="none"
+            stroke="${css('--bronze')}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+          ${[[10,95],[52,88],[94,84],[136,66],[178,58],[220,44]].map(([x,y])=>
+            `<circle cx="${x}" cy="${y}" r="2.5" fill="${css('--bronze')}"/>`).join('')}
+          <circle cx="258" cy="30" r="4" fill="${css('--accent')}"/>
+        </svg>
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-top:4px">
+          <span style="color:var(--textDim)">72kg – 89kg</span>
+          <span style="color:var(--bronze);font-weight:700">+17kg over 7 sessions</span></div>
+        <div style="font-size:12px;color:var(--bronze);margin-top:12px">Best: 85kg × 5 · e1RM 99kg</div>
+      </div>
+
+      <div class="sech"><h3>Weekly Volume</h3></div>
+      <div class="card">
+        <div style="font-size:12px;color:var(--textDim);line-height:1.5;margin-bottom:12px">
+          Working sets per muscle over the last 7 days. The shaded band is the range most lifters grow in.</div>
+        ${[['Chest',14,10,20],['Lats',18,10,22],['Side Delts',9,12,26],['Quads',22,10,20],
+           ['Hamstrings',8,8,16],['Biceps',12,8,20]].map(([l,v,lo,hi])=>{
+          const scale=Math.max(hi*1.15,v*1.1);
+          const tone = v>hi?css('--accent') : v>=lo?css('--bronze') : css('--textDim');
+          return `<div class="volrow"><span class="vollabel">${l}</span>
+            <span class="voltrack">
+              <span class="volwin" style="left:${(lo/scale)*100}%;width:${((hi-lo)/scale)*100}%"></span>
+              <span class="volfill" style="width:${(v/scale)*100}%;background:${tone}"></span></span>
+            <span class="volval" style="color:${tone}">${v}</span></div>`;}).join('')}
+      </div>
+
+      <div class="sech"><h3>Bodyweight</h3><a href="#">Log</a></div>
+      <div class="card">
+        <svg width="270" height="90">
+          <line x1="10" y1="80" x2="260" y2="80" stroke="${css('--border')}" stroke-width="1"/>
+          <polyline points="10,55 52,52 94,48 136,50 178,44 220,40 258,36" fill="none"
+            stroke="${css('--bronze')}" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="258" cy="36" r="4" fill="${css('--accent')}"/>
+        </svg>
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-top:4px">
+          <span style="color:var(--textDim)">69.2kg – 71.8kg</span>
+          <span style="color:var(--bronze);font-weight:700">+2.6kg over 7 weeks</span></div>
+      </div>
+
+      <div class="sech"><h3>Your Data</h3></div>
+      <div class="locked">
+        <div class="lockrow">${icon('lock',18,css('--bronze'),1.7)}
+          <h4>Export Your Data</h4><span class="probadge">PRO</span></div>
+        <p class="lockblurb">Download your full training history as CSV. Your data is never locked in.</p>
+        <div class="lockcta">Unlock with Pro</div></div>
+      <div style="height:20px"></div>
+    </div>${tabbar('chart')}</div>`},
+
+  {label:'Exercise detail — the “i” button', html:`
+    <div class="screen"><div class="body">
+      <div style="display:flex;align-items:center;gap:4px;color:var(--accent);font-size:15px;font-weight:600;margin-bottom:8px">
+        ${icon('back',18,css('--accent'),1.8)} Back</div>
+      <div class="hero" style="font-size:24px">Lateral Raise</div>
+      <div class="tagrow"><span class="chip">Shoulders</span><span class="chip">Dumbbell</span>
+        <span class="chip">isolation</span><span class="chip">beginner</span></div>
+      <div class="card" style="display:flex;flex-direction:column;align-items:center">
+        <div class="ctitle" style="align-self:flex-start">MUSCLES WORKED</div>
+        <div style="display:flex;gap:14px">
+          <div style="text-align:center"><svg id="detF" height="230"></svg><div class="figcap">Front</div></div>
+          <div style="text-align:center"><svg id="detB" height="230"></svg><div class="figcap">Back</div></div></div>
+        <div class="legend" style="justify-content:center">
+          <span><i class="sw" style="background:var(--accent)"></i>Primary</span>
+          <span><i class="sw" style="background:var(--bronze)"></i>Secondary</span></div>
+        <div class="mcols"><div class="mcol"><h4>PRIMARY</h4><p style="color:var(--accent)">Side Delts</p></div>
+          <div class="mcol"><h4>SECONDARY</h4><p style="color:var(--bronze)">Traps</p></div></div>
+      </div>
+      <div class="card"><div class="ctitle">YOUR NUMBERS</div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0">
+          <span style="font-size:14px;color:var(--textSecondary)">Best set</span>
+          <span style="font-size:14px;font-weight:600">14kg × 12
+            <span style="color:var(--textDim);font-weight:400;font-size:12px">(e1RM 20kg)</span></span></div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0">
+          <span style="font-size:14px;color:var(--textSecondary)">Last session</span>
+          <span style="font-size:14px;font-weight:600">12×15, 12×13, 10×15</span></div></div>
+      <div class="card"><div class="ctitle">HOW TO PERFORM</div>
+        <div class="step"><span class="stepn">1</span><span class="stept">Stand with a dumbbell in each hand at your sides, slight bend in the elbows.</span></div>
+        <div class="step"><span class="stepn">2</span><span class="stept">Raise the arms out to the sides until they reach shoulder height.</span></div>
+        <div class="step"><span class="stepn">3</span><span class="stept">Lead with the elbows, not the hands.</span></div></div>
+      <div class="card"><div class="ctitle">COACHING NOTES</div>
+        <div class="tip"><i>▸</i><span>Almost everyone goes too heavy here. Light and strict beats heavy and swung.</span></div></div>
+      <button class="btn">Add to Workout</button><div style="height:24px"></div>
+    </div></div>`},
+];
+
+const host=document.getElementById('phones');
+SCREENS.forEach(s=>{
+  const w=document.createElement('div');
+  w.innerHTML=`<div class="phone">
+      <div class="island"></div>
+      <div class="statusbar"><span class="time">9:41</span>
+        <span class="right">▮▮▮ ᯤ ▰</span></div>
+      ${s.html}
+      <div class="homebar"><i></i></div>
+    </div><div class="plabel">${s.label}</div>`;
+  host.appendChild(w);
+});
+['dA1','dA2'].forEach(id=>document.getElementById(id).innerHTML=icon('check',15,css('--onAccent'),2.4));
+document.getElementById('dA3').innerHTML=icon('check',15,css('--textFaint'),2.4);
+['dB1','dB2'].forEach(id=>document.getElementById(id).innerHTML=icon('check',15,'#E8CFA4',2.4));
+document.getElementById('dB3').innerHTML=icon('check',15,css('--textFaint'),2.4);
+['dC1','dC2'].forEach(id=>document.getElementById(id).innerHTML=icon('check',17,css('--bronze'),2.4));
+document.getElementById('dC3').innerHTML=icon('check',15,css('--textFaint'),2.4);
+
+drawBody(document.getElementById('homeBody'),'front','recovery');
+drawBody(document.getElementById('detF'),'front','target',['side_delts'],['traps']);
+drawBody(document.getElementById('detB'),'back','target',['side_delts'],['traps']);
+</script>
+</body>
+</html>

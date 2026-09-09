@@ -1,0 +1,192 @@
+<title>ATLAS Exercise Library</title>
+<style>
+  :root { --bg:#0D0D0E; --card:#181715; --alt:#1F1E1C; --line:#2A2825; --ink:#F0EEE9;
+          --sec:#A8A49B; --dim:#8C887F; --faint:#5A5750; --accent:#B4472F; --bronze:#C08A3E; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif; line-height:1.6; }
+  .page { max-width:1080px; margin:0 auto; padding:44px 26px 80px; }
+  h1 { font-size:29px; font-weight:700; letter-spacing:6px; margin:0; }
+  h1 b { color:var(--bronze); }
+  .lede { color:var(--dim); font-size:14px; margin:14px 0 0; max-width:76ch; }
+  .buckets { display:flex; gap:10px; flex-wrap:wrap; margin-top:24px; }
+  .bucket { background:var(--card); border:1px solid var(--line); border-radius:10px;
+    padding:12px 16px; min-width:92px; }
+  .bucket b { display:block; font-size:22px; font-weight:700; font-variant-numeric:tabular-nums; }
+  .bucket span { font-size:11px; color:var(--dim); letter-spacing:.4px; }
+  .ex { background:var(--card); border:1px solid var(--line); border-radius:16px;
+    padding:24px 26px; margin-top:26px; }
+  .ex h2 { margin:0; font-size:23px; font-weight:600; letter-spacing:-.3px; }
+  .chips { display:flex; gap:7px; flex-wrap:wrap; margin-top:12px; }
+  .chips span { font-size:11.5px; color:var(--sec); background:var(--alt);
+    border:1px solid var(--line); border-radius:99px; padding:4px 10px; text-transform:capitalize; }
+  .chips .pat { color:var(--bronze); border-color:rgba(192,138,62,.4); }
+  .summary { color:var(--dim); font-size:13px; margin:12px 0 0; }
+  .cols { display:grid; grid-template-columns:1.35fr 1fr; gap:28px; margin-top:22px; }
+  h3 { font-size:10.5px; font-weight:700; letter-spacing:1.6px; color:var(--dim);
+    text-transform:uppercase; margin:0 0 12px; }
+  .mistake { display:flex; gap:11px; margin-top:12px; }
+  .mistake i { flex:0 0 auto; width:18px; height:18px; border-radius:9px; margin-top:3px;
+    background:rgba(180,71,47,.15); color:var(--accent); font-size:10px; font-weight:700;
+    display:flex; align-items:center; justify-content:center; font-style:normal; }
+  .mistake p { margin:0; font-size:13.5px; color:var(--sec); line-height:1.62; }
+  .mistake.specific i { background:rgba(192,138,62,.18); color:var(--bronze); }
+  .mistake.specific p { color:var(--ink); }
+  .note { font-size:11.5px; color:var(--faint); margin-top:16px; line-height:1.6; }
+  .access { font-size:11.5px; color:var(--faint); margin:-4px 0 8px; text-transform:capitalize; }
+  .row { display:flex; flex-direction:column; padding:9px 0; border-bottom:1px solid var(--line); }
+  .row b { font-size:14px; font-weight:600; }
+  .row span { font-size:11.5px; color:var(--faint); margin-top:1px; }
+  @media (max-width:860px) { .cols { grid-template-columns:1fr; } }
+</style>
+<div class="page">
+  <h1>ATL<b>A</b>S</h1>
+  <p class="lede">
+    176 exercises. Common mistakes come from the movement pattern rather than being
+    written out per exercise, so the coaching on a Smith incline press is the same coaching as on a
+    barbell bench — because the errors are the same. Variations and substitutions are scored from
+    the data, not listed by hand, which is how the substitution list can respect the equipment you
+    actually have.
+  </p>
+  <div class="buckets"><div class="bucket"><b>38</b><span>Press</span></div><div class="bucket"><b>33</b><span>Pull</span></div><div class="bucket"><b>35</b><span>Arms</span></div><div class="bucket"><b>18</b><span>Squat</span></div><div class="bucket"><b>24</b><span>Hinge</span></div><div class="bucket"><b>4</b><span>Calves</span></div><div class="bucket"><b>24</b><span>Core</span></div></div>
+  <section class="ex">
+  <header>
+    <h2>Barbell Bench Press</h2>
+    <div class="chips">
+      <span>Barbell</span>
+      <span>compound</span>
+      <span>intermediate</span>
+      <span class="pat">Horizontal Press</span>
+    </div>
+    <p class="summary">Pressing a load away from the chest while lying or seated upright.</p>
+  </header>
+
+  <div class="cols">
+    <div class="col wide">
+      <h3>Common mistakes</h3>
+      <div class="mistake specific">
+               <i>✕</i><p>Letting the wrists bend back. The bar sits over the heel of the palm with a straight wrist, or the load goes through the joint instead of the forearm.</p></div><div class="mistake specific">
+               <i>✕</i><p>Feet moving mid-set. Plant them once, drive them into the floor, and leave them there — leg drive is a real part of this lift.</p></div><div class="mistake">
+               <i>✕</i><p>Letting the shoulder blades roll forward at the top. They stay pinned down and back for the whole set — losing that position is what turns a chest press into a shoulder press, and it is where most bench-related shoulder pain starts.</p></div><div class="mistake">
+               <i>✕</i><p>Flaring the elbows to ninety degrees. Around 45–70° from the torso keeps the load on the chest and off the front of the shoulder capsule.</p></div><div class="mistake">
+               <i>✕</i><p>Bouncing the bar off the ribs to get out of the bottom. It hides a weak position rather than fixing one, and the rep you cannot do without a bounce is the rep you actually need to train.</p></div><div class="mistake">
+               <i>✕</i><p>Half-repping under a load that is too heavy. A full stretch at the bottom is where most of the growth stimulus lives.</p></div>
+      <p class="note">The first 2 are specific to this lift. The rest are
+             true of every horizontal press and are written once, on the pattern.</p>
+    </div>
+
+    <div class="col">
+      <h3>Variations</h3>
+      <div class="row"><b>Incline Barbell Press</b><span>Barbell · intermediate</span></div><div class="row"><b>Decline Barbell Press</b><span>Barbell · intermediate</span></div><div class="row"><b>Floor Press</b><span>Barbell · intermediate</span></div><div class="row"><b>Deficit Push-Up</b><span>Bodyweight · intermediate</span></div>
+
+      <h3 style="margin-top:26px">If you can't do this one</h3>
+      <p class="access">Equipment: home dumbbells</p>
+      <div class="row"><b>Flat Dumbbell Press</b><span>Same movement on dumbbells</span></div><div class="row"><b>Deficit Push-Up</b><span>Same movement on bodyweight</span></div><div class="row"><b>Band Chest Press</b><span>Same movement on a band</span></div><div class="row"><b>Push-Up</b><span>Same movement on bodyweight</span></div>
+    </div>
+  </div>
+</section>
+<section class="ex">
+  <header>
+    <h2>Romanian Deadlift</h2>
+    <div class="chips">
+      <span>Barbell</span>
+      <span>compound</span>
+      <span>intermediate</span>
+      <span class="pat">Hip Hinge</span>
+    </div>
+    <p class="summary">Driving the hips back and forward with a braced spine and minimal knee bend.</p>
+  </header>
+
+  <div class="cols">
+    <div class="col wide">
+      <h3>Common mistakes</h3>
+      <div class="mistake specific">
+               <i>✕</i><p>Touching the floor. The rep ends where the hamstring stretch ends — usually mid-shin — not where the plates land.</p></div><div class="mistake specific">
+               <i>✕</i><p>Bending and straightening the knees through the rep. Set a slight knee bend at the top and hold that angle the whole way down.</p></div><div class="mistake">
+               <i>✕</i><p>Squatting it instead of hinging it. The hips travel backward, the knees stay soft but relatively still — this is the single most common error and it turns every deadlift variant into a bad squat.</p></div><div class="mistake">
+               <i>✕</i><p>Losing the neutral spine. The moment the lower back rounds under load, the set is over.</p></div><div class="mistake">
+               <i>✕</i><p>Letting the bar drift away from the legs, which multiplies the load on the lower back.</p></div><div class="mistake">
+               <i>✕</i><p>Hyperextending at the top. Finish standing tall with the glutes squeezed, not leaning back.</p></div>
+      <p class="note">The first 2 are specific to this lift. The rest are
+             true of every hip hinge and are written once, on the pattern.</p>
+    </div>
+
+    <div class="col">
+      <h3>Variations</h3>
+      <div class="row"><b>Stiff-Leg Deadlift</b><span>Barbell · advanced</span></div><div class="row"><b>Conventional Deadlift</b><span>Barbell · advanced</span></div><div class="row"><b>Kettlebell Swing</b><span>Kettlebell · intermediate</span></div><div class="row"><b>Single-Leg Romanian Deadlift</b><span>Dumbbell · intermediate</span></div>
+
+      <h3 style="margin-top:26px">If you can't do this one</h3>
+      <p class="access">Equipment: full gym</p>
+      <div class="row"><b>Dumbbell Romanian Deadlift</b><span>Same movement on dumbbells</span></div><div class="row"><b>Cable Pull-Through</b><span>Same movement on cables</span></div><div class="row"><b>Kettlebell Swing</b><span>Same movement on a kettlebell</span></div><div class="row"><b>Single-Leg Romanian Deadlift</b><span>Same movement on dumbbells</span></div>
+    </div>
+  </div>
+</section>
+<section class="ex">
+  <header>
+    <h2>Dumbbell Lateral Raise</h2>
+    <div class="chips">
+      <span>Dumbbell</span>
+      <span>isolation</span>
+      <span>beginner</span>
+      <span class="pat">Lateral Raise</span>
+    </div>
+    <p class="summary">Raising the arms out to the side against gravity or a cable.</p>
+  </header>
+
+  <div class="cols">
+    <div class="col wide">
+      <h3>Common mistakes</h3>
+      <div class="mistake">
+               <i>✕</i><p>Swinging with the hips. The most abused movement in any gym — if the torso moves, the side delt is not the thing being trained.</p></div><div class="mistake">
+               <i>✕</i><p>Going above shoulder height, where the traps take over and the delt stops being the limiting factor.</p></div><div class="mistake">
+               <i>✕</i><p>Leading with the hands rather than the elbows. Think about pushing the elbows out and up.</p></div><div class="mistake">
+               <i>✕</i><p>Choosing a weight that only allows six reps. This is a small muscle with a short lever; 12–20 reps is where it grows.</p></div>
+      <p class="note">All inherited from the lateral raise pattern — nothing
+             specific to this lift needed adding.</p>
+    </div>
+
+    <div class="col">
+      <h3>Variations</h3>
+      <div class="row"><b>Lu Raise</b><span>Dumbbell · intermediate</span></div><div class="row"><b>Cable Lateral Raise</b><span>Cable · beginner</span></div><div class="row"><b>Machine Lateral Raise</b><span>Machine · beginner</span></div><div class="row"><b>Upright Row</b><span>Barbell · intermediate</span></div>
+
+      <h3 style="margin-top:26px">If you can't do this one</h3>
+      <p class="access">Equipment: full gym</p>
+      <div class="row"><b>Cable Lateral Raise</b><span>Same movement on cables</span></div><div class="row"><b>Machine Lateral Raise</b><span>Same movement on a machine</span></div><div class="row"><b>Lu Raise</b><span>Closest match to the original</span></div><div class="row"><b>Upright Row</b><span>Same movement on a barbell</span></div>
+    </div>
+  </div>
+</section>
+<section class="ex">
+  <header>
+    <h2>Cable Pull-Through</h2>
+    <div class="chips">
+      <span>Cable</span>
+      <span>compound</span>
+      <span>beginner</span>
+      <span class="pat">Hip Hinge</span>
+    </div>
+    <p class="summary">Driving the hips back and forward with a braced spine and minimal knee bend.</p>
+  </header>
+
+  <div class="cols">
+    <div class="col wide">
+      <h3>Common mistakes</h3>
+      <div class="mistake">
+               <i>✕</i><p>Squatting it instead of hinging it. The hips travel backward, the knees stay soft but relatively still — this is the single most common error and it turns every deadlift variant into a bad squat.</p></div><div class="mistake">
+               <i>✕</i><p>Losing the neutral spine. The moment the lower back rounds under load, the set is over.</p></div><div class="mistake">
+               <i>✕</i><p>Letting the bar drift away from the legs, which multiplies the load on the lower back.</p></div><div class="mistake">
+               <i>✕</i><p>Hyperextending at the top. Finish standing tall with the glutes squeezed, not leaning back.</p></div>
+      <p class="note">All inherited from the hip hinge pattern — nothing
+             specific to this lift needed adding.</p>
+    </div>
+
+    <div class="col">
+      <h3>Variations</h3>
+      <div class="row"><b>Dumbbell Romanian Deadlift</b><span>Dumbbell · beginner</span></div><div class="row"><b>Romanian Deadlift</b><span>Barbell · intermediate</span></div><div class="row"><b>Stiff-Leg Deadlift</b><span>Barbell · advanced</span></div><div class="row"><b>Kettlebell Swing</b><span>Kettlebell · intermediate</span></div>
+
+      <h3 style="margin-top:26px">If you can't do this one</h3>
+      <p class="access">Equipment: bodyweight only</p>
+      <div class="row"><b>Glute Bridge</b><span>Same muscles, different movement</span></div><div class="row"><b>Nordic Hamstring Curl</b><span>Same muscles, different movement</span></div>
+    </div>
+  </div>
+</section>
+</div>

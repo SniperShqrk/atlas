@@ -1,0 +1,326 @@
+<title>ATLAS</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;1,8..60,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --bg:#F4F2EC; --surface:#FFFFFF; --surface-alt:#EDEAE2; --surface-raised:#FAF8F4;
+    --border:#DCD7CC; --border-strong:#C4BEB0;
+    --ink:#1E1C19; --ink-dim:#57534B; --ink-faint:#6F6A61;
+    --bronze:#8A6224; --bronze-soft:rgba(138,98,36,0.12);
+    --rust:#9C3A24; --rust-soft:rgba(156,58,36,0.10);
+    --recovery-fresh:#8A6224; --recovery-fatigued:#9C3A24;
+    --shadow: 0 1px 2px rgba(30,28,25,0.06);
+    --font-display:'Cinzel', 'Trajan Pro', Georgia, serif;
+    --font-body:'Source Serif 4', Georgia, 'Times New Roman', serif;
+    --font-mono:'IBM Plex Mono', ui-monospace, 'SF Mono', Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0D0D0E; --surface:#181715; --surface-alt:#1F1E1C; --surface-raised:#141415;
+      --border:#2A2825; --border-strong:#38352F;
+      --ink:#F0EEE9; --ink-dim:#A8A49B; --ink-faint:#8C887F;
+      --bronze:#C08A3E; --bronze-soft:rgba(192,138,62,0.15);
+      --rust:#B4472F; --rust-soft:rgba(180,71,47,0.15);
+      --recovery-fresh:#EDEAE3; --recovery-fatigued:#B4472F;
+      --shadow: 0 1px 2px rgba(0,0,0,0.4);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0D0D0E; --surface:#181715; --surface-alt:#1F1E1C; --surface-raised:#141415;
+    --border:#2A2825; --border-strong:#38352F;
+    --ink:#F0EEE9; --ink-dim:#A8A49B; --ink-faint:#8C887F;
+    --bronze:#C08A3E; --bronze-soft:rgba(192,138,62,0.15);
+    --rust:#B4472F; --rust-soft:rgba(180,71,47,0.15);
+    --recovery-fresh:#EDEAE3; --recovery-fatigued:#B4472F;
+    --shadow: 0 1px 2px rgba(0,0,0,0.4);
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:var(--font-body);
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  h1,h2,h3{text-wrap:balance; margin:0; font-weight:500;}
+  p{margin:0;}
+  a{color:inherit;}
+  ::selection{ background:var(--bronze-soft); }
+
+  .wrap{ max-width:1080px; margin:0 auto; padding:0 28px; }
+  .rule{ height:1px; background:linear-gradient(90deg, transparent, var(--border-strong) 15%, var(--border-strong) 85%, transparent); }
+
+  .eyebrow{
+    font-family:var(--font-mono); font-size:11px; font-weight:500;
+    letter-spacing:0.16em; text-transform:uppercase; color:var(--bronze);
+  }
+
+  /* ---------- meander (Greek key) divider, drawn not photographed ---------- */
+  .meander{
+    height:14px; width:100%;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='14' viewBox='0 0 28 14'%3E%3Cpath d='M0 1 H27 V13 H9 V5 H21' fill='none' stroke='%238A6224' stroke-width='1.3' stroke-opacity='0.5'/%3E%3C/svg%3E");
+    background-repeat:repeat-x; background-size:28px 14px; opacity:0.7;
+  }
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .meander{ opacity:0.55; } }
+  :root[data-theme="dark"] .meander{ opacity:0.55; }
+
+  /* ---------- nav ---------- */
+  nav{ padding:22px 0; }
+  nav .wrap{ display:flex; align-items:center; justify-content:space-between; }
+  .word{ font-family:var(--font-display); font-weight:600; font-size:16px; letter-spacing:0.32em; }
+  .word b{ color:var(--bronze); font-weight:600; }
+  .nav-cta{
+    font-family:var(--font-mono); font-size:12px; letter-spacing:0.06em;
+    color:var(--ink-dim); border:1px solid var(--border-strong); border-radius:3px;
+    padding:8px 14px; text-decoration:none; transition:border-color .15s, color .15s;
+  }
+  .nav-cta:hover{ border-color:var(--bronze); color:var(--bronze); }
+
+  /* ---------- hero ---------- */
+  .hero{ padding:64px 0 88px; }
+  .hero-grid{ display:grid; grid-template-columns:1.15fr 0.85fr; gap:56px; align-items:center; }
+  .hero-word{
+    font-family:var(--font-display); font-weight:600;
+    font-size:clamp(48px,8vw,84px); letter-spacing:0.14em; line-height:1;
+  }
+  .hero-word b{ color:var(--bronze); font-weight:600; }
+  .tagline{
+    font-family:var(--font-body); font-style:italic; font-weight:400;
+    font-size:clamp(22px,2.6vw,30px); line-height:1.42; color:var(--ink);
+    max-width:20ch; margin-top:22px;
+  }
+  .hero-sub{
+    font-size:16px; line-height:1.7; color:var(--ink-dim); max-width:46ch; margin-top:20px;
+  }
+  .hero-actions{ display:flex; gap:14px; margin-top:32px; flex-wrap:wrap; }
+  .btn{
+    font-family:var(--font-mono); font-size:13px; font-weight:500; letter-spacing:0.04em;
+    padding:14px 22px; border-radius:3px; text-decoration:none; display:inline-block;
+    transition:transform .15s, background .15s, border-color .15s, color .15s;
+  }
+  .btn-primary{ background:var(--bronze); color:var(--surface); border:1px solid var(--bronze); }
+  .btn-primary:hover{ transform:translateY(-1px); }
+  .btn-ghost{ color:var(--ink); border:1px solid var(--border-strong); background:transparent; }
+  .btn-ghost:hover{ border-color:var(--bronze); color:var(--bronze); }
+  .hero-note{
+    margin-top:16px; font-family:var(--font-mono); font-size:11.5px; color:var(--ink-faint); letter-spacing:0.02em;
+  }
+
+  /* ---------- phone mock ---------- */
+  .phone{
+    background:#0D0D0E; border-radius:32px; padding:16px; width:100%; max-width:280px;
+    margin-left:auto; box-shadow:0 30px 70px rgba(20,15,5,0.28), 0 2px 0 var(--border-strong);
+    border:1px solid #000;
+  }
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .phone{ box-shadow:0 30px 70px rgba(0,0,0,0.55); } }
+  :root[data-theme="dark"] .phone{ box-shadow:0 30px 70px rgba(0,0,0,0.55); }
+  .phone-screen{ background:#0D0D0E; border-radius:20px; padding:20px 16px; font-family:var(--font-body); }
+  .p-greet{ font-family:var(--font-display); font-size:20px; font-weight:600; color:#F0EEE9; letter-spacing:0.02em; }
+  .p-sub{ font-size:12.5px; color:#8C887F; margin-top:3px; font-family:var(--font-mono); }
+  .p-quote{ display:flex; gap:10px; margin-top:16px; }
+  .p-quote .bar{ width:2px; background:#C08A3E; border-radius:1px; }
+  .p-quote .txt{ font-style:italic; font-size:12px; line-height:1.5; color:#A8A49B; }
+  .p-quote .attr{ font-family:var(--font-mono); font-size:8.5px; letter-spacing:0.09em; color:#C08A3E; margin-top:5px; }
+  .p-stats{ display:flex; gap:8px; margin-top:16px; background:#181715; border:1px solid #2A2825; border-radius:12px; padding:12px; }
+  .p-stats div{ flex:1; text-align:center; }
+  .p-stats .n{ font-family:var(--font-mono); font-weight:500; font-size:18px; color:#F0EEE9; }
+  .p-stats .l{ font-size:9.5px; color:#8C887F; margin-top:2px; }
+  .p-map-label{ font-family:var(--font-mono); font-size:9.5px; letter-spacing:0.1em; color:#8C887F; margin-top:18px; text-transform:uppercase; }
+  .p-bar-row{ display:flex; align-items:center; gap:8px; margin-top:8px; }
+  .p-bar-row .m{ font-size:10.5px; color:#A8A49B; width:52px; font-family:var(--font-mono); }
+  .p-bar-row .track{ flex:1; height:5px; border-radius:3px; background:#1F1E1C; overflow:hidden; }
+  .p-bar-row .fill{ height:100%; border-radius:3px; }
+  .p-bar-row .v{ font-size:10px; color:#8C887F; width:26px; text-align:right; font-family:var(--font-mono); }
+
+  /* ---------- pillars ---------- */
+  .section{ padding:80px 0; }
+  .section-head{ max-width:44ch; margin-bottom:44px; }
+  .section-head h2{
+    font-family:var(--font-display); font-size:clamp(22px,2.8vw,28px); letter-spacing:0.04em;
+    margin-top:10px; font-weight:600;
+  }
+  .pillars{ display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--border); border:1px solid var(--border); border-radius:4px; overflow:hidden; }
+  .pillar{ background:var(--surface); padding:32px 28px; }
+  .pillar svg{ width:30px; height:30px; }
+  .pillar h3{ font-family:var(--font-display); font-size:16px; letter-spacing:0.05em; margin-top:20px; font-weight:600; }
+  .pillar p{ font-size:14.5px; line-height:1.65; color:var(--ink-dim); margin-top:10px; }
+
+  /* ---------- proof ---------- */
+  .proof-grid{ display:grid; grid-template-columns:1fr 1fr; gap:48px; align-items:start; }
+  .tag{
+    display:inline-block; font-family:var(--font-mono); font-size:10px; letter-spacing:0.1em;
+    border:1px solid var(--bronze); color:var(--bronze); padding:2px 8px; border-radius:3px; margin-bottom:14px;
+  }
+  .insight-card{ background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:24px; box-shadow:var(--shadow); }
+  .insight-card h4{ font-family:var(--font-body); font-weight:500; font-size:17px; }
+  .insight-card .prev{ font-size:14px; color:var(--ink-dim); margin-top:6px; }
+  .insight-card .rule2{ height:1px; background:var(--border); margin:16px 0; }
+  .insight-card .metrics{ display:flex; gap:20px; }
+  .insight-card .metrics div{ }
+  .insight-card .metrics .v{ font-family:var(--font-mono); font-size:20px; color:var(--ink); }
+  .insight-card .metrics .l{ font-family:var(--font-mono); font-size:9.5px; letter-spacing:0.08em; color:var(--ink-faint); text-transform:uppercase; margin-top:2px; }
+  .proof-copy p{ font-size:15.5px; line-height:1.75; color:var(--ink-dim); }
+  .proof-copy p + p{ margin-top:14px; }
+
+  /* ---------- quote break ---------- */
+  .quote-break{ padding:96px 0; text-align:center; background:var(--surface-alt); }
+  .quote-break blockquote{
+    font-family:var(--font-body); font-style:italic; font-weight:400;
+    font-size:clamp(24px,3.4vw,36px); line-height:1.45; max-width:26ch; margin:0 auto; color:var(--ink);
+  }
+  .quote-break cite{
+    display:block; margin-top:22px; font-family:var(--font-mono); font-size:11.5px;
+    letter-spacing:0.14em; color:var(--bronze); font-style:normal; text-transform:uppercase;
+  }
+
+  /* ---------- closing cta ---------- */
+  .cta-section{ padding:96px 0; text-align:center; }
+  .cta-section h2{ font-family:var(--font-display); font-size:clamp(24px,3vw,34px); letter-spacing:0.03em; max-width:16ch; margin:0 auto; }
+  .cta-section p{ margin:18px auto 0; max-width:46ch; color:var(--ink-dim); font-size:15.5px; line-height:1.7; }
+  .cta-section .hero-actions{ justify-content:center; margin-top:30px; }
+  .badge-row{ display:flex; justify-content:center; gap:10px; margin-top:28px; flex-wrap:wrap; }
+  .badge{
+    font-family:var(--font-mono); font-size:11px; color:var(--ink-faint);
+    border:1px dashed var(--border-strong); border-radius:4px; padding:8px 14px; letter-spacing:0.03em;
+  }
+
+  footer{ padding:36px 0 48px; }
+  footer .wrap{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
+  footer .word{ font-size:12px; letter-spacing:0.28em; color:var(--ink-faint); }
+  footer .fine{ font-family:var(--font-mono); font-size:11px; color:var(--ink-faint); max-width:50ch; text-align:right; line-height:1.6; }
+
+  @media (max-width: 860px){
+    .hero-grid{ grid-template-columns:1fr; }
+    .phone{ margin:0 auto; max-width:240px; }
+    .pillars{ grid-template-columns:1fr; }
+    .proof-grid{ grid-template-columns:1fr; }
+    footer .wrap{ flex-direction:column; align-items:flex-start; }
+    footer .fine{ text-align:left; }
+  }
+</style>
+
+<nav>
+  <div class="wrap">
+    <div class="word">ATL<b>A</b>S</div>
+    <a class="nav-cta" href="mailto:hugoksheehan@gmail.com?subject=ATLAS%20—%20notify%20me%20at%20launch">Get notified →</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <div class="eyebrow">For those who train like it matters</div>
+      <div class="hero-word" style="margin-top:14px;">ATL<b>A</b>S</div>
+      <p class="tagline">A training log that tells you what your training is actually doing.</p>
+      <p class="hero-sub">Log every set. ATLAS reads it back — a recovery map of what's ready to train today, and a plain-language read on what your programme is quietly getting wrong. No caps, no ad-supported nonsense, no free trial that guilts you into paying.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="mailto:hugoksheehan@gmail.com?subject=ATLAS%20—%20notify%20me%20at%20launch&body=Notify%20me%20when%20ATLAS%20launches%20on%20iOS.">Get notified at launch</a>
+        <a class="btn btn-ghost" href="#proof">See how it thinks</a>
+      </div>
+      <div class="hero-note">Building for iOS. No release date yet — this is the plan taking shape.</div>
+    </div>
+
+    <div class="phone">
+      <div class="phone-screen">
+        <div class="p-greet">Hey Hugo</div>
+        <div class="p-sub">3 OF 4 SESSIONS THIS WEEK</div>
+        <div class="p-quote">
+          <div class="bar"></div>
+          <div>
+            <div class="txt">The impediment to action advances action. What stands in the way becomes the way.</div>
+            <div class="attr">MARCUS AURELIUS · MEDITATIONS</div>
+          </div>
+        </div>
+        <div class="p-stats">
+          <div><div class="n">3</div><div class="l">WORKOUTS</div></div>
+          <div><div class="n">27</div><div class="l">SETS</div></div>
+          <div><div class="n">8.1K</div><div class="l">VOL KG</div></div>
+        </div>
+        <div class="p-map-label">Still recovering</div>
+        <div class="p-bar-row"><div class="m">Rear delts</div><div class="track"><div class="fill" style="width:22%;background:#B4472F;"></div></div><div class="v">22%</div></div>
+        <div class="p-bar-row"><div class="m">Hamstrings</div><div class="track"><div class="fill" style="width:41%;background:#B4472F;"></div></div><div class="v">41%</div></div>
+        <div class="p-bar-row"><div class="m">Quads</div><div class="track"><div class="fill" style="width:88%;background:#EDEAE3;"></div></div><div class="v">88%</div></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="meander"></div>
+
+<section class="section">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">The system</div>
+      <h2>Three things holding up everything else</h2>
+    </div>
+    <div class="pillars">
+      <div class="pillar">
+        <svg viewBox="0 0 30 30" fill="none"><circle cx="15" cy="15" r="12" stroke="var(--bronze)" stroke-width="1.6"/><path d="M15 3a12 12 0 0 1 8.5 20.5" stroke="var(--bronze)" stroke-width="1.6" stroke-linecap="round"/><circle cx="15" cy="15" r="2.4" fill="var(--bronze)"/></svg>
+        <h3>Recovery Map</h3>
+        <p>Fatigue modelled per muscle from the sets you actually logged — not a guess, not a generic rest-day calendar. Open the app and see what's ready today.</p>
+      </div>
+      <div class="pillar">
+        <svg viewBox="0 0 30 30" fill="none"><path d="M6 24 V14 M15 24 V6 M24 24 V17" stroke="var(--bronze)" stroke-width="2" stroke-linecap="round"/></svg>
+        <h3>Insight Engine</h3>
+        <p>Neglected muscle groups, push/pull imbalances, stalled lifts — arithmetic on your own numbers, in plain language, not a chatbot guessing at your programme.</p>
+      </div>
+      <div class="pillar">
+        <svg viewBox="0 0 30 30" fill="none"><path d="M15 4 L15 26 M8 26 H22 M8 4 H22" stroke="var(--bronze)" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <h3>Discipline, Documented</h3>
+        <p>Real lines from Marcus Aurelius, Epictetus and Seneca, surfaced exactly when they're useful — before a session, mid-rest, on the days it's hardest to start.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="proof">
+  <div class="wrap proof-grid">
+    <div class="proof-copy">
+      <div class="tag">EXAMPLE</div>
+      <p>This is a real insight, built from example numbers — the kind ATLAS finds after about three logged sessions. Yours will read your own lifts, not these.</p>
+      <p>Most training apps show you a graph and call it progress. ATLAS diagnoses: which muscle group is falling behind, which ratio is quietly building an injury, which lift has been stuck for a month and why.</p>
+      <p>The headline and the numbers are always free. What ATLAS thinks you should actually do about it — the diagnosis and the fix — is Premium.</p>
+    </div>
+    <div class="insight-card">
+      <h4>Your rear delts are being left behind your front delts</h4>
+      <p class="prev">Front-to-rear delt work is at roughly 2.7:1.</p>
+      <div class="rule2"></div>
+      <div class="metrics">
+        <div><div class="v">54</div><div class="l">Front</div></div>
+        <div><div class="v">20</div><div class="l">Rear</div></div>
+        <div><div class="v">2.7:1</div><div class="l">Ratio</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="quote-break">
+  <div class="wrap">
+    <blockquote>"He who has learned how to die has unlearned how to be a slave."</blockquote>
+    <cite>Epictetus · Discourses</cite>
+  </div>
+</div>
+
+<section class="cta-section">
+  <div class="wrap">
+    <h2>Built for the free lift, not the free trial</h2>
+    <p>Unlimited logging, the full exercise library, your history and the recovery map — free forever, no session caps. Premium adds the full diagnosis and AI-built programming, whenever you're ready for it.</p>
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="mailto:hugoksheehan@gmail.com?subject=ATLAS%20—%20notify%20me%20at%20launch&body=Notify%20me%20when%20ATLAS%20launches%20on%20iOS.">Get notified at launch</a>
+    </div>
+    <div class="badge-row">
+      <div class="badge">iOS · in development</div>
+      <div class="badge">No account required to start</div>
+      <div class="badge">Built independently</div>
+    </div>
+  </div>
+</section>
+
+<div class="meander"></div>
+
+<footer>
+  <div class="wrap">
+    <div class="word">ATL<b style="color:var(--bronze);">A</b>S</div>
+    <div class="fine">Independently built. Not affiliated with any equipment, supplement or apparel brand.<br>Quotations are drawn from public-domain translations of Marcus Aurelius, Epictetus and Seneca.</div>
+  </div>
+</footer>
