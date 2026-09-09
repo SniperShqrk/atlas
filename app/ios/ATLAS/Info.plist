@@ -27,7 +27,7 @@
 		<dict>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.hugosheehan.atlas</string>
+				<string>com.hugosheehan.atlasapp</string>
 			</array>
 		</dict>
 	</array>
