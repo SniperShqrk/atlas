@@ -122,14 +122,6 @@ export default function PlanScreen() {
               loading={loading}
               size="lg"
             />
-            {currentPlan && (
-              <Button
-                label={isPlanSaved ? 'Update Saved Plan' : 'Save Plan'}
-                variant="secondary"
-                onPress={onSavePlan}
-                style={{ marginTop: spacing.sm }}
-              />
-            )}
             <Button
               label="Import Workout"
               variant="secondary"
@@ -137,7 +129,6 @@ export default function PlanScreen() {
               style={{ marginTop: spacing.sm }}
             />
             {error && <Text style={styles.error}>{error}</Text>}
-            {justSaved && !loading && <Text style={styles.note}>Saved to My Plans.</Text>}
             {currentPlan?.source === 'rule_based' && !loading && (
               <Text style={styles.note}>
                 Built with the offline generator — set an API key on the backend for the AI planner.
@@ -333,6 +324,18 @@ export default function PlanScreen() {
               onPress={() => setEditing((e) => !e)}
               style={{ marginTop: spacing.md }}
             />
+
+            {isPro && (
+              <Button
+                label={isPlanSaved ? 'Update Saved Plan' : 'Save Plan'}
+                variant="secondary"
+                onPress={onSavePlan}
+                style={{ marginTop: spacing.sm }}
+              />
+            )}
+            {justSaved && !loading && (
+              <Text style={[styles.note, { marginTop: spacing.sm }]}>Saved to My Plans.</Text>
+            )}
 
             {currentPlan.days.map((day, i) => (
               <View key={i} style={{ marginTop: spacing.xl }}>
