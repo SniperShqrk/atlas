@@ -30,13 +30,12 @@ export interface ImportWorkoutResult {
 
 export async function importWorkout(input: {
   text?: string;
-  imageBase64?: string;
-  imageMediaType?: string;
+  images?: { base64: string; mimeType: string }[];
 }): Promise<ImportWorkoutResult> {
   const res = await fetch(`${API_BASE_URL}/api/plan/import`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(input),
+    body: JSON.stringify({ text: input.text, images: input.images }),
   });
   const body = await res.json().catch(() => null);
   if (!res.ok) {

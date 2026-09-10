@@ -6,8 +6,8 @@ import { sessionsRouter } from './routes/sessions.js';
 
 const app = express();
 app.use(cors());
-// 8mb covers a compressed phone photo for Import Workouts with headroom.
-app.use(express.json({ limit: '8mb' }));
+// 20mb covers up to 3 compressed phone photos for Import Workouts with headroom.
+app.use(express.json({ limit: '20mb' }));
 
 app.get('/health', (req, res) => res.json({ ok: true }));
 app.use('/api/plan', planRouter);

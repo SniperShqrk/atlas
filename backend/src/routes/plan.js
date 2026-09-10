@@ -19,16 +19,16 @@ planRouter.post('/generate', async (req, res) => {
   }
 });
 
-// Import Workouts (Pro): turn a photo of / pasted text describing the user's
+// Import Workouts (Pro): turn photos of / pasted text describing the user's
 // own plan into the same shape /generate returns, plus any custom exercises
-// that had no catalog match. Request body: { text?, imageBase64?, imageMediaType? }.
-// A 2mb JSON body limit is set in server.js — comfortably fits one compressed
-// photo; the client should downscale before sending.
+// that had no catalog match. Request body: { text?, images?: { base64, mimeType }[] }.
+// A 20mb JSON body limit is set in server.js — comfortably fits up to 3
+// compressed photos; the client should downscale before sending.
 planRouter.post('/import', async (req, res) => {
-  const { text, imageBase64, imageMediaType } = req.body ?? {};
+  const { text, images } = req.body ?? {};
 
   try {
-    const plan = await importWorkout({ text, imageBase64, imageMediaType });
+    const plan = await importWorkout({ text, images });
     await savePlan(plan);
     res.json(plan);
   } catch (err) {

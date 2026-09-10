@@ -118,29 +118,30 @@ function tryParseJSON(text) {
 }
 
 /**
- * text and/or an image (base64 + media type) describing a workout plan in the
- * user's own words/handwriting/screenshot. Returns a GeneratedPlan-shaped
- * object plus any brand-new exercises the app needs to create locally before
- * the plan's exerciseIds will resolve (see tempId in newExercises).
+ * text and/or up to a few images (base64 + media type) describing a workout
+ * plan in the user's own words/handwriting/screenshot. Returns a
+ * GeneratedPlan-shaped object plus any brand-new exercises the app needs to
+ * create locally before the plan's exerciseIds will resolve (see tempId in
+ * newExercises).
  */
-export async function importWorkout({ text, imageBase64, imageMediaType }) {
+export async function importWorkout({ text, images }) {
   if (!process.env.ANTHROPIC_API_KEY) {
     const err = new Error('Import Workouts needs ANTHROPIC_API_KEY set on the backend — there is no offline fallback for reading arbitrary photos/text.');
     err.code = 'NO_API_KEY';
     throw err;
   }
-  if (!text?.trim() && !imageBase64) {
+  if (!text?.trim() && !images?.length) {
     throw new Error('Provide either pasted text or a photo to import.');
   }
 
   const content = [];
-  if (imageBase64) {
+  for (const img of images ?? []) {
     content.push({
       type: 'image',
-      source: { type: 'base64', media_type: imageMediaType || 'image/jpeg', data: imageBase64 },
+      source: { type: 'base64', media_type: img.mimeType || 'image/jpeg', data: img.base64 },
     });
   }
-  content.push({ type: 'text', text: text?.trim() ? `Pasted plan text:\n${text.trim()}` : 'Read the plan from the attached photo.' });
+  content.push({ type: 'text', text: text?.trim() ? `Pasted plan text:\n${text.trim()}` : 'Read the plan from the attached photo(s).' });
   content.push({ type: 'text', text: buildPrompt() });
 
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });

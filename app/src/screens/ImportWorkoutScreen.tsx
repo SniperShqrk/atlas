@@ -10,9 +10,9 @@ import { makeStyles, useTheme } from '@/theme/ThemeProvider';
 import { useWorkoutStore, CustomExerciseInput } from '@/store/workoutStore';
 import { importWorkout, ImportedExercise } from '@/api/client';
 
-/** Photo is downscaled+recompressed client-side (quality 0.5, JPEG) rather than
+/** Photos are downscaled+recompressed client-side (quality 0.5, JPEG) rather than
  *  sent at full camera resolution — keeps the request well under the backend's
- *  8mb JSON body limit and Haiku doesn't need more detail than that to read a
+ *  20mb JSON body limit and Haiku doesn't need more detail than that to read a
  *  photographed plan. */
 const PICKER_OPTS: ImagePicker.ImagePickerOptions = {
   mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -20,6 +20,8 @@ const PICKER_OPTS: ImagePicker.ImagePickerOptions = {
   quality: 0.5,
   allowsEditing: false,
 };
+
+const MAX_IMAGES = 3;
 
 export default function ImportWorkoutScreen() {
   const { colors } = useTheme();
@@ -29,11 +31,15 @@ export default function ImportWorkoutScreen() {
   const setCurrentPlan = useWorkoutStore((s) => s.setCurrentPlan);
 
   const [text, setText] = useState('');
-  const [image, setImage] = useState<{ base64: string; mimeType: string; uri: string } | null>(null);
+  const [images, setImages] = useState<{ base64: string; mimeType: string; uri: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const pickImage = async (fromCamera: boolean) => {
+    if (images.length >= MAX_IMAGES) {
+      Alert.alert('Limit reached', `You can add up to ${MAX_IMAGES} photos.`);
+      return;
+    }
     const perm = fromCamera
       ? await ImagePicker.requestCameraPermissionsAsync()
       : await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -49,11 +55,18 @@ export default function ImportWorkoutScreen() {
       : await ImagePicker.launchImageLibraryAsync(PICKER_OPTS);
     if (result.canceled || !result.assets?.[0]?.base64) return;
     const asset = result.assets[0];
-    setImage({ base64: asset.base64!, mimeType: asset.mimeType ?? 'image/jpeg', uri: asset.uri });
+    setImages((prev) => [
+      ...prev,
+      { base64: asset.base64!, mimeType: asset.mimeType ?? 'image/jpeg', uri: asset.uri },
+    ]);
     setError(null);
   };
 
-  const canSubmit = (text.trim().length > 0 || !!image) && !loading;
+  const removeImage = (index: number) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const canSubmit = (text.trim().length > 0 || images.length > 0) && !loading;
 
   const onImport = async () => {
     if (!canSubmit) return;
@@ -62,8 +75,7 @@ export default function ImportWorkoutScreen() {
     try {
       const { plan, newExercises } = await importWorkout({
         text: text.trim() || undefined,
-        imageBase64: image?.base64,
-        imageMediaType: image?.mimeType,
+        images: images.length ? images.map(({ base64, mimeType }) => ({ base64, mimeType })) : undefined,
       });
 
       if (!plan.days.length) {
@@ -121,15 +133,22 @@ export default function ImportWorkoutScreen() {
           textAlignVertical="top"
         />
 
-        <Text style={[styles.label, { marginTop: spacing.xl }]}>OR ADD A PHOTO</Text>
-        {image ? (
-          <View style={styles.imagePreviewWrap}>
-            <Image source={{ uri: image.uri }} style={styles.imagePreview} />
-            <Pressable style={styles.removeImage} onPress={() => setImage(null)} hitSlop={10}>
-              <Icon name="close" size={16} color="#fff" strokeWidth={2} />
-            </Pressable>
+        <Text style={[styles.label, { marginTop: spacing.xl }]}>
+          OR ADD A PHOTO {images.length > 0 ? `(${images.length}/${MAX_IMAGES})` : ''}
+        </Text>
+        {images.length > 0 && (
+          <View style={styles.imageThumbRow}>
+            {images.map((img, i) => (
+              <View key={img.uri + i} style={styles.imagePreviewWrap}>
+                <Image source={{ uri: img.uri }} style={styles.imagePreview} />
+                <Pressable style={styles.removeImage} onPress={() => removeImage(i)} hitSlop={10}>
+                  <Icon name="close" size={16} color="#fff" strokeWidth={2} />
+                </Pressable>
+              </View>
+            ))}
           </View>
-        ) : (
+        )}
+        {images.length < MAX_IMAGES && (
           <View style={styles.photoRow}>
             <Pressable style={styles.photoButton} onPress={() => pickImage(false)}>
               <Icon name="library" size={20} color={colors.textSecondary} strokeWidth={1.6} />
@@ -189,8 +208,9 @@ const useStyles = makeStyles((c) => ({
     paddingVertical: spacing.lg,
   },
   photoButtonText: { ...typography.bodyMedium, color: c.textSecondary },
+  imageThumbRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
   imagePreviewWrap: { alignSelf: 'flex-start' },
-  imagePreview: { width: 140, height: 140, borderRadius: radius.md, borderWidth: 1, borderColor: c.border },
+  imagePreview: { width: 100, height: 100, borderRadius: radius.md, borderWidth: 1, borderColor: c.border },
   removeImage: {
     position: 'absolute',
     top: -8,
