@@ -26,6 +26,11 @@ interface AuthState {
    *  While this is set, AuthScreen shows the 6-digit code entry step
    *  instead of the sign-in/sign-up form. */
   pendingEmail: string | null;
+  /** Set the moment a "Forgot password" request goes out. While set and no
+   *  session exists yet, AuthScreen shows the reset-code entry step; once
+   *  the code is verified a temporary session lands and AuthScreen shows
+   *  the new-password step instead — cleared only once that's saved. */
+  resetEmail: string | null;
 
   init: () => void;
   refreshProfile: () => Promise<void>;
@@ -38,6 +43,10 @@ interface AuthState {
   verifyEmail: (code: string) => Promise<{ error: string | null }>;
   resendCode: () => Promise<{ error: string | null }>;
   cancelVerification: () => void;
+  requestPasswordReset: (email: string) => Promise<{ error: string | null }>;
+  verifyResetCode: (code: string) => Promise<{ error: string | null }>;
+  updatePassword: (newPassword: string) => Promise<{ error: string | null }>;
+  cancelPasswordReset: () => void;
   signOut: () => Promise<void>;
   setUsername: (username: string) => Promise<{ error: string | null }>;
 }
@@ -50,6 +59,7 @@ export const useAuth = create<AuthState>()((set, get) => ({
   profile: null,
   busy: false,
   pendingEmail: null,
+  resetEmail: null,
 
   init: () => {
     if (initialized || !isSupabaseConfigured) {
@@ -172,6 +182,38 @@ export const useAuth = create<AuthState>()((set, get) => ({
   },
 
   cancelVerification: () => set({ pendingEmail: null }),
+
+  requestPasswordReset: async (email) => {
+    set({ busy: true });
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    set({ busy: false });
+    if (error) return { error: error.message };
+    set({ resetEmail: email });
+    return { error: null };
+  },
+
+  verifyResetCode: async (code) => {
+    const email = get().resetEmail;
+    if (!email) return { error: 'Nothing to verify' };
+    set({ busy: true });
+    const { error } = await supabase.auth.verifyOtp({ email, token: code.trim(), type: 'recovery' });
+    set({ busy: false });
+    // onAuthStateChange lands a temporary session here; resetEmail stays set
+    // so AuthScreen shows "set a new password" next, instead of treating
+    // this like a normal sign-in and jumping straight into the app.
+    return { error: error?.message ?? null };
+  },
+
+  updatePassword: async (newPassword) => {
+    set({ busy: true });
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    set({ busy: false });
+    if (error) return { error: error.message };
+    set({ resetEmail: null });
+    return { error: null };
+  },
+
+  cancelPasswordReset: () => set({ resetEmail: null }),
 
   signOut: async () => {
     await supabase.auth.signOut();

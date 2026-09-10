@@ -31,6 +31,11 @@ export default function AuthScreen() {
   const verifyEmail = useAuth((s) => s.verifyEmail);
   const resendCode = useAuth((s) => s.resendCode);
   const cancelVerification = useAuth((s) => s.cancelVerification);
+  const resetEmail = useAuth((s) => s.resetEmail);
+  const requestPasswordReset = useAuth((s) => s.requestPasswordReset);
+  const verifyResetCode = useAuth((s) => s.verifyResetCode);
+  const updatePassword = useAuth((s) => s.updatePassword);
+  const cancelPasswordReset = useAuth((s) => s.cancelPasswordReset);
   const setUsername = useAuth((s) => s.setUsername);
 
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
@@ -53,13 +58,20 @@ export default function AuthScreen() {
   const [resending, setResending] = useState(false);
   const [username, setUsernameInput] = useState('');
   const [claimingHistory, setClaimingHistory] = useState(false);
+  const [resetCode, setResetCode] = useState('');
+  const [resendingReset, setResendingReset] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
 
   // Already signed in with a username picked — nothing for this screen to
   // do. A separate effect (not a render-time call) so React never sees a
   // navigation action fire while this component is still rendering.
+  // Skipped mid password-reset: verifying the reset code lands a real
+  // session too, and this would otherwise bounce straight past the
+  // new-password step before it ever renders.
   useEffect(() => {
-    if (session && profile?.username) navigation.replace('Social');
-  }, [session, profile?.username, navigation]);
+    if (session && profile?.username && !resetEmail) navigation.replace('Social');
+  }, [session, profile?.username, resetEmail, navigation]);
 
   if (!isSupabaseConfigured) {
     return (
@@ -154,6 +166,154 @@ export default function AuthScreen() {
               disabled={resending}
               onPress={onResend}
               style={{ marginTop: spacing.sm }}
+            />
+          </View>
+        </KeyboardAvoidingView>
+      </Screen>
+    );
+  }
+
+  // "Forgot password": resetPasswordForEmail sent a code to resetEmail, and
+  // no session exists yet — show the code entry step.
+  if (resetEmail && !session) {
+    const onVerifyReset = async () => {
+      if (resetCode.trim().length < 4) {
+        Alert.alert('Enter the code', 'Check the email you were sent for the code.');
+        return;
+      }
+      const { error } = await verifyResetCode(resetCode);
+      if (error) {
+        Alert.alert("Couldn't verify", error);
+        return;
+      }
+      // onAuthStateChange lands a temporary session; the branch below takes
+      // over on the next render to collect the new password.
+      setResetCode('');
+    };
+
+    const onResendReset = async () => {
+      setResendingReset(true);
+      const { error } = await requestPasswordReset(resetEmail);
+      setResendingReset(false);
+      if (error) {
+        Alert.alert("Couldn't resend", error);
+        return;
+      }
+      Alert.alert('Code sent', `Check ${resetEmail} for a new code.`);
+    };
+
+    return (
+      <Screen>
+        <ModalHeader
+          title="Reset your password"
+          onBack={() => {
+            cancelPasswordReset();
+            setResetCode('');
+          }}
+        />
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <View style={styles.content}>
+            <View style={styles.iconCircle}>
+              <Icon name="friends" size={30} color={colors.accent} strokeWidth={1.6} />
+            </View>
+            <Text style={styles.tagline}>
+              We sent a code to {resetEmail}. Enter it below to continue.
+            </Text>
+
+            <Text style={[styles.label, { marginTop: spacing.xl }]}>CODE</Text>
+            <TextInput
+              style={[styles.input, styles.codeInput]}
+              value={resetCode}
+              onChangeText={(t) => setResetCode(t.replace(/[^0-9]/g, '').slice(0, 10))}
+              placeholder="000000"
+              placeholderTextColor={colors.textFaint}
+              keyboardType="number-pad"
+              autoFocus
+              maxLength={10}
+            />
+
+            <Button
+              label="Verify"
+              size="lg"
+              loading={busy}
+              disabled={busy || resetCode.trim().length < 4}
+              onPress={onVerifyReset}
+              style={{ marginTop: spacing.xl }}
+            />
+            <Button
+              label="Resend code"
+              variant="ghost"
+              loading={resendingReset}
+              disabled={resendingReset}
+              onPress={onResendReset}
+              style={{ marginTop: spacing.sm }}
+            />
+          </View>
+        </KeyboardAvoidingView>
+      </Screen>
+    );
+  }
+
+  // Code verified — a temporary recovery session now exists. Collect and
+  // save a new password before this behaves like a normal signed-in session.
+  if (resetEmail && session) {
+    const onSaveNewPassword = async () => {
+      if (newPassword.length < 6) {
+        Alert.alert('Too short', 'Use at least 6 characters.');
+        return;
+      }
+      if (newPassword !== confirmNewPassword) {
+        Alert.alert("Passwords don't match", 'Enter the same password in both fields.');
+        return;
+      }
+      const { error } = await updatePassword(newPassword);
+      if (error) {
+        Alert.alert("Couldn't update password", error);
+        return;
+      }
+      setNewPassword('');
+      setConfirmNewPassword('');
+      // resetEmail is cleared now — the effect above takes it from here
+      // (straight to Social, since this account already has a username).
+    };
+
+    return (
+      <Screen>
+        <ModalHeader title="Set a new password" onBack={() => cancelPasswordReset()} />
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <View style={styles.content}>
+            <Text style={styles.label}>NEW PASSWORD</Text>
+            <TextInput
+              style={styles.input}
+              value={newPassword}
+              onChangeText={setNewPassword}
+              placeholder="••••••••"
+              placeholderTextColor={colors.textFaint}
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoFocus
+            />
+            <Text style={[styles.label, { marginTop: spacing.lg }]}>CONFIRM PASSWORD</Text>
+            <TextInput
+              style={styles.input}
+              value={confirmNewPassword}
+              onChangeText={setConfirmNewPassword}
+              placeholder="••••••••"
+              placeholderTextColor={colors.textFaint}
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <Text style={styles.hint}>At least 6 characters.</Text>
+
+            <Button
+              label="Save password"
+              size="lg"
+              loading={busy}
+              disabled={busy || newPassword.length < 6}
+              onPress={onSaveNewPassword}
+              style={{ marginTop: spacing.xl }}
             />
           </View>
         </KeyboardAvoidingView>
@@ -309,6 +469,21 @@ export default function AuthScreen() {
             </Pressable>
           </View>
           {mode === 'signup' && <Text style={styles.hint}>At least 6 characters.</Text>}
+          {mode === 'signin' && (
+            <Pressable
+              onPress={async () => {
+                if (!email.includes('@')) {
+                  Alert.alert('Enter your email', 'Type your email above first, then tap this again.');
+                  return;
+                }
+                const { error } = await requestPasswordReset(email.trim());
+                if (error) Alert.alert("Couldn't send reset code", error);
+              }}
+              style={{ marginTop: spacing.sm }}
+            >
+              <Text style={styles.forgotPassword}>Forgot password?</Text>
+            </Pressable>
+          )}
 
           <Button
             label={mode === 'signup' ? 'Create Account' : 'Sign In'}
@@ -374,6 +549,7 @@ const useStyles = makeStyles((c) => ({
     letterSpacing: 8,
   },
   hint: { ...typography.caption, color: c.textDim, marginTop: spacing.sm, lineHeight: 18 },
+  forgotPassword: { ...typography.caption, color: c.bronze, textAlign: 'right' },
   claimingText: { ...typography.caption, color: c.textDim, textAlign: 'center', marginTop: spacing.md },
   notConfiguredTitle: { ...typography.h2, color: c.text, textAlign: 'center', marginBottom: spacing.sm },
   notConfiguredBody: { ...typography.body, color: c.textDim, textAlign: 'center', lineHeight: 21 },
