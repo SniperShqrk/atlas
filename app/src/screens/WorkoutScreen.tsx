@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -46,6 +46,67 @@ function elapsed(startedAt: number | null, now: number) {
   return h > 0
     ? `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
     : `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+/**
+ * Weight and RPE are both free-decimal fields whose committed value lives in
+ * the store as a number, and both used to bind the TextInput's `value`
+ * straight to that number. That re-renders the field from the parsed number
+ * on every keystroke, so typing a bare "." before any digit follows it gets
+ * wiped on the very next render — parseFloat("102.") is 102, so the field
+ * snaps back to "102" and there's nowhere for a decimal to land. That reads
+ * as "decimals aren't accepted".
+ *
+ * Buffering the raw typed text locally and only parsing/committing on blur
+ * fixes it — the same pattern already used for the height field in
+ * ProfileScreen.tsx. `committed` only overwrites the buffer when it changed
+ * for a reason other than this field's own typing (a unit toggle, mainly).
+ */
+function DecimalInput({
+  committed,
+  parse,
+  format,
+  onCommit,
+  style,
+  placeholder,
+  placeholderTextColor,
+}: {
+  committed: number | undefined;
+  parse: (text: string) => number | undefined;
+  format: (n: number | undefined) => string;
+  onCommit: (n: number | undefined) => void;
+  style: any;
+  placeholder: string;
+  placeholderTextColor: string;
+}) {
+  const displayValue = format(committed);
+  const [text, setText] = useState(displayValue);
+  const lastExternal = useRef(displayValue);
+
+  useEffect(() => {
+    if (displayValue !== lastExternal.current) {
+      setText(displayValue);
+      lastExternal.current = displayValue;
+    }
+  }, [displayValue]);
+
+  return (
+    <TextInput
+      style={style}
+      keyboardType="decimal-pad"
+      placeholder={placeholder}
+      placeholderTextColor={placeholderTextColor}
+      value={text}
+      onChangeText={(t) => setText(t.replace(/[^0-9.]/g, ''))}
+      onEndEditing={() => {
+        const n = parse(text);
+        onCommit(n);
+        const normalized = format(n);
+        setText(normalized);
+        lastExternal.current = normalized;
+      }}
+    />
+  );
 }
 
 export default function WorkoutScreen() {
@@ -351,19 +412,18 @@ export default function WorkoutScreen() {
                       </Text>
 
                       <View style={styles.colInput}>
-                        <TextInput
+                        <DecimalInput
                           style={[styles.input, s.completed && styles.inputDone]}
-                          keyboardType="decimal-pad"
                           placeholder={
                             prev
                               ? String(displayWeight(prev.weightKg, unit))
                               : String(displayWeight(suggestion.weightKg || 0, unit))
                           }
                           placeholderTextColor={colors.textFaint}
-                          value={s.weightKg ? String(displayWeight(s.weightKg, unit)) : ''}
-                          onChangeText={(t) =>
-                            updateSet(entry.exerciseId, s.id, { weightKg: parseWeightInput(t, unit) })
-                          }
+                          committed={s.weightKg}
+                          parse={(t) => parseWeightInput(t, unit)}
+                          format={(kg) => (kg ? String(displayWeight(kg, unit)) : '')}
+                          onCommit={(kg) => updateSet(entry.exerciseId, s.id, { weightKg: kg ?? 0 })}
                         />
                       </View>
 
@@ -381,18 +441,17 @@ export default function WorkoutScreen() {
                       </View>
 
                       <View style={styles.colRpe}>
-                        <TextInput
+                        <DecimalInput
                           style={[styles.input, styles.rpeInput, s.completed && styles.inputDone]}
-                          keyboardType="decimal-pad"
                           placeholder="–"
                           placeholderTextColor={colors.textFaint}
-                          value={s.rpe ? String(s.rpe) : ''}
-                          onChangeText={(t) => {
+                          committed={s.rpe}
+                          parse={(t) => {
                             const v = parseFloat(t);
-                            updateSet(entry.exerciseId, s.id, {
-                              rpe: Number.isFinite(v) ? Math.min(10, Math.max(1, v)) : undefined,
-                            });
+                            return Number.isFinite(v) ? Math.min(10, Math.max(1, v)) : undefined;
                           }}
+                          format={(v) => (v ? String(v) : '')}
+                          onCommit={(v) => updateSet(entry.exerciseId, s.id, { rpe: v })}
                         />
                       </View>
 

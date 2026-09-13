@@ -52,6 +52,9 @@ export type SplitPreference =
 
 export interface UserProfile {
   name: string;
+  /** drives which body-map silhouette (BodyMap.tsx) is drawn; unset falls
+   *  back to the male figure so existing profiles render unchanged */
+  gender?: 'male' | 'female';
   goal: 'build_muscle' | 'lose_fat' | 'strength' | 'general_fitness';
   experience: 'beginner' | 'intermediate' | 'advanced';
   daysPerWeek: number;

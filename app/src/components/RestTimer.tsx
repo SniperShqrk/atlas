@@ -79,6 +79,29 @@ export function RestTimer() {
     }
   }, [restEndsAt]);
 
+  // Belt-and-braces cleanup for the case the effect above never gets to run
+  // its own "restEndsAt went null" branch: finishing or discarding a workout
+  // sets activeSession and restEndsAt to null in the same store update, and
+  // WorkoutScreen only renders <RestTimer /> inside its "active session"
+  // branch — so finishing mid-rest unmounts this component on that same
+  // render, before it ever sees restEndsAt become null. Without this, the
+  // Live Activity is orphaned and sits on the Lock Screen / Dynamic Island
+  // until iOS eventually expires it on its own. This runs once, on true
+  // unmount only (empty deps), so it never interferes with the effect above
+  // updating the same activity in place while the timer is still running.
+  useEffect(() => {
+    return () => {
+      if (activityId.current) {
+        try {
+          stopActivity(activityId.current, { title: 'Rest complete' });
+        } catch {
+          // best-effort, same as above
+        }
+        activityId.current = undefined;
+      }
+    };
+  }, []);
+
   // seeded on the rest window itself so the line holds steady for the whole
   // rest rather than reshuffling on every 500ms tick
   const quote = useMemo(

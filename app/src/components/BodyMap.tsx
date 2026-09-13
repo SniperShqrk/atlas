@@ -4,12 +4,18 @@ import { MuscleGroup } from '@/data/exercises';
 import { MuscleLoad } from '@/store/recovery';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Palette } from '@/theme/palettes';
+import { useWorkoutStore } from '@/store/workoutStore';
 import {
   FRONT_REGIONS,
   BACK_REGIONS,
   FRONT_VIEW_BOX,
   BACK_VIEW_BOX,
   DELTOID_SPLIT,
+  FRONT_REGIONS_FEMALE,
+  BACK_REGIONS_FEMALE,
+  FRONT_VIEW_BOX_FEMALE,
+  BACK_VIEW_BOX_FEMALE,
+  DELTOID_SPLIT_FEMALE,
   BodyRegion,
 } from '@/data/bodyPaths';
 
@@ -63,7 +69,10 @@ const SLUG_TO_MUSCLE: Record<string, MuscleGroup | null> = {
   ankles: null,
 };
 
-/** Pure: takes the palette rather than reading it, so it is not a hook. */
+/** Pure: takes the palette rather than reading it, so it is not a hook.
+ *  'untrained' (never logged) and 'fresh' (fully recovered) intentionally
+ *  render identically — both mean "clear to train", and splitting them
+ *  into two colours on the figure implied a difference that isn't real. */
 function recoveryColor(
   status: MuscleLoad['status'] | undefined,
   colors: Palette
@@ -76,9 +85,9 @@ function recoveryColor(
     case 'ready':
       return colors.recoveryReady;
     case 'fresh':
-      return colors.recoveryFresh;
+    case 'untrained':
     default:
-      return colors.recoveryUntrained;
+      return colors.recoveryFresh;
   }
 }
 
@@ -86,8 +95,24 @@ export function BodyMap(props: Props) {
   const { colors } = useTheme();
   const { view, size = 220 } = props;
   const isFront = view === 'front';
-  const viewBox = isFront ? FRONT_VIEW_BOX : BACK_VIEW_BOX;
-  const regions = isFront ? FRONT_REGIONS : BACK_REGIONS;
+  // Unset profile.gender falls back to the original male figure so every
+  // existing profile keeps rendering exactly as it did before this option
+  // existed.
+  const isFemale = useWorkoutStore((s) => s.profile.gender) === 'female';
+  const viewBox = isFront
+    ? isFemale
+      ? FRONT_VIEW_BOX_FEMALE
+      : FRONT_VIEW_BOX
+    : isFemale
+      ? BACK_VIEW_BOX_FEMALE
+      : BACK_VIEW_BOX;
+  const regions = isFront
+    ? isFemale
+      ? FRONT_REGIONS_FEMALE
+      : FRONT_REGIONS
+    : isFemale
+      ? BACK_REGIONS_FEMALE
+      : BACK_REGIONS;
   const [, , vbW, vbH] = viewBox.split(' ').map(Number);
   const height = size * (vbH / vbW);
 
@@ -105,7 +130,8 @@ export function BodyMap(props: Props) {
     return colorFor(muscle);
   };
 
-  const split = isFront ? DELTOID_SPLIT.front : DELTOID_SPLIT.back;
+  const deltoidSplit = isFemale ? DELTOID_SPLIT_FEMALE : DELTOID_SPLIT;
+  const split = isFront ? deltoidSplit.front : deltoidSplit.back;
   // front view shows the anterior head on the inside of the cap; back shows the posterior
   const innerHead: MuscleGroup = isFront ? 'front_delts' : 'rear_delts';
 

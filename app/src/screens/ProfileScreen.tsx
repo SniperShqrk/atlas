@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet, TextInput, Alert, DevSettings } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Screen, Card, SectionHeader, StatTile, Chip, Button } from '@/components/ui';
@@ -36,6 +36,10 @@ const UNITS: { key: UserProfile['unit']; label: string }[] = [
   { key: 'lb', label: 'Pounds (lb)' },
 ];
 const HEIGHT_LIMITS = { minCm: 100, maxCm: 250 };
+const GENDERS: { key: NonNullable<UserProfile['gender']>; label: string }[] = [
+  { key: 'male', label: 'Male' },
+  { key: 'female', label: 'Female' },
+];
 
 export default function ProfileScreen() {
   const { colors } = useTheme();
@@ -57,6 +61,13 @@ export default function ProfileScreen() {
   const resetOnboarding = useOnboarding((s) => s.reset);
   const authSession = useAuth((s) => s.session);
   const authProfile = useAuth((s) => s.profile);
+
+  // Local buffer for the height field: clamping heightCm on every keystroke
+  // (the old behaviour) snaps to 100 the instant you type a single digit
+  // below it, which makes it impossible to type "170" digit by digit. Typing
+  // is free-form here; the value is only parsed and clamped into the store
+  // once the field loses focus.
+  const [heightText, setHeightText] = useState(profile.heightCm ? String(profile.heightCm) : '');
 
   const totalVolume = sessions.reduce((sum, s) => sum + sessionVolume(s), 0);
   const totalSets = sessions.reduce((sum, s) => sum + sessionSetCount(s), 0);
@@ -375,6 +386,20 @@ export default function ProfileScreen() {
         </View>
 
         <View style={{ marginTop: spacing.xl }}>
+          <SectionHeader title="Body Map" />
+          <View style={styles.chipRow}>
+            {GENDERS.map((g) => (
+              <Chip
+                key={g.key}
+                label={g.label}
+                active={profile.gender === g.key}
+                onPress={() => setProfile({ gender: g.key })}
+              />
+            ))}
+          </View>
+        </View>
+
+        <View style={{ marginTop: spacing.xl }}>
           <SectionHeader title="Height" />
           <View style={styles.heightRow}>
             <TextInput
@@ -382,16 +407,18 @@ export default function ProfileScreen() {
               keyboardType="number-pad"
               placeholder="170"
               placeholderTextColor={colors.textFaint}
-              value={profile.heightCm ? String(profile.heightCm) : ''}
-              onChangeText={(t) => {
-                const n = parseInt(t, 10);
+              value={heightText}
+              onChangeText={(t) => setHeightText(t.replace(/[^0-9]/g, ''))}
+              onEndEditing={() => {
+                const n = parseInt(heightText, 10);
                 if (!Number.isFinite(n)) {
                   setProfile({ heightCm: undefined });
+                  setHeightText('');
                   return;
                 }
-                setProfile({
-                  heightCm: Math.min(HEIGHT_LIMITS.maxCm, Math.max(HEIGHT_LIMITS.minCm, n)),
-                });
+                const clamped = Math.min(HEIGHT_LIMITS.maxCm, Math.max(HEIGHT_LIMITS.minCm, n));
+                setProfile({ heightCm: clamped });
+                setHeightText(String(clamped));
               }}
             />
             <Text style={styles.heightUnit}>cm</Text>

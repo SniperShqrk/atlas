@@ -43,6 +43,11 @@ const UNITS: { value: UserProfile['unit']; label: string }[] = [
   { value: 'lb', label: 'lb' },
 ];
 
+const GENDERS: { value: NonNullable<UserProfile['gender']>; label: string }[] = [
+  { value: 'male', label: 'Male' },
+  { value: 'female', label: 'Female' },
+];
+
 export default function OnboardingScreen() {
   const { colors } = useTheme();
   const styles = useStyles();
@@ -198,6 +203,28 @@ export default function OnboardingScreen() {
                   >
                     <Text style={[styles.pillText, on && { color: colors.onAccent }]}>
                       {u.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <Text style={styles.label}>BODY MAP — CHANGE ANY TIME IN PROFILE</Text>
+            <View style={styles.row}>
+              {GENDERS.map((g) => {
+                const on = profile.gender === g.value;
+                return (
+                  <Pressable
+                    key={g.value}
+                    onPress={() => setProfile({ gender: g.value })}
+                    style={[
+                      styles.pill,
+                      { flex: 1 },
+                      on && { backgroundColor: colors.accent, borderColor: colors.accent },
+                    ]}
+                  >
+                    <Text style={[styles.pillText, on && { color: colors.onAccent }]}>
+                      {g.label}
                     </Text>
                   </Pressable>
                 );
