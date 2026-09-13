@@ -94,7 +94,7 @@ export interface GeneratedPlan {
   /** set when the plan is saved to the plan library (see savePlan) — an
    *  unsaved just-generated plan has none yet. */
   name?: string;
-  source: 'ai' | 'rule_based' | 'imported' | 'preset';
+  source: 'ai' | 'rule_based' | 'imported' | 'preset' | 'manual';
   /** model id, when the plan came from the AI planner */
   model?: string;
   summary: string;
@@ -190,6 +190,10 @@ interface WorkoutStoreState {
    *  editable GeneratedPlan on the Plan tab — same downstream behavior as an
    *  AI-generated or imported plan (editable, saveable, startable). */
   loadPresetProgram: (preset: Omit<GeneratedPlan, 'id' | 'createdAt' | 'source'>) => void;
+  /** The free path: an empty plan with one day per profile.daysPerWeek and
+   *  nothing in them yet — the Plan screen drops straight into editing mode
+   *  after this so the drag-and-drop library is right there to fill it. */
+  createBlankPlan: () => void;
   /** Internal plumbing shared by every plan-editing action — not meant to be
    *  called directly from UI code, use the specific action instead. */
   syncPlanEdit: (plan: GeneratedPlan) => void;
@@ -516,6 +520,23 @@ export const useWorkoutStore = create<WorkoutStoreState>()(
         });
       },
 
+      createBlankPlan: () => {
+        const count = Math.max(1, get().profile.daysPerWeek);
+        set({
+          currentPlan: {
+            id: uid(),
+            createdAt: Date.now(),
+            source: 'manual',
+            summary: 'Built by you.',
+            days: Array.from({ length: count }, (_, i) => ({
+              label: `Day ${i + 1}`,
+              focus: 'Custom',
+              exercises: [],
+            })),
+          },
+        });
+      },
+
       // Every plan-editing action below funnels through here: it updates
       // currentPlan (what the Plan tab is showing) and, if that plan is
       // already in the saved library, its saved copy too — so editing a
@@ -786,14 +807,25 @@ setCustomExercises(useWorkoutStore.getState().customExercises);
 /* Selectors                                                           */
 /* ------------------------------------------------------------------ */
 
-/** The most recent completed sets for an exercise, for the "previous" column. */
+/** The most recent completed sets for an exercise, for the "previous" column
+ *  and for seeding the next session's weight/reps (addExerciseToActive,
+ *  swapExerciseInActive). Prefers real, completed working sets — a warm-up's
+ *  lighter weight or a set you never actually finished shouldn't become next
+ *  time's auto-filled working weight, which is exactly what happened before
+ *  this filter existed: an entry logged as [warmup 40kg, working 100kg,
+ *  100kg] would auto-fill next session's set 1 at 40kg. Still falls back to
+ *  whatever was logged if an entry turns out to be nothing but warm-ups/
+ *  incomplete sets, rather than returning nothing. */
 export function getPreviousSets(sessions: WorkoutSession[], exerciseId: string): SetEntry[] | null {
   const sorted = [...sessions].sort(
     (a, b) => (b.completedAt ?? b.startedAt) - (a.completedAt ?? a.startedAt)
   );
   for (const session of sorted) {
     const entry = session.entries.find((e) => e.exerciseId === exerciseId);
-    if (entry && entry.sets.length > 0) return entry.sets;
+    if (!entry || entry.sets.length === 0) continue;
+    const working = entry.sets.filter((s) => s.completed && !s.warmup);
+    if (working.length > 0) return working;
+    return entry.sets;
   }
   return null;
 }

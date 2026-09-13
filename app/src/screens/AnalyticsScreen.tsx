@@ -143,6 +143,16 @@ export default function AnalyticsScreen() {
   const prevMonthMetrics = mom.previous;
   const monthVolumeChange = mom.volumeChangePct;
   const monthSessionChange = mom.sessionChangePct;
+  // "This month vs last" only means something once there IS a last month to
+  // compare against — on a one-month-old account it was comparing trailing
+  // 30 days to a mostly-empty previous 30, which reads as a misleadingly
+  // huge swing rather than a real trend. Gated on ~2 calendar months of
+  // history (60 days since the first logged session) instead.
+  const firstTrainedAt = useMemo(
+    () => (sessions.length ? Math.min(...sessions.map((s) => s.completedAt ?? s.startedAt)) : null),
+    [sessions]
+  );
+  const hasTwoMonthsHistory = firstTrainedAt !== null && now - firstTrainedAt >= 60 * 24 * 60 * 60 * 1000;
 
   // Bodyweight-relative strength standard for whichever lift is selected in
   // the Strength Trend chip row below — most recent weigh-in first, falling
@@ -285,28 +295,30 @@ export default function AnalyticsScreen() {
         </Card>
 
         {/* ---------------- month over month (private) ---------------- */}
-        <View style={{ marginTop: spacing.xl }}>
-          <SectionHeader title="This Month vs Last" />
-          <Card>
-            <View style={{ flexDirection: 'row' }}>
-              <StatTile label="Sessions" value={String(monthMetrics.sessionCount)} />
-              <StatTile label="Sets" value={String(monthMetrics.totalSets)} />
-              <StatTile
-                label="Volume"
-                value={(() => {
-                  const v = unit === 'lb' ? kgToLb(monthMetrics.totalVolumeKg) : monthMetrics.totalVolumeKg;
-                  return v >= 10000 ? `${Math.round(v / 1000)}k` : String(Math.round(v));
-                })()}
-                unit={unit}
-              />
-            </View>
-            <View style={styles.deltaRow}>
-              <Delta label="sessions" pct={monthSessionChange} />
-              <Delta label="volume" pct={monthVolumeChange} />
-              <Text style={styles.deltaNote}>trailing 30 days · visible only to you</Text>
-            </View>
-          </Card>
-        </View>
+        {hasTwoMonthsHistory && (
+          <View style={{ marginTop: spacing.xl }}>
+            <SectionHeader title="This Month vs Last" />
+            <Card>
+              <View style={{ flexDirection: 'row' }}>
+                <StatTile label="Sessions" value={String(monthMetrics.sessionCount)} />
+                <StatTile label="Sets" value={String(monthMetrics.totalSets)} />
+                <StatTile
+                  label="Volume"
+                  value={(() => {
+                    const v = unit === 'lb' ? kgToLb(monthMetrics.totalVolumeKg) : monthMetrics.totalVolumeKg;
+                    return v >= 10000 ? `${Math.round(v / 1000)}k` : String(Math.round(v));
+                  })()}
+                  unit={unit}
+                />
+              </View>
+              <View style={styles.deltaRow}>
+                <Delta label="sessions" pct={monthSessionChange} />
+                <Delta label="volume" pct={monthVolumeChange} />
+                <Text style={styles.deltaNote}>trailing 30 days · visible only to you</Text>
+              </View>
+            </Card>
+          </View>
+        )}
 
         {/* ---------------- ATLAS insights ---------------- */}
         <View style={{ marginTop: spacing.xl }}>

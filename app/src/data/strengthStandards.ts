@@ -34,6 +34,24 @@ const FEMALE_STANDARDS: Record<string, [number, number, number, number, number]>
   overhead_press: [0.2, 0.3, 0.45, 0.65, 0.85],
 };
 
+/** Exercises this table actually covers — used by the achievements engine to
+ *  know which lifts can carry a strength-standard milestone. */
+export const STANDARD_LIFT_IDS = Object.keys(MALE_STANDARDS);
+
+/** The bodyweight multiple that crosses into `tier` for this lift/gender, or
+ *  null if the lift has no table. Lets other modules (achievements) reuse
+ *  the same numbers `strengthStandard` uses, instead of re-guessing them. */
+export function standardThreshold(
+  exerciseId: string,
+  tier: StandardTier,
+  gender: 'male' | 'female' = 'male'
+): number | null {
+  const table = gender === 'female' ? FEMALE_STANDARDS : MALE_STANDARDS;
+  const tiers = table[exerciseId];
+  if (!tiers) return null;
+  return tiers[TIER_LABELS.indexOf(tier)];
+}
+
 export interface StandardProgress {
   /** null when the lift is below even the Beginner threshold */
   tier: StandardTier | null;

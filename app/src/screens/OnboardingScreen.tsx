@@ -275,7 +275,11 @@ export default function OnboardingScreen() {
               {[
                 'The full diagnosis behind every insight, and what to change',
                 'AI workout plans built around your recovery and equipment',
-                'Strength trends, weekly volume against growth targets',
+                'An AI coach that edits your plan mid-conversation — swap a lift, cut a session short',
+                'Snap a photo or paste in a plan you already follow',
+                'Add your own exercises straight into the library',
+                'Estimated 1RM trends and weekly volume against growth targets',
+                'More saved routines, and your full history as a CSV whenever you want it',
               ].map((line) => (
                 <View key={line} style={styles.bullet}>
                   <Icon name="check" size={15} color={colors.bronze} strokeWidth={2.2} />

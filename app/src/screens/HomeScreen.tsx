@@ -62,6 +62,16 @@ export default function HomeScreen() {
   const customExercises = useWorkoutStore((s) => s.customExercises);
   const recentlyViewed = useWorkoutStore((s) => s.recentlyViewed);
   const mom = useMemo(() => monthOverMonth(sessions), [sessions]);
+  // Same 60-day (~2 calendar months) gate as the Progress screen's own
+  // "This Month vs Last" card — see AnalyticsScreen.tsx for the reasoning.
+  // Both read the same monthOverMonth() numbers, so they should agree about
+  // when there's enough history for the comparison to mean anything too.
+  const firstTrainedAt = useMemo(
+    () => (sessions.length ? Math.min(...sessions.map((s) => s.completedAt ?? s.startedAt)) : null),
+    [sessions]
+  );
+  const hasTwoMonthsHistory =
+    firstTrainedAt !== null && Date.now() - firstTrainedAt >= 60 * 24 * 60 * 60 * 1000;
   const [view, setView] = useState<'front' | 'back'>('front');
 
   const popularExercises = useMemo(
@@ -198,29 +208,32 @@ export default function HomeScreen() {
           )}
 
           {/* this month (private) — mirrors the Progress screen's own card via
-              the shared monthOverMonth() helper, so the two can't disagree */}
-          <View style={{ marginTop: spacing.xl }}>
-            <SectionHeader title="This Month" action="See Progress" onAction={() => navigation.navigate('ProgressTab')} />
-            <Card onPress={() => navigation.navigate('ProgressTab')}>
-              <View style={styles.statRow}>
-                <StatTile label="Sessions" value={String(mom.current.sessionCount)} />
-                <StatTile label="Sets" value={String(mom.current.totalSets)} />
-                <StatTile
-                  label="Volume"
-                  value={(() => {
-                    const v = unit === 'lb' ? kgToLb(mom.current.totalVolumeKg) : mom.current.totalVolumeKg;
-                    return v >= 10000 ? `${Math.round(v / 1000)}k` : String(Math.round(v));
-                  })()}
-                  unit={unit}
-                />
-              </View>
-              <View style={styles.deltaRow}>
-                <HomeDelta label="sessions" pct={mom.sessionChangePct} />
-                <HomeDelta label="volume" pct={mom.volumeChangePct} />
-                <Text style={styles.deltaNote}>trailing 30 days · visible only to you</Text>
-              </View>
-            </Card>
-          </View>
+              the shared monthOverMonth() helper, so the two can't disagree.
+              Gated on 2 months of history — see hasTwoMonthsHistory above. */}
+          {hasTwoMonthsHistory && (
+            <View style={{ marginTop: spacing.xl }}>
+              <SectionHeader title="This Month" action="See Progress" onAction={() => navigation.navigate('ProgressTab')} />
+              <Card onPress={() => navigation.navigate('ProgressTab')}>
+                <View style={styles.statRow}>
+                  <StatTile label="Sessions" value={String(mom.current.sessionCount)} />
+                  <StatTile label="Sets" value={String(mom.current.totalSets)} />
+                  <StatTile
+                    label="Volume"
+                    value={(() => {
+                      const v = unit === 'lb' ? kgToLb(mom.current.totalVolumeKg) : mom.current.totalVolumeKg;
+                      return v >= 10000 ? `${Math.round(v / 1000)}k` : String(Math.round(v));
+                    })()}
+                    unit={unit}
+                  />
+                </View>
+                <View style={styles.deltaRow}>
+                  <HomeDelta label="sessions" pct={mom.sessionChangePct} />
+                  <HomeDelta label="volume" pct={mom.volumeChangePct} />
+                  <Text style={styles.deltaNote}>trailing 30 days · visible only to you</Text>
+                </View>
+              </Card>
+            </View>
+          )}
 
           {/* proactive coach — gated explicitly on !activeSession rather than
               relying on the Start/Resume button swap alone, so the sacred-

@@ -70,22 +70,57 @@ export const ICON_PATHS = {
   // actually doing (barbell vs dumbbell vs machine, etc.) instead of two-letter
   // initials of the exercise name. Keyed 1:1 with the Equipment values that
   // actually appear on an Exercise (see EQUIPMENT_ICONS in ExerciseThumb.tsx).
-  equipBarbell: 'M4,9.5 V14.5 M20,9.5 V14.5 M6.5,12 H17.5',
-  equipDumbbell: 'M2.5,9 V15 M4.5,7.5 V16.5 M19.5,7.5 V16.5 M21.5,9 V15 M6.5,12 H17.5',
-  equipMachine: 'M9,4.5 V19.5 M15,4.5 V19.5 M7,7 H17 M7,10 H17 M7,13 H17 M7,16 H17',
+  //
+  // Redrawn from the original set, which had two real problems: the barbell
+  // was just a plain I-beam indistinguishable from generic "line" furniture,
+  // and the machine/smith pair were both a vertical-rails-plus-rungs shape —
+  // at a 46px thumbnail they read as the same icon. Every glyph below is
+  // built to have a distinct silhouette from every other one at small size,
+  // not just a technically-different path.
+  //
+  // Full-width, graduated plates at both ends (bar spans nearly edge to edge)
+  // — the width itself is the tell that distinguishes it from the dumbbell.
+  equipBarbell:
+    'M0.5,12 H4 M4,8 V16 M6,6 V18 M8,9.5 V14.5 M16,9.5 V14.5 M18,6 V18 M20,8 V16 M20,12 H23.5 M8,12 H16',
+  // Short and centered (fits inside the middle third) with a thick grip —
+  // reads as "compact, handheld" next to the barbell's "long, loaded" shape.
+  equipDumbbell: 'M6,9.5 V14.5 M8,7.5 V16.5 M16,7.5 V16.5 M18,9.5 V14.5 M9,12 H15',
+  // A weight-stack tower: a closed frame with the stack's plates visible
+  // inside it, plus a cable stub off the top — unambiguously "a machine",
+  // not a ladder.
+  equipMachine:
+    'M8,3.5 V20.5 M16,3.5 V20.5 M8,3.5 H16 M8,20.5 H16 M12,3.5 V1.2 ' +
+    'M10,7 H14 M10,10.5 H14 M10,14 H14 M10,17.5 H14',
+  // Pulley wheel, cable, D-handle — the same idea as before, tightened up.
   equipCable:
-    'M12,3.5 A3,3 0 1 1 11.99,3.5 Z M12,6.5 V15 ' +
-    'M8.5,15 C8.5,15 8.5,18.5 12,18.5 C15.5,18.5 15.5,15 15.5,15',
+    'M12,2.8 A2,2 0 1 1 11.99,2.8 Z M12,4.8 V14 ' +
+    'M8.5,14 C8.5,14 8.5,18.5 12,18.5 C15.5,18.5 15.5,14 15.5,14',
+  // A real person outline — head, curved shoulders, a tapered torso and two
+  // separated legs — instead of the old four-line matchstick figure (a dot
+  // head with diagonal arm/leg strokes), which read as a crude stick man
+  // rather than a body.
   equipBodyweight:
-    'M12,3.5 A2.2,2.2 0 1 1 11.99,3.5 Z M12,7.7 V15 ' +
-    'M12,9.5 L7.5,12.5 M12,9.5 L16.5,12.5 M12,15 L8,20.5 M12,15 L16,20.5',
+    'M12,3.3 A1.8,1.8 0 1 1 11.99,3.3 Z ' +
+    'M8.3,7.6 C9.3,6.6 10.6,6.1 12,6.1 C13.4,6.1 14.7,6.6 15.7,7.6 ' +
+    'M8.3,7.6 L7.2,12.3 M15.7,7.6 L16.8,12.3 ' +
+    'M9.3,7.6 L9.8,14.5 L14.2,14.5 L14.7,7.6 ' +
+    'M10.2,14.5 L8.8,21 M13.8,14.5 L15.2,21',
   equipKettlebell:
     'M9.5,8 C9.5,5.8 10.6,4.2 12,4.2 C13.4,4.2 14.5,5.8 14.5,8 ' +
     'M7,13 C7,9.8 9.2,8 12,8 C14.8,8 17,9.8 17,13 C17,16.8 14.8,19.8 12,19.8 C9.2,19.8 7,16.8 7,13 Z',
-  equipBand:
-    'M4,12 C4,9 6.5,7 9,9 C11.5,11 12.5,11 15,9 C17.5,7 20,9 20,12 ' +
-    'C20,15 17.5,17 15,15 C12.5,13 11.5,13 9,15 C6.5,17 4,15 4,12 Z',
-  equipSmith: 'M6,4 V20 M18,4 V20 M6,11 H18 M4,11 H6 M18,11 H20',
+  // A flattened loop — the actual silhouette of a resistance loop band lying
+  // stretched, rather than an ambiguous squiggle.
+  equipBand: 'M3,12 C3,8.5 21,8.5 21,12 M3,12 C3,15.5 21,15.5 21,12',
+  // A rack: two full-height rails with a top crossbeam, and a bar constrained
+  // between them that pokes out past both rails — that "bar wider than its
+  // own rails" detail is the actual visual signature of a Smith machine, and
+  // what now separates it from the weight-stack machine glyph above.
+  equipSmith: 'M6,3.5 V20.5 M18,3.5 V20.5 M6,3.5 H18 M2.5,11 H7 M17,11 H21.5',
+  // Six-dot grip, the universal "drag me" affordance — reuses the same
+  // zero-length-line dot trick as library's three dots above.
+  dragHandle:
+    'M9,6 L9,6.01 M9,12 L9,12.01 M9,18 L9,18.01 ' +
+    'M15,6 L15,6.01 M15,12 L15,12.01 M15,18 L15,18.01',
   eyeOpen:
     'M2.5,12 C2.5,12 6,6 12,6 C18,6 21.5,12 21.5,12 C21.5,12 18,18 12,18 C6,18 2.5,12 2.5,12 Z ' +
     'M12,14.5 A2.5,2.5 0 1 1 12.01,14.5 Z',

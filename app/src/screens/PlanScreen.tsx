@@ -11,7 +11,7 @@ import {
   PanResponder,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Screen, Card, Button, SectionHeader, EmptyState, Chip, InfoButton } from '@/components/ui';
+import { Screen, Card, Button, SectionHeader, Chip, InfoButton } from '@/components/ui';
 import { ScreenLayout } from '@/components/ScreenLayout';
 import { ProBadge } from '@/components/Pro';
 import { Icon } from '@/components/Icon';
@@ -38,6 +38,7 @@ const PROGRAM_SOURCE_LABEL: Record<string, string> = {
   imported: 'Imported',
   preset: 'Program',
   rule_based: 'Offline generator',
+  manual: 'Built by you',
 };
 
 /** Bounding box in screen (page) coordinates, from measureInWindow. */
@@ -59,7 +60,6 @@ const SPLITS: { key: SplitPreference; label: string }[] = [
 ];
 
 const SESSION_LENGTHS = [30, 45, 60, 75, 90];
-const DAYS_PER_WEEK_OPTIONS = [2, 3, 4, 5, 6];
 
 /** "Auto" (null) lets the backend pick a focus from recovery data rather
  *  than always defaulting to Push. */
@@ -123,6 +123,7 @@ export default function PlanScreen() {
   const removePlanExercise = useWorkoutStore((s) => s.removePlanExercise);
   const removePlanDay = useWorkoutStore((s) => s.removePlanDay);
   const addPlanDay = useWorkoutStore((s) => s.addPlanDay);
+  const createBlankPlan = useWorkoutStore((s) => s.createBlankPlan);
   const addExerciseToPlanDay = useWorkoutStore((s) => s.addExerciseToPlanDay);
   const loadPresetProgram = useWorkoutStore((s) => s.loadPresetProgram);
   const customExercises = useWorkoutStore((s) => s.customExercises);
@@ -150,6 +151,10 @@ export default function PlanScreen() {
   const [dropTargetDay, setDropTargetDay] = useState<number | null>(null);
   const [planScope, setPlanScope] = useState<'week' | 'day'>('week');
   const [dayFocus, setDayFocus] = useState<string | null>(null);
+  // The AI settings (session length, split, emphasis, injuries, scope) used
+  // to be a permanently-open card regardless of whether anyone was about to
+  // generate anything. Now it's tucked behind the AI Planner card itself.
+  const [showAiSettings, setShowAiSettings] = useState(false);
   const dragPos = useRef(new Animated.ValueXY()).current;
   const dayCardNodes = useRef<Record<number, any>>({});
   const dayCardBounds = useRef<Record<number, Bounds>>({});
@@ -302,10 +307,88 @@ export default function PlanScreen() {
           {profile.daysPerWeek} days · {profile.sessionMinutes} min · {profile.goal.replace('_', ' ')}
         </Text>
 
-        {/* generation — the real thing, for Pro. Free users get the Create
-            Plan CTA above instead of a second, redundant lock panel here. */}
-        {isPro && (
-          <View style={{ marginTop: spacing.lg }}>
+        {/* ---- how to build a plan: two parallel, equally-visible paths ----
+            Free: Build Your Own, a blank plan you fill by dragging exercises
+            in below (same mechanism as editing any other plan). Pro: AI
+            Planner, which expands in place into the actual generation
+            controls instead of those living in a permanently-open settings
+            card whether or not anyone was about to use it — that card was
+            most of what made this screen feel crowded. */}
+        {!currentPlan && (
+          <Pressable
+            onPress={() => {
+              haptics.tap();
+              createBlankPlan();
+              setEditing(true);
+            }}
+            style={({ pressed }) => [styles.buildCard, pressed && { opacity: 0.9 }, { marginTop: spacing.lg }]}
+          >
+            <View style={styles.buildIconWrap}>
+              <Icon name="dragHandle" size={20} color={colors.textSecondary} strokeWidth={2.6} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.buildTitle}>Build Your Own</Text>
+              <Text style={styles.buildBlurb}>
+                Pick your own exercises and drag them into each day — free, no limits
+              </Text>
+            </View>
+            <Icon name="chevron" size={18} color={colors.textFaint} strokeWidth={1.8} />
+          </Pressable>
+        )}
+
+        <Pressable
+          onPress={() => {
+            if (!isPro) {
+              recordPaywallView('ai_planner');
+              navigation.navigate('Paywall', { feature: 'ai_planner' });
+              return;
+            }
+            haptics.tap();
+            setShowAiSettings((v) => !v);
+          }}
+          style={({ pressed }) => [
+            styles.buildCard,
+            styles.aiCard,
+            pressed && { opacity: 0.9 },
+            { marginTop: currentPlan ? spacing.lg : spacing.sm },
+          ]}
+        >
+          <View style={[styles.buildIconWrap, styles.aiIconWrap]}>
+            <Icon name="sparkle" size={20} color="#fff" strokeWidth={1.7} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <View style={styles.buildTitleRow}>
+              <Text style={styles.buildTitle}>AI Planner</Text>
+              {!isPro && <ProBadge />}
+            </View>
+            <Text style={styles.buildBlurb}>
+              {currentPlan
+                ? 'Regenerate around your goal, equipment and current recovery'
+                : 'Let ATLAS build and schedule your whole week automatically'}
+            </Text>
+          </View>
+          <View style={isPro && showAiSettings ? styles.chevronOpen : undefined}>
+            <Icon name="chevron" size={18} color={isPro ? colors.textFaint : colors.bronze} strokeWidth={1.8} />
+          </View>
+        </Pressable>
+
+        {!isPro && !currentPlan && (
+          <Pressable
+            onPress={() => {
+              recordPaywallView('import_workouts');
+              navigation.navigate('Paywall', { feature: 'import_workouts' });
+            }}
+            style={{ marginTop: spacing.md }}
+          >
+            <Text style={styles.importLink}>Have a plan already? Import it →</Text>
+          </Pressable>
+        )}
+
+        {/* AI settings — collapsed by default. Everything here only ever
+            shaped what the generator writes, so it has no reason to be
+            visible before the AI Planner card above is actually open. */}
+        {isPro && showAiSettings && (
+          <Card style={{ marginTop: spacing.md }}>
             {/* Plan the whole week, or just today — before this, the planner
                 only ever wrote a full week, which meant asking it for "just
                 today's session" meant regenerating (and losing) the rest of
@@ -327,123 +410,6 @@ export default function PlanScreen() {
                 ))}
               </View>
             )}
-
-            <Button
-              label={
-                loading
-                  ? planScope === 'day'
-                    ? 'Building your session…'
-                    : 'Building your week…'
-                  : currentPlan
-                  ? 'Regenerate Plan'
-                  : planScope === 'day'
-                  ? 'Generate Day'
-                  : 'Generate Plan'
-              }
-              onPress={onGenerate}
-              loading={loading}
-              size="lg"
-              style={{ marginTop: spacing.lg }}
-            />
-            <Button
-              label="Import Workout"
-              variant="secondary"
-              onPress={() => navigation.navigate('ImportWorkout')}
-              style={{ marginTop: spacing.sm }}
-            />
-            {currentPlan && (
-              <Pressable onPress={onAskCoach} style={styles.askCoachRow}>
-                <Icon name="info" size={15} color={colors.bronze} strokeWidth={1.7} />
-                <Text style={styles.askCoachText}>Ask the coach to adjust this plan</Text>
-              </Pressable>
-            )}
-            {error && <Text style={styles.error}>{error}</Text>}
-            {currentPlan?.source === 'rule_based' && !loading && (
-              <Text style={styles.note}>
-                Built with the offline generator — set an API key on the backend for the AI planner.
-              </Text>
-            )}
-            {currentPlan?.source === 'imported' && !loading && (
-              <Text style={styles.note}>Imported from your own plan.</Text>
-            )}
-          </View>
-        )}
-
-        {/* saved plan library — generating/regenerating never touches these,
-            only an explicit Save Plan tap does, so switching plans or trying
-            a new week never costs you one you already liked. */}
-        {isPro && savedPlans.length > 0 && (
-          <View style={{ marginTop: spacing.xl }}>
-            <SectionHeader title="My Plans" />
-            <Card style={{ padding: 0, marginTop: spacing.sm }}>
-              {savedPlans.map((p, i) => (
-                <Pressable
-                  key={p.id}
-                  style={[styles.planRow, i > 0 && styles.exRowBorder]}
-                  onPress={() => {
-                    loadSavedPlan(p.id);
-                    setEditing(false);
-                  }}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.planRowName} numberOfLines={1}>
-                      {p.name}
-                    </Text>
-                    <Text style={styles.planRowMeta}>
-                      {p.days.length} days · {PROGRAM_SOURCE_LABEL[p.source] ?? 'Offline generator'}
-                      {currentPlan?.id === p.id ? ' · Open now' : ''}
-                    </Text>
-                  </View>
-                  <Pressable
-                    onPress={() =>
-                      Alert.alert('Delete this plan?', p.name ?? 'Untitled plan', [
-                        { text: 'Cancel', style: 'cancel' },
-                        { text: 'Delete', style: 'destructive', onPress: () => deleteSavedPlan(p.id) },
-                      ])
-                    }
-                    hitSlop={10}
-                  >
-                    <Icon name="close" size={16} color={colors.textFaint} strokeWidth={1.7} />
-                  </Pressable>
-                </Pressable>
-              ))}
-            </Card>
-          </View>
-        )}
-
-        {/* Free doesn't get a dedicated Import CTA card — the Create Plan
-            card below already sends them to the same paywall, which lists
-            Import Workouts among the Pro features. A plain link keeps this
-            screen from stacking three near-identical upsell blocks. */}
-        {!isPro && (
-          <Pressable
-            onPress={() => {
-              recordPaywallView('import_workouts');
-              navigation.navigate('Paywall', { feature: 'import_workouts' });
-            }}
-            style={{ marginTop: spacing.lg }}
-          >
-            <Text style={styles.importLink}>Have a plan already? Import it →</Text>
-          </Pressable>
-        )}
-
-        {/* planner parameters — always visible; these feed the AI planner above
-            and also shape the empty-state suggestions below, so hiding them
-            behind a toggle just cost a tap for no reason */}
-        <View style={{ marginTop: spacing.xl }}>
-          <SectionHeader title="Planner Settings" />
-          <Card style={{ marginTop: spacing.sm }}>
-            <Text style={styles.paramLabel}>DAYS PER WEEK</Text>
-            <View style={styles.chipRow}>
-              {DAYS_PER_WEEK_OPTIONS.map((d) => (
-                <Chip
-                  key={d}
-                  label={`${d}`}
-                  active={profile.daysPerWeek === d}
-                  onPress={() => setProfile({ daysPerWeek: d })}
-                />
-              ))}
-            </View>
 
             <Text style={[styles.paramLabel, { marginTop: spacing.lg }]}>SESSION LENGTH</Text>
             <View style={styles.chipRow}>
@@ -494,79 +460,115 @@ export default function PlanScreen() {
               placeholderTextColor={colors.textFaint}
               multiline
             />
-          </Card>
-        </View>
 
-        {/* prominent premium CTA — the intentional funnel this screen exists
-            to run: Workout Planner → Create Plan → ATLAS Pro. Pro users
-            already have the real generate button up top, so this only shows
-            for Free. Sits above "No plan yet" so it reads as the answer to
-            that question rather than an afterthought below it. */}
-        {!isPro && (
-          <Pressable
-            onPress={() => {
-              recordPaywallView('ai_planner');
-              navigation.navigate('Paywall', { feature: 'ai_planner' });
-            }}
-            style={({ pressed }) => [
-              styles.createPlanCard,
-              pressed && { opacity: 0.88 },
-              { marginTop: spacing.xl },
-            ]}
-          >
-            <View style={styles.createPlanIconWrap}>
-              <Icon name="sparkle" size={22} color="#fff" strokeWidth={1.7} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <View style={styles.createPlanTitleRow}>
-                <Text style={styles.createPlanTitle}>Create Plan</Text>
-                <ProBadge />
-              </View>
-              <Text style={styles.createPlanBlurb}>
-                Let ATLAS build and schedule your whole week automatically
-              </Text>
-            </View>
-            <Icon name="chevron" size={18} color={colors.bronze} strokeWidth={1.8} />
-          </Pressable>
+            <Button
+              label={
+                loading
+                  ? planScope === 'day'
+                    ? 'Building your session…'
+                    : 'Building your week…'
+                  : currentPlan
+                  ? 'Regenerate Plan'
+                  : planScope === 'day'
+                  ? 'Generate Day'
+                  : 'Generate Plan'
+              }
+              onPress={onGenerate}
+              loading={loading}
+              size="lg"
+              style={{ marginTop: spacing.lg }}
+            />
+            <Button
+              label="Import Workout"
+              variant="secondary"
+              onPress={() => navigation.navigate('ImportWorkout')}
+              style={{ marginTop: spacing.sm }}
+            />
+            {currentPlan && (
+              <Pressable onPress={onAskCoach} style={styles.askCoachRow}>
+                <Icon name="info" size={15} color={colors.bronze} strokeWidth={1.7} />
+                <Text style={styles.askCoachText}>Ask the coach to adjust this plan</Text>
+              </Pressable>
+            )}
+            {error && <Text style={styles.error}>{error}</Text>}
+          </Card>
         )}
 
-        {!currentPlan && !loading && (
-          <EmptyState
-            title="No plan yet"
-            subtitle="The planner reads your goal, equipment, time per session, injuries and current recovery, then writes the week around them."
-          />
+        {/* saved plan library — offered only before you've settled on
+            something, so it isn't sitting underneath the plan you're already
+            editing. Generating/regenerating never touches these, only an
+            explicit Save Plan tap does. */}
+        {!currentPlan && isPro && savedPlans.length > 0 && (
+          <View style={{ marginTop: spacing.xl }}>
+            <SectionHeader title="My Plans" />
+            <Card style={{ padding: 0, marginTop: spacing.sm }}>
+              {savedPlans.map((p, i) => (
+                <Pressable
+                  key={p.id}
+                  style={[styles.planRow, i > 0 && styles.exRowBorder]}
+                  onPress={() => {
+                    loadSavedPlan(p.id);
+                    setEditing(false);
+                  }}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.planRowName} numberOfLines={1}>
+                      {p.name}
+                    </Text>
+                    <Text style={styles.planRowMeta}>
+                      {p.days.length} days · {PROGRAM_SOURCE_LABEL[p.source] ?? 'Offline generator'}
+                    </Text>
+                  </View>
+                  <Pressable
+                    onPress={() =>
+                      Alert.alert('Delete this plan?', p.name ?? 'Untitled plan', [
+                        { text: 'Cancel', style: 'cancel' },
+                        { text: 'Delete', style: 'destructive', onPress: () => deleteSavedPlan(p.id) },
+                      ])
+                    }
+                    hitSlop={10}
+                  >
+                    <Icon name="close" size={16} color={colors.textFaint} strokeWidth={1.7} />
+                  </Pressable>
+                </Pressable>
+              ))}
+            </Card>
+          </View>
         )}
 
         {/* Ready-made programs — free, no generator required. Loading one just
             opens it as a normal, editable plan, same as anything the AI
-            writes or you import. */}
-        <View style={{ marginTop: spacing.xl }}>
-          <SectionHeader title="Quick-Start Programs" />
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.programRow}
-            style={{ marginTop: spacing.sm }}
-          >
-            {PREBUILT_PROGRAMS.map((program) => (
-              <Pressable
-                key={program.name}
-                style={styles.programCard}
-                onPress={() => {
-                  haptics.tap();
-                  loadPresetProgram(program);
-                  setEditing(false);
-                }}
-              >
-                <Text style={styles.programCardName}>{program.name}</Text>
-                <Text style={styles.programCardMeta}>{program.days.length}-day split</Text>
-                <Text style={styles.programCardSummary} numberOfLines={3}>
-                  {program.summary}
-                </Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-        </View>
+            writes or you import. Hidden once a plan exists — this is another
+            "start something new" affordance, same as Build Your Own above. */}
+        {!currentPlan && (
+          <View style={{ marginTop: spacing.xl }}>
+            <SectionHeader title="Quick-Start Programs" />
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.programRow}
+              style={{ marginTop: spacing.sm }}
+            >
+              {PREBUILT_PROGRAMS.map((program) => (
+                <Pressable
+                  key={program.name}
+                  style={styles.programCard}
+                  onPress={() => {
+                    haptics.tap();
+                    loadPresetProgram(program);
+                    setEditing(false);
+                  }}
+                >
+                  <Text style={styles.programCardName}>{program.name}</Text>
+                  <Text style={styles.programCardMeta}>{program.days.length}-day split</Text>
+                  <Text style={styles.programCardSummary} numberOfLines={3}>
+                    {program.summary}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
         {currentPlan && (
           <>
@@ -574,6 +576,15 @@ export default function PlanScreen() {
               <Text style={styles.summary}>{currentPlan.summary}</Text>
               {currentPlan.model && (
                 <Text style={styles.modelNote}>Generated by {currentPlan.model}</Text>
+              )}
+              {currentPlan.source === 'rule_based' && (
+                <Text style={styles.modelNote}>Built offline — the AI planner wasn't reachable.</Text>
+              )}
+              {currentPlan.source === 'imported' && (
+                <Text style={styles.modelNote}>Imported from your own workout history.</Text>
+              )}
+              {currentPlan.source === 'manual' && (
+                <Text style={styles.modelNote}>Built by you.</Text>
               )}
             </Card>
 
@@ -798,27 +809,30 @@ export default function PlanScreen() {
 
 const useStyles = makeStyles((c) => ({
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  createPlanCard: {
+  buildCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    backgroundColor: c.bronzeSoft,
-    borderWidth: 1.5,
-    borderColor: c.bronze,
+    backgroundColor: c.card,
+    borderWidth: 1,
+    borderColor: c.border,
     borderRadius: radius.lg,
     padding: spacing.lg,
   },
-  createPlanIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: c.bronze,
+  buildIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: c.cardAlt,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  createPlanTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  createPlanTitle: { ...typography.h2, color: c.text },
-  createPlanBlurb: { ...typography.caption, color: c.textDim, marginTop: 3, lineHeight: 18 },
+  aiCard: { backgroundColor: c.bronzeSoft, borderColor: c.bronze, borderWidth: 1.5 },
+  aiIconWrap: { backgroundColor: c.bronze },
+  buildTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  buildTitle: { ...typography.h2, color: c.text },
+  buildBlurb: { ...typography.caption, color: c.textDim, marginTop: 3, lineHeight: 18 },
+  chevronOpen: { transform: [{ rotate: '90deg' }] },
   title: { ...typography.hero, color: c.text },
   subtitle: { ...typography.body, color: c.textDim, marginTop: 2, textTransform: 'capitalize' },
   paramLabel: { ...typography.micro, color: c.textFaint, marginBottom: spacing.sm },

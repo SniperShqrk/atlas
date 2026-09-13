@@ -14,13 +14,13 @@ import {
   computeAchievements,
 } from '@/data/achievements';
 
-const CATEGORY_ORDER: AchievementCategory[] = ['sessions', 'volume', 'streak', 'records', 'exercises'];
+const CATEGORY_ORDER: AchievementCategory[] = ['strength', 'sessions', 'streak', 'volume', 'records'];
 const CATEGORY_ICON: Record<AchievementCategory, any> = {
+  strength: 'scale',
   sessions: 'workout',
-  volume: 'plates',
   streak: 'flame',
+  volume: 'plates',
   records: 'trophy',
-  exercises: 'library',
 };
 
 function formatDate(t: number): string {
@@ -35,8 +35,12 @@ export default function AchievementsScreen() {
   const profile = useWorkoutStore((s) => s.profile);
 
   const report = useMemo(
-    () => computeAchievements(sessions, profile.daysPerWeek),
-    [sessions, profile.daysPerWeek]
+    () =>
+      computeAchievements(sessions, profile.daysPerWeek, {
+        bodyweightKg: profile.weightKg,
+        gender: profile.gender,
+      }),
+    [sessions, profile.daysPerWeek, profile.weightKg, profile.gender]
   );
 
   return (
@@ -79,6 +83,11 @@ export default function AchievementsScreen() {
         {CATEGORY_ORDER.map((cat) => (
           <View key={cat} style={{ marginTop: spacing.xl }}>
             <Text style={styles.sectionTitle}>{CATEGORY_LABELS[cat]}</Text>
+            {cat === 'strength' && !profile.weightKg && (
+              <Text style={styles.strengthHint}>
+                Log your bodyweight to unlock these — strength standards are measured against it.
+              </Text>
+            )}
             <Card style={{ padding: 0 }}>
               {report.byCategory[cat].map((a, i) => (
                 <TierRow key={a.tier.id} progress={a} first={i === 0} />
@@ -143,6 +152,13 @@ const useStyles = makeStyles((c) => ({
     color: c.textDim,
     marginBottom: spacing.sm,
     paddingHorizontal: spacing.xs,
+  },
+  strengthHint: {
+    ...typography.caption,
+    color: c.textFaint,
+    marginBottom: spacing.sm,
+    paddingHorizontal: spacing.xs,
+    lineHeight: 17,
   },
 
   nextRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.lg },

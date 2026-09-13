@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, Pressable, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import * as AppleAuthentication from 'expo-apple-authentication';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { Screen, Button } from '@/components/ui';
 import { ModalHeader } from '@/components/ScreenLayout';
 import { Icon } from '@/components/Icon';
@@ -15,12 +15,23 @@ import { syncStatsToSupabase } from '@/lib/socialSync';
 /**
  * Entirely separate from the rest of ATLAS: nothing else in the app requires
  * an account, and skipping this screen entirely still leaves a fully working
- * solo training log. This is only the gate in front of Friends & Groups.
+ * solo training log.
+ *
+ * Reachable from two places, via route.params.entryPoint: the "Friends &
+ * Groups" row (entryPoint 'social', the default — framed around friends,
+ * groups and leaderboards, lands on Social when done) and a plain "Account"
+ * row directly on Profile (entryPoint 'profile' — framed around creating/
+ * backing up your account on its own, with no mention of social features,
+ * lands back on Profile when done). Same screen, same auth logic — only the
+ * copy and the landing destination change.
  */
 export default function AuthScreen() {
   const { colors, isLight } = useTheme();
   const styles = useStyles();
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const entryPoint: 'social' | 'profile' = route.params?.entryPoint === 'profile' ? 'profile' : 'social';
+  const landingScreen = entryPoint === 'profile' ? 'ProfileTab' : 'Social';
   const session = useAuth((s) => s.session);
   const profile = useAuth((s) => s.profile);
   const busy = useAuth((s) => s.busy);
@@ -70,21 +81,22 @@ export default function AuthScreen() {
   // session too, and this would otherwise bounce straight past the
   // new-password step before it ever renders.
   useEffect(() => {
-    if (session && profile?.username && !resetEmail) navigation.replace('Social');
-  }, [session, profile?.username, resetEmail, navigation]);
+    if (session && profile?.username && !resetEmail) navigation.replace(landingScreen);
+  }, [session, profile?.username, resetEmail, navigation, landingScreen]);
 
   if (!isSupabaseConfigured) {
     return (
       <Screen>
-        <ModalHeader title="Friends & Groups" onBack={() => navigation.goBack()} />
+        <ModalHeader title={entryPoint === 'profile' ? 'Account' : 'Friends & Groups'} onBack={() => navigation.goBack()} />
         <View style={styles.content}>
           <View style={styles.iconCircle}>
             <Icon name="friends" size={30} color={colors.textDim} strokeWidth={1.6} />
           </View>
           <Text style={styles.notConfiguredTitle}>Not set up yet</Text>
           <Text style={styles.notConfiguredBody}>
-            Friends, groups and shared leaderboards need a small one-time setup that hasn't been
-            done on this build yet. Nothing else in ATLAS depends on it.
+            {entryPoint === 'profile'
+              ? "Accounts need a small one-time setup that hasn't been done on this build yet. Nothing else in ATLAS depends on it."
+              : "Friends, groups and shared leaderboards need a small one-time setup that hasn't been done on this build yet. Nothing else in ATLAS depends on it."}
           </Text>
         </View>
       </Screen>
@@ -340,12 +352,12 @@ export default function AuthScreen() {
       const { records, sessions } = useWorkoutStore.getState();
       await syncStatsToSupabase(records, sessions);
       setClaimingHistory(false);
-      navigation.replace('Social');
+      navigation.replace(landingScreen);
     };
 
     return (
       <Screen>
-        <ModalHeader title="Choose a username" onBack={() => navigation.goBack()} />
+        <ModalHeader title={entryPoint === 'profile' ? 'Almost done' : 'Choose a username'} onBack={() => navigation.goBack()} />
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <View style={styles.content}>
             <Text style={styles.label}>USERNAME</Text>
@@ -400,14 +412,19 @@ export default function AuthScreen() {
 
   return (
     <Screen>
-      <ModalHeader title="Friends & Groups" onBack={() => navigation.goBack()} />
+      <ModalHeader title={entryPoint === 'profile' ? 'Account' : 'Friends & Groups'} onBack={() => navigation.goBack()} />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.content}>
           <View style={styles.iconCircle}>
             <Icon name="friends" size={30} color={colors.accent} strokeWidth={1.6} />
           </View>
           <Text style={styles.tagline}>
-            Add friends, build a group, and compare lifts on a shared leaderboard.
+            {entryPoint === 'profile'
+              ? 'Create an account or sign in to back up your training data.'
+              : 'Add friends, build a group, and compare lifts on a shared leaderboard.'}
+          </Text>
+          <Text style={styles.transferNote}>
+            Your data will transfer to whichever account you sign into.
           </Text>
 
           {appleAvailable && (
@@ -520,6 +537,13 @@ const useStyles = makeStyles((c) => ({
     marginBottom: spacing.lg,
   },
   tagline: { ...typography.body, color: c.textSecondary, textAlign: 'center', lineHeight: 21 },
+  transferNote: {
+    ...typography.caption,
+    color: c.textFaint,
+    textAlign: 'center',
+    marginTop: spacing.sm,
+    lineHeight: 17,
+  },
   label: { ...typography.micro, color: c.textFaint, marginBottom: spacing.sm },
   input: {
     backgroundColor: c.cardAlt,

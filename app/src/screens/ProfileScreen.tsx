@@ -77,7 +77,10 @@ export default function ProfileScreen() {
   const totalVolume = sessions.reduce((sum, s) => sum + sessionVolume(s), 0);
   const totalSets = sessions.reduce((sum, s) => sum + sessionSetCount(s), 0);
   const latestWeight = bodyweight[bodyweight.length - 1];
-  const achievements = computeAchievements(sessions, profile.daysPerWeek);
+  const achievements = computeAchievements(sessions, profile.daysPerWeek, {
+    bodyweightKg: profile.weightKg,
+    gender: profile.gender,
+  });
 
   const topRecords = Object.values(records)
     .sort((a, b) => b.bestE1rm - a.bestE1rm)
@@ -151,9 +154,38 @@ export default function ProfileScreen() {
           <Icon name="chevron" size={18} color={colors.textDim} strokeWidth={1.7} />
         </Pressable>
 
+        {/* Account — signing in/up on its own terms, independent of Friends &
+            Groups below. Some people want their data backed up to an account
+            without ever touching the social side. */}
         <Pressable
           style={styles.linkRow}
-          onPress={() => navigation.navigate(authSession && authProfile?.username ? 'Social' : 'Auth')}
+          onPress={() =>
+            navigation.navigate(
+              authSession && authProfile?.username ? 'Social' : 'Auth',
+              { entryPoint: 'profile' }
+            )
+          }
+        >
+          <Icon name="profile" size={20} color={colors.textSecondary} strokeWidth={1.6} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.linkTitle}>Account</Text>
+            <Text style={styles.linkMeta}>
+              {authProfile?.username
+                ? `Signed in as @${authProfile.username}`
+                : 'Create an account or sign in — your data transfers with it'}
+            </Text>
+          </View>
+          <Icon name="chevron" size={18} color={colors.textDim} strokeWidth={1.7} />
+        </Pressable>
+
+        <Pressable
+          style={styles.linkRow}
+          onPress={() =>
+            navigation.navigate(
+              authSession && authProfile?.username ? 'Social' : 'Auth',
+              { entryPoint: 'social' }
+            )
+          }
         >
           <Icon name="friends" size={20} color={colors.textSecondary} strokeWidth={1.6} />
           <View style={{ flex: 1 }}>

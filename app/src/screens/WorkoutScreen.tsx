@@ -118,10 +118,18 @@ function DecimalInput({
 }
 
 /**
- * Compact +/- stepper wrapped around the weight DecimalInput, in fixed
- * 0.5kg increments regardless of display unit (kg is the unit the user
- * actually loads plates in). A tap steps once; holding either button
- * auto-repeats after a short delay, like a native stepper.
+ * Compact +/- stepper wrapped around the weight input, in fixed 0.5kg
+ * increments regardless of display unit (kg is the unit the user actually
+ * loads plates in). A tap steps once; holding either button auto-repeats
+ * after a short delay, like a native stepper.
+ *
+ * This owns its own text buffer rather than delegating to the generic
+ * DecimalInput — the +/- buttons need to read whatever is CURRENTLY typed,
+ * not the last value committed to the store. DecimalInput only commits on
+ * blur, so typing "100" and immediately tapping "+" without the field losing
+ * focus used to read `committed` (still 0, or whatever it was before you
+ * started typing), step from that, and silently discard the "100" you'd just
+ * typed — the bug where a tap after typing produced 0.5 instead of 100.5.
  */
 function WeightStepper({
   committed,
@@ -146,11 +154,39 @@ function WeightStepper({
   const repeatDelay = useRef<ReturnType<typeof setTimeout> | null>(null);
   const repeatTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const format = (kg: number | undefined) => (kg ? String(displayWeight(kg, unit)) : '');
+  const [text, setText] = useState(format(committed || undefined));
+  const lastExternal = useRef(format(committed || undefined));
+
+  useEffect(() => {
+    const formatted = format(committed || undefined);
+    if (formatted !== lastExternal.current) {
+      setText(formatted);
+      lastExternal.current = formatted;
+    }
+    // unit is a dependency too — toggling kg/lb needs to reformat the same
+    // committed weight in the new unit even though `committed` itself didn't change.
+  }, [committed, unit]);
+
+  const commit = (kg: number) => {
+    onChange(kg);
+    const formatted = format(kg || undefined);
+    setText(formatted);
+    lastExternal.current = formatted;
+  };
+
+  // The base for a step is whatever is on screen right now, typed or not —
+  // never the possibly-stale `committed` prop.
+  const currentKg = () => {
+    const parsed = parseWeightInput(text, unit);
+    return parsed !== undefined ? parsed : committed || 0;
+  };
+
   const step = (dir: 1 | -1) => {
     haptics.tapMedium();
-    const base = committed || 0;
+    const base = currentKg();
     const next = Math.max(0, Math.round((base + dir * STEP_KG) * 2) / 2);
-    onChange(next);
+    commit(next);
   };
 
   const stopRepeat = () => {
@@ -179,14 +215,17 @@ function WeightStepper({
       >
         <Text style={styles.stepperBtnText}>–</Text>
       </Pressable>
-      <DecimalInput
+      <TextInput
         style={[styles.input, styles.stepperInput, done && styles.inputDone]}
+        keyboardType="decimal-pad"
         placeholder={isBodyweight ? '–' : String(displayWeight(placeholderKg || 0, unit))}
         placeholderTextColor={colors.textFaint}
-        committed={committed || undefined}
-        parse={(t) => parseWeightInput(t, unit)}
-        format={(kg) => (kg ? String(displayWeight(kg, unit)) : '')}
-        onCommit={(kg) => onChange(kg ?? 0)}
+        value={text}
+        onChangeText={(t) => setText(t.replace(/[^0-9.]/g, ''))}
+        onEndEditing={() => {
+          const n = parseWeightInput(text, unit);
+          commit(n ?? 0);
+        }}
       />
       <Pressable
         style={styles.stepperBtn}
@@ -241,7 +280,11 @@ function SetRow({
 }) {
   const translateX = useRef(new Animated.Value(0)).current;
   const isBodyweight = exercise?.equipment === 'bodyweight';
-  const SWIPE_THRESHOLD = 72;
+  // Lowered from 72/10/1.5 — the old numbers made the gesture feel like it
+  // wasn't registering unless the swipe was long and near-perfectly
+  // horizontal. This is a full-width, single gesture with nothing else to
+  // conflict with underneath it, so there's no reason to make it that strict.
+  const SWIPE_THRESHOLD = 52;
   const MAX_SWIPE = 96;
   // panResponder closes over `s.completed` via a ref so release logic always
   // sees the latest value without having to recreate the responder per render
@@ -252,7 +295,7 @@ function SetRow({
     PanResponder.create({
       onStartShouldSetPanResponder: () => false,
       onMoveShouldSetPanResponder: (_evt, g) =>
-        Math.abs(g.dx) > 10 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
+        Math.abs(g.dx) > 6 && Math.abs(g.dx) > Math.abs(g.dy) * 1.1,
       onPanResponderMove: (_evt, g) => {
         const dx = completedRef.current ? Math.min(0, g.dx) : Math.max(0, g.dx);
         translateX.setValue(Math.max(-MAX_SWIPE, Math.min(MAX_SWIPE, dx)));
@@ -283,13 +326,15 @@ function SetRow({
         pointerEvents="none"
       >
         {!s.completed && (
-          <View style={styles.swipeIconLeft}>
-            <Icon name="check" size={16} color={colors.bronze} strokeWidth={2.4} />
+          <View style={styles.swipeHintLeft}>
+            <Text style={[styles.swipeArrow, { color: colors.bronze }]}>→</Text>
+            <Text style={[styles.swipeHintText, { color: colors.bronze }]}>SWIPE TO COMPLETE</Text>
           </View>
         )}
         {s.completed && (
-          <View style={styles.swipeIconRight}>
-            <Icon name="close" size={16} color={colors.textFaint} strokeWidth={2.4} />
+          <View style={styles.swipeHintRight}>
+            <Text style={[styles.swipeHintText, { color: colors.textFaint }]}>SWIPE TO UNDO</Text>
+            <Text style={[styles.swipeArrow, { color: colors.textFaint }]}>←</Text>
           </View>
         )}
       </View>
@@ -538,7 +583,8 @@ export default function WorkoutScreen() {
     // diff achievements before/after rather than tracking an "unlocked" event
     // anywhere — this session isn't in `sessions` yet, so the after-state is
     // the current log plus the one about to be finished
-    const before = computeAchievements(sessions, profile.daysPerWeek);
+    const achievementOpts = { bodyweightKg: profile.weightKg, gender: profile.gender };
+    const before = computeAchievements(sessions, profile.daysPerWeek, achievementOpts);
     const finished = finishSession();
     if (finished) {
       haptics.success();
@@ -546,7 +592,7 @@ export default function WorkoutScreen() {
       syncSessionToSupabase(finished);
       const allSessions = [...sessions, finished];
       syncStatsToSupabase(useWorkoutStore.getState().records, allSessions);
-      const after = computeAchievements(allSessions, profile.daysPerWeek);
+      const after = computeAchievements(allSessions, profile.daysPerWeek, achievementOpts);
       const justUnlocked = newlyUnlocked(before, after);
       // real PRs only — a genuinely new best e1RM logged in the set that was
       // just finished, not the whole history's records
@@ -889,7 +935,7 @@ const useStyles = makeStyles((c) => ({
   setRowWrap: {
     borderRadius: radius.sm,
     overflow: 'hidden',
-    marginBottom: 1,
+    marginBottom: 3,
   },
   swipeBackdrop: {
     position: 'absolute',
@@ -900,12 +946,28 @@ const useStyles = makeStyles((c) => ({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  swipeIconLeft: { paddingLeft: spacing.md },
-  swipeIconRight: { flex: 1, alignItems: 'flex-end', paddingRight: spacing.md },
+  swipeHintLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingLeft: spacing.md,
+  },
+  swipeHintRight: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 6,
+    paddingRight: spacing.md,
+  },
+  swipeArrow: { fontSize: 16, fontWeight: '700' },
+  swipeHintText: { ...typography.micro, fontSize: 10, fontWeight: '700', letterSpacing: 0.4 },
   setRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 5,
+    // taller than before (5 -> 11) — a bigger swipe target, and more room
+    // for the "SWIPE TO COMPLETE" hint text to sit comfortably underneath
+    paddingVertical: 11,
     borderRadius: radius.sm,
     gap: 4,
     backgroundColor: c.bg,
