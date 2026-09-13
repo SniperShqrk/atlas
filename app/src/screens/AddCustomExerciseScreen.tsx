@@ -15,6 +15,7 @@ import {
 } from '@/data/exercises';
 import { MovementPattern, PATTERNS, PATTERN_GROUPS } from '@/data/patterns';
 import { useWorkoutStore } from '@/store/workoutStore';
+import { syncCustomExerciseToSupabase } from '@/lib/dataSync';
 
 const CATEGORIES = Object.keys(CATEGORY_LABELS) as Category[];
 const EQUIPMENT = Object.keys(EQUIPMENT_LABELS) as Equipment[];
@@ -77,6 +78,7 @@ export default function AddCustomExerciseScreen() {
       secondaryMuscles,
       pattern,
     });
+    syncCustomExerciseToSupabase(created);
     if (fromPicker && planDayIndex != null) {
       if (planExerciseIndex != null) {
         swapPlanExercise(planDayIndex, planExerciseIndex, created.id);

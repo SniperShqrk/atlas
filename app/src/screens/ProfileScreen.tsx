@@ -15,6 +15,7 @@ import { useAuth } from '@/store/auth';
 import { getExerciseById, CATEGORY_LABELS, EQUIPMENT_LABELS, EQUIPMENT_OPTIONS } from '@/data/exercises';
 import { computeAchievements } from '@/data/achievements';
 import { displayWeight, kgToLb } from '@/utils/units';
+import { deleteRoutineFromSupabase, deleteCustomExerciseFromSupabase } from '@/lib/dataSync';
 
 const GOALS: { key: UserProfile['goal']; label: string }[] = [
   { key: 'build_muscle', label: 'Build Muscle' },
@@ -197,7 +198,14 @@ export default function ProfileScreen() {
                     onPress={() =>
                       Alert.alert('Delete routine?', r.name, [
                         { text: 'Cancel', style: 'cancel' },
-                        { text: 'Delete', style: 'destructive', onPress: () => deleteRoutine(r.id) },
+                        {
+                          text: 'Delete',
+                          style: 'destructive',
+                          onPress: () => {
+                            deleteRoutine(r.id);
+                            deleteRoutineFromSupabase(r.id);
+                          },
+                        },
                       ])
                     }
                     hitSlop={10}
@@ -243,7 +251,14 @@ export default function ProfileScreen() {
                     onPress={() =>
                       Alert.alert('Delete custom exercise?', e.name, [
                         { text: 'Cancel', style: 'cancel' },
-                        { text: 'Delete', style: 'destructive', onPress: () => deleteCustomExercise(e.id) },
+                        {
+                          text: 'Delete',
+                          style: 'destructive',
+                          onPress: () => {
+                            deleteCustomExercise(e.id);
+                            deleteCustomExerciseFromSupabase(e.id);
+                          },
+                        },
                       ])
                     }
                     hitSlop={10}

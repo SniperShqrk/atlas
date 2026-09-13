@@ -9,6 +9,7 @@ import { makeStyles, useTheme } from '@/theme/ThemeProvider';
 import { useWorkoutStore } from '@/store/workoutStore';
 import { useEntitlements, FREE_LIMITS, PRO_LIMITS } from '@/store/entitlements';
 import { getExerciseById } from '@/data/exercises';
+import { syncRoutineToSupabase } from '@/lib/dataSync';
 
 export default function SaveRoutineScreen() {
   const { colors } = useTheme();
@@ -50,6 +51,7 @@ export default function SaveRoutineScreen() {
       Alert.alert('Nothing to save', 'Add at least one exercise before saving a routine.');
       return;
     }
+    syncRoutineToSupabase(saved);
     navigation.goBack();
   };
 

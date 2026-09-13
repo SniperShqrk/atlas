@@ -5,11 +5,13 @@
 -- IF NOT EXISTS / CREATE OR REPLACE.
 --
 -- Nothing in here touches the AI Workout Planner backend (Render/Express) —
--- this is a separate Postgres database that only exists for accounts,
--- friends, groups and the numbers needed to compare/rank people. Training
--- logs themselves stay local on-device exactly as they always have; only a
--- small per-exercise summary (best weight, best e1RM, best set volume) and a
--- lifetime-totals row get synced here, and only once someone signs in.
+-- this is a separate Postgres database. Two different things live here:
+-- accounts/friends/groups/leaderboard summaries (exercise_stats,
+-- profile_stats — visible to friends and groupmates), and, further down,
+-- a private full backup of a signed-in user's actual training log
+-- (workout_sessions, routines, custom_exercises, bodyweight_entries — owner
+-- only, so it can restore a full history on a new device). Nothing syncs at
+-- all until someone signs in; the app is fully local-only otherwise.
 
 -- ─────────────────────────────────────────────────────────────────────────
 -- Tables
@@ -353,3 +355,91 @@ create policy "profile_stats writable by owner" on public.profile_stats
 drop policy if exists "profile_stats updatable by owner" on public.profile_stats;
 create policy "profile_stats updatable by owner" on public.profile_stats
   for update using (user_id = auth.uid());
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- Personal backup: full workout history, routines, custom exercises and
+-- bodyweight log. Unlike everything above, this IS the actual training log
+-- (previously local-only, in AsyncStorage) — it exists so signing in on a
+-- new device restores it, not just the leaderboard summary. Strictly private
+-- to the owner: no friend/groupmate visibility, unlike exercise_stats.
+--
+-- id columns are `text`, not `uuid` — local ids come from the app's own uid()
+-- helper (a short random base36 string), not gen_random_uuid(), so the
+-- primary key type has to match what the client actually sends.
+-- ─────────────────────────────────────────────────────────────────────────
+
+create table if not exists public.workout_sessions (
+  id text primary key,
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  name text not null,
+  started_at timestamptz not null,
+  training_started_at timestamptz,
+  completed_at timestamptz,
+  duration_sec int,
+  -- the exercises/sets array, nested as-is — nobody queries an individual
+  -- set server-side, so normalizing further would only add joins for
+  -- no benefit.
+  entries jsonb not null default '[]',
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists workout_sessions_user_idx on public.workout_sessions (user_id);
+
+create table if not exists public.routines (
+  id text primary key,
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  name text not null,
+  created_at timestamptz not null,
+  exercises jsonb not null default '[]',
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists routines_user_idx on public.routines (user_id);
+
+create table if not exists public.custom_exercises (
+  id text primary key,
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  -- the whole Exercise object (category, equipment, muscles, pattern, etc.)
+  -- as one payload — same reasoning as entries above.
+  data jsonb not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists custom_exercises_user_idx on public.custom_exercises (user_id);
+
+create table if not exists public.bodyweight_entries (
+  id text primary key,
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  at timestamptz not null,
+  weight_kg numeric not null,
+  note text,
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists bodyweight_entries_user_idx on public.bodyweight_entries (user_id);
+
+alter table public.workout_sessions enable row level security;
+alter table public.routines enable row level security;
+alter table public.custom_exercises enable row level security;
+alter table public.bodyweight_entries enable row level security;
+
+-- one policy per table covers select/insert/update/delete — this is a
+-- straight personal backup, not shared data, so "owner" is the only
+-- condition that will ever apply.
+
+drop policy if exists "workout_sessions owner all" on public.workout_sessions;
+create policy "workout_sessions owner all" on public.workout_sessions
+  for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+drop policy if exists "routines owner all" on public.routines;
+create policy "routines owner all" on public.routines
+  for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+drop policy if exists "custom_exercises owner all" on public.custom_exercises;
+create policy "custom_exercises owner all" on public.custom_exercises
+  for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+drop policy if exists "bodyweight_entries owner all" on public.bodyweight_entries;
+create policy "bodyweight_entries owner all" on public.bodyweight_entries
+  for all using (user_id = auth.uid()) with check (user_id = auth.uid());

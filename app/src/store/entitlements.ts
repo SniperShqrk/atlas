@@ -71,6 +71,10 @@ interface EntitlementState {
   isPro: boolean;
   /** set when a subscription is active; null on free */
   proSince: number | null;
+  /** where the current isPro came from — lets syncFromRevenueCat tell "no
+   *  RevenueCat purchase on this device" apart from "actually revoked", so
+   *  it never clobbers a beta-code or dev-toggle unlock it doesn't know about */
+  proSource: 'dev' | 'beta' | 'revenuecat' | null;
   /** counts how often a locked feature was opened, useful for tuning the paywall later */
   paywallViews: Record<string, number>;
 
@@ -99,13 +103,15 @@ export const useEntitlements = create<EntitlementState>()(
     (set, get) => ({
       isPro: false,
       proSince: null,
+      proSource: null,
       paywallViews: {},
 
-      setPro: (value) => set({ isPro: value, proSince: value ? Date.now() : null }),
+      setPro: (value) =>
+        set({ isPro: value, proSince: value ? Date.now() : null, proSource: value ? 'dev' : null }),
 
       redeemBetaCode: (code) => {
         if (!isValidBetaCode(code)) return false;
-        set({ isPro: true, proSince: Date.now() });
+        set({ isPro: true, proSince: Date.now(), proSource: 'beta' });
         return true;
       },
 
@@ -114,10 +120,16 @@ export const useEntitlements = create<EntitlementState>()(
 
       syncFromRevenueCat: (customerInfo) => {
         const entitlement = customerInfo.entitlements.active[PRO_ENTITLEMENT_ID];
-        set({
-          isPro: !!entitlement,
-          proSince: entitlement ? entitlement.originalPurchaseDateMillis : null,
-        });
+        if (entitlement) {
+          set({ isPro: true, proSince: entitlement.originalPurchaseDateMillis, proSource: 'revenuecat' });
+          return;
+        }
+        // RevenueCat has no purchase on record for this device — that's the
+        // normal state for a beta-code tester, so don't let it wipe an
+        // unlock RevenueCat was never the source of. Only downgrade when
+        // RevenueCat itself was the one that granted pro.
+        if (get().proSource === 'beta' || get().proSource === 'dev') return;
+        set({ isPro: false, proSince: null, proSource: null });
       },
     }),
     {

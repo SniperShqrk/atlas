@@ -1,0 +1,51 @@
+diff --git a/app/src/store/entitlements.ts b/app/src/store/entitlements.ts
+index 2ef071c..3c23211 100644
+--- a/app/src/store/entitlements.ts
++++ b/app/src/store/entitlements.ts
+@@ -73,6 +73,14 @@ interface EntitlementState {
+   proSince: number | null;
+   /** counts how often a locked feature was opened, useful for tuning the paywall later */
+   paywallViews: Record<string, number>;
++  /**
++   * True once a beta code has ever been redeemed on this device. Tracked
++   * separately from `isPro` so `syncFromRevenueCat` (which runs on every app
++   * launch once RevenueCat is configured) can't silently clobber a beta
++   * unlock back to free just because that person never made a real
++   * purchase — see the OR in `syncFromRevenueCat` below.
++   */
++  betaUnlocked: boolean;
+ 
+   /**
+    * Local dev/testing toggle. This is the ONLY thing that flips `isPro` when
+@@ -100,12 +108,13 @@ export const useEntitlements = create<EntitlementState>()(
+       isPro: false,
+       proSince: null,
+       paywallViews: {},
++      betaUnlocked: false,
+ 
+       setPro: (value) => set({ isPro: value, proSince: value ? Date.now() : null }),
+ 
+       redeemBetaCode: (code) => {
+         if (!isValidBetaCode(code)) return false;
+-        set({ isPro: true, proSince: Date.now() });
++        set({ isPro: true, proSince: Date.now(), betaUnlocked: true });
+         return true;
+       },
+ 
+@@ -114,9 +123,14 @@ export const useEntitlements = create<EntitlementState>()(
+ 
+       syncFromRevenueCat: (customerInfo) => {
+         const entitlement = customerInfo.entitlements.active[PRO_ENTITLEMENT_ID];
++        const { betaUnlocked, proSince } = get();
++        // A beta unlock never expires and RevenueCat has no way to confirm
++        // or deny it (it only knows about real purchases), so "no active
++        // RevenueCat entitlement" must NOT override a standing beta unlock —
++        // only a real entitlement is allowed to take precedence over it.
+         set({
+-          isPro: !!entitlement,
+-          proSince: entitlement ? entitlement.originalPurchaseDateMillis : null,
++          isPro: !!entitlement || betaUnlocked,
++          proSince: entitlement ? entitlement.originalPurchaseDateMillis : (betaUnlocked ? proSince : null),
+         });
+       },
+     }),

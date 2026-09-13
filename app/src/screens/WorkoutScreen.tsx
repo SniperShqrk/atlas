@@ -31,6 +31,7 @@ import { suggestNext } from '@/store/progression';
 import { getExerciseById } from '@/data/exercises';
 import { syncSession } from '@/api/client';
 import { syncStatsToSupabase } from '@/lib/socialSync';
+import { syncSessionToSupabase } from '@/lib/dataSync';
 import { quoteByTheme } from '@/data/quotes';
 import { StoicQuote } from '@/components/StoicQuote';
 import { computeAchievements, newlyUnlocked, AchievementProgress } from '@/data/achievements';
@@ -278,6 +279,7 @@ export default function WorkoutScreen() {
     if (finished) {
       haptics.success();
       syncSession(finished);
+      syncSessionToSupabase(finished);
       const allSessions = [...sessions, finished];
       syncStatsToSupabase(useWorkoutStore.getState().records, allSessions);
       const after = computeAchievements(allSessions, profile.daysPerWeek);

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View } from 'react-native';
 import * as Sentry from '@sentry/react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -14,6 +14,8 @@ import {
   subscribeToCustomerInfoUpdates,
 } from '@/store/purchases';
 import { useAuth } from '@/store/auth';
+import { useWorkoutStore } from '@/store/workoutStore';
+import { pullCloudBackup, pushFullBackup } from '@/lib/dataSync';
 
 // No-op (and no network calls at all) when EXPO_PUBLIC_SENTRY_DSN isn't set,
 // which is the normal state for local dev — nobody needs a Sentry project
@@ -99,9 +101,46 @@ function useAuthInit() {
   }, [init]);
 }
 
+/**
+ * Reconciles the local, on-device training history with Supabase whenever a
+ * signed-in user id shows up — on a fresh sign-in, and on every cold launch
+ * for someone already signed in. Pulls whatever the account has, merges any
+ * rows the device doesn't have locally (mergeById in workoutStore never
+ * drops local-only data), then pushes the full local set back up so this
+ * device's history is backed up too. Guarded by a ref keyed on user id so it
+ * runs once per sign-in per launch, not on every render.
+ *
+ * No-op when Supabase isn't configured or nobody's signed in — pullCloudBackup
+ * and pushFullBackup are both already best-effort/try-caught in dataSync.ts.
+ */
+function useCloudBackupSync() {
+  const userId = useAuth((s) => s.session?.user.id);
+  const hydrateFromCloud = useWorkoutStore((s) => s.hydrateFromCloud);
+  const reconciledFor = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!userId || reconciledFor.current === userId) return;
+    reconciledFor.current = userId;
+
+    (async () => {
+      const backup = await pullCloudBackup();
+      if (backup) hydrateFromCloud(backup);
+
+      const state = useWorkoutStore.getState();
+      await pushFullBackup({
+        sessions: state.sessions,
+        routines: state.routines,
+        customExercises: state.customExercises,
+        bodyweight: state.bodyweight,
+      });
+    })();
+  }, [userId, hydrateFromCloud]);
+}
+
 function App() {
   usePurchasesSync();
   useAuthInit();
+  useCloudBackupSync();
   return (
     <ThemeProvider>
       <SafeAreaProvider>

@@ -211,8 +211,21 @@ interface WorkoutStoreState {
   startRest: (seconds?: number) => void;
   stopRest: () => void;
 
-  logBodyweight: (weightKg: number, note?: string) => void;
+  /** Returns the entry it just created plus the id(s) of any same-day
+   *  entries it replaced — callers that mirror this to a backend need both,
+   *  to upsert the new row and delete the stale one it superseded. */
+  logBodyweight: (weightKg: number, note?: string) => { entry: BodyweightEntry; replacedIds: string[] };
   removeBodyweight: (id: string) => void;
+  /** Merges a pulled-down cloud backup into local state, by id — an id
+   *  already present locally is left untouched (this device's copy wins),
+   *  so this only ever fills gaps, never overwrites an in-progress local
+   *  edit or resurrects something deleted here after the pull started. */
+  hydrateFromCloud: (data: {
+    sessions: WorkoutSession[];
+    routines: Routine[];
+    customExercises: Exercise[];
+    bodyweight: BodyweightEntry[];
+  }) => void;
 
   saveRoutine: (name: string, exercises: Routine['exercises']) => Routine;
   saveActiveAsRoutine: (name: string) => Routine | null;
@@ -587,17 +600,34 @@ export const useWorkoutStore = create<WorkoutStoreState>()(
       logBodyweight: (weightKg, note) => {
         const today = new Date().setHours(0, 0, 0, 0);
         // one entry per day — logging again replaces the day's reading
+        const replaced = get().bodyweight.filter(
+          (e) => new Date(e.at).setHours(0, 0, 0, 0) === today
+        );
         const rest = get().bodyweight.filter(
           (e) => new Date(e.at).setHours(0, 0, 0, 0) !== today
         );
+        const entry: BodyweightEntry = { id: uid(), at: Date.now(), weightKg, note };
         set({
-          bodyweight: [...rest, { id: uid(), at: Date.now(), weightKg, note }].sort(
-            (a, b) => a.at - b.at
-          ),
+          bodyweight: [...rest, entry].sort((a, b) => a.at - b.at),
         });
+        return { entry, replacedIds: replaced.map((e) => e.id) };
       },
 
       removeBodyweight: (id) => set({ bodyweight: get().bodyweight.filter((e) => e.id !== id) }),
+
+      hydrateFromCloud: (data) => {
+        const state = get();
+        const mergeById = <T extends { id: string }>(local: T[], remote: T[]): T[] => {
+          const localIds = new Set(local.map((x) => x.id));
+          return [...local, ...remote.filter((r) => !localIds.has(r.id))];
+        };
+        set({
+          sessions: mergeById(state.sessions, data.sessions),
+          routines: mergeById(state.routines, data.routines),
+          customExercises: mergeById(state.customExercises, data.customExercises),
+          bodyweight: mergeById(state.bodyweight, data.bodyweight).sort((a, b) => a.at - b.at),
+        });
+      },
 
       saveRoutine: (name, exercises) => {
         const routine: Routine = { id: uid(), name, createdAt: Date.now(), exercises };

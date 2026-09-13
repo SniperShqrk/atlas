@@ -1,0 +1,221 @@
+diff --git a/app/src/api/client.ts b/app/src/api/client.ts
+index aa2f1ec..9d8a2f1 100644
+--- a/app/src/api/client.ts
++++ b/app/src/api/client.ts
+@@ -30,13 +30,12 @@ export interface ImportWorkoutResult {
+ 
+ export async function importWorkout(input: {
+   text?: string;
+-  imageBase64?: string;
+-  imageMediaType?: string;
++  images?: { base64: string; mimeType: string }[];
+ }): Promise<ImportWorkoutResult> {
+   const res = await fetch(`${API_BASE_URL}/api/plan/import`, {
+     method: 'POST',
+     headers: { 'Content-Type': 'application/json' },
+-    body: JSON.stringify(input),
++    body: JSON.stringify({ text: input.text, images: input.images }),
+   });
+   const body = await res.json().catch(() => null);
+   if (!res.ok) {
+diff --git a/app/src/screens/ImportWorkoutScreen.tsx b/app/src/screens/ImportWorkoutScreen.tsx
+index c9b1a83..821c9a8 100644
+--- a/app/src/screens/ImportWorkoutScreen.tsx
++++ b/app/src/screens/ImportWorkoutScreen.tsx
+@@ -10,9 +10,9 @@ import { makeStyles, useTheme } from '@/theme/ThemeProvider';
+ import { useWorkoutStore, CustomExerciseInput } from '@/store/workoutStore';
+ import { importWorkout, ImportedExercise } from '@/api/client';
+ 
+-/** Photo is downscaled+recompressed client-side (quality 0.5, JPEG) rather than
++/** Photos are downscaled+recompressed client-side (quality 0.5, JPEG) rather than
+  *  sent at full camera resolution — keeps the request well under the backend's
+- *  8mb JSON body limit and Haiku doesn't need more detail than that to read a
++ *  20mb JSON body limit and Haiku doesn't need more detail than that to read a
+  *  photographed plan. */
+ const PICKER_OPTS: ImagePicker.ImagePickerOptions = {
+   mediaTypes: ImagePicker.MediaTypeOptions.Images,
+@@ -21,6 +21,8 @@ const PICKER_OPTS: ImagePicker.ImagePickerOptions = {
+   allowsEditing: false,
+ };
+ 
++const MAX_IMAGES = 3;
++
+ export default function ImportWorkoutScreen() {
+   const { colors } = useTheme();
+   const styles = useStyles();
+@@ -29,11 +31,15 @@ export default function ImportWorkoutScreen() {
+   const setCurrentPlan = useWorkoutStore((s) => s.setCurrentPlan);
+ 
+   const [text, setText] = useState('');
+-  const [image, setImage] = useState<{ base64: string; mimeType: string; uri: string } | null>(null);
++  const [images, setImages] = useState<{ base64: string; mimeType: string; uri: string }[]>([]);
+   const [loading, setLoading] = useState(false);
+   const [error, setError] = useState<string | null>(null);
+ 
+   const pickImage = async (fromCamera: boolean) => {
++    if (images.length >= MAX_IMAGES) {
++      Alert.alert('Limit reached', `You can add up to ${MAX_IMAGES} photos.`);
++      return;
++    }
+     const perm = fromCamera
+       ? await ImagePicker.requestCameraPermissionsAsync()
+       : await ImagePicker.requestMediaLibraryPermissionsAsync();
+@@ -49,11 +55,18 @@ export default function ImportWorkoutScreen() {
+       : await ImagePicker.launchImageLibraryAsync(PICKER_OPTS);
+     if (result.canceled || !result.assets?.[0]?.base64) return;
+     const asset = result.assets[0];
+-    setImage({ base64: asset.base64!, mimeType: asset.mimeType ?? 'image/jpeg', uri: asset.uri });
++    setImages((prev) => [
++      ...prev,
++      { base64: asset.base64!, mimeType: asset.mimeType ?? 'image/jpeg', uri: asset.uri },
++    ]);
+     setError(null);
+   };
+ 
+-  const canSubmit = (text.trim().length > 0 || !!image) && !loading;
++  const removeImage = (index: number) => {
++    setImages((prev) => prev.filter((_, i) => i !== index));
++  };
++
++  const canSubmit = (text.trim().length > 0 || images.length > 0) && !loading;
+ 
+   const onImport = async () => {
+     if (!canSubmit) return;
+@@ -62,8 +75,7 @@ export default function ImportWorkoutScreen() {
+     try {
+       const { plan, newExercises } = await importWorkout({
+         text: text.trim() || undefined,
+-        imageBase64: image?.base64,
+-        imageMediaType: image?.mimeType,
++        images: images.length ? images.map(({ base64, mimeType }) => ({ base64, mimeType })) : undefined,
+       });
+ 
+       if (!plan.days.length) {
+@@ -121,15 +133,22 @@ export default function ImportWorkoutScreen() {
+           textAlignVertical="top"
+         />
+ 
+-        <Text style={[styles.label, { marginTop: spacing.xl }]}>OR ADD A PHOTO</Text>
+-        {image ? (
+-          <View style={styles.imagePreviewWrap}>
+-            <Image source={{ uri: image.uri }} style={styles.imagePreview} />
+-            <Pressable style={styles.removeImage} onPress={() => setImage(null)} hitSlop={10}>
+-              <Icon name="close" size={16} color="#fff" strokeWidth={2} />
+-            </Pressable>
++        <Text style={[styles.label, { marginTop: spacing.xl }]}>
++          OR ADD A PHOTO {images.length > 0 ? `(${images.length}/${MAX_IMAGES})` : ''}
++        </Text>
++        {images.length > 0 && (
++          <View style={styles.imageThumbRow}>
++            {images.map((img, i) => (
++              <View key={img.uri + i} style={styles.imagePreviewWrap}>
++                <Image source={{ uri: img.uri }} style={styles.imagePreview} />
++                <Pressable style={styles.removeImage} onPress={() => removeImage(i)} hitSlop={10}>
++                  <Icon name="close" size={16} color="#fff" strokeWidth={2} />
++                </Pressable>
++              </View>
++            ))}
+           </View>
+-        ) : (
++        )}
++        {images.length < MAX_IMAGES && (
+           <View style={styles.photoRow}>
+             <Pressable style={styles.photoButton} onPress={() => pickImage(false)}>
+               <Icon name="library" size={20} color={colors.textSecondary} strokeWidth={1.6} />
+@@ -189,8 +208,9 @@ const useStyles = makeStyles((c) => ({
+     paddingVertical: spacing.lg,
+   },
+   photoButtonText: { ...typography.bodyMedium, color: c.textSecondary },
++  imageThumbRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
+   imagePreviewWrap: { alignSelf: 'flex-start' },
+-  imagePreview: { width: 140, height: 140, borderRadius: radius.md, borderWidth: 1, borderColor: c.border },
++  imagePreview: { width: 100, height: 100, borderRadius: radius.md, borderWidth: 1, borderColor: c.border },
+   removeImage: {
+     position: 'absolute',
+     top: -8,
+diff --git a/backend/src/routes/plan.js b/backend/src/routes/plan.js
+index 4669d73..02b29a8 100644
+--- a/backend/src/routes/plan.js
++++ b/backend/src/routes/plan.js
+@@ -19,16 +19,16 @@ planRouter.post('/generate', async (req, res) => {
+   }
+ });
+ 
+-// Import Workouts (Pro): turn a photo of / pasted text describing the user's
++// Import Workouts (Pro): turn photos of / pasted text describing the user's
+ // own plan into the same shape /generate returns, plus any custom exercises
+-// that had no catalog match. Request body: { text?, imageBase64?, imageMediaType? }.
+-// A 2mb JSON body limit is set in server.js — comfortably fits one compressed
+-// photo; the client should downscale before sending.
++// that had no catalog match. Request body: { text?, images?: { base64, mimeType }[] }.
++// A 20mb JSON body limit is set in server.js — comfortably fits up to 3
++// compressed photos; the client should downscale before sending.
+ planRouter.post('/import', async (req, res) => {
+-  const { text, imageBase64, imageMediaType } = req.body ?? {};
++  const { text, images } = req.body ?? {};
+ 
+   try {
+-    const plan = await importWorkout({ text, imageBase64, imageMediaType });
++    const plan = await importWorkout({ text, images });
+     await savePlan(plan);
+     res.json(plan);
+   } catch (err) {
+diff --git a/backend/src/server.js b/backend/src/server.js
+index a52f2af..063a17d 100644
+--- a/backend/src/server.js
++++ b/backend/src/server.js
+@@ -6,8 +6,8 @@ import { sessionsRouter } from './routes/sessions.js';
+ 
+ const app = express();
+ app.use(cors());
+-// 8mb covers a compressed phone photo for Import Workouts with headroom.
+-app.use(express.json({ limit: '8mb' }));
++// 20mb covers up to 3 compressed phone photos for Import Workouts with headroom.
++app.use(express.json({ limit: '20mb' }));
+ 
+ app.get('/health', (req, res) => res.json({ ok: true }));
+ app.use('/api/plan', planRouter);
+diff --git a/backend/src/services/importPlan.js b/backend/src/services/importPlan.js
+index 5e1e371..bd982f9 100644
+--- a/backend/src/services/importPlan.js
++++ b/backend/src/services/importPlan.js
+@@ -118,29 +118,30 @@ function tryParseJSON(text) {
+ }
+ 
+ /**
+- * text and/or an image (base64 + media type) describing a workout plan in the
+- * user's own words/handwriting/screenshot. Returns a GeneratedPlan-shaped
+- * object plus any brand-new exercises the app needs to create locally before
+- * the plan's exerciseIds will resolve (see tempId in newExercises).
++ * text and/or up to a few images (base64 + media type) describing a workout
++ * plan in the user's own words/handwriting/screenshot. Returns a
++ * GeneratedPlan-shaped object plus any brand-new exercises the app needs to
++ * create locally before the plan's exerciseIds will resolve (see tempId in
++ * newExercises).
+  */
+-export async function importWorkout({ text, imageBase64, imageMediaType }) {
++export async function importWorkout({ text, images }) {
+   if (!process.env.ANTHROPIC_API_KEY) {
+     const err = new Error('Import Workouts needs ANTHROPIC_API_KEY set on the backend — there is no offline fallback for reading arbitrary photos/text.');
+     err.code = 'NO_API_KEY';
+     throw err;
+   }
+-  if (!text?.trim() && !imageBase64) {
++  if (!text?.trim() && !images?.length) {
+     throw new Error('Provide either pasted text or a photo to import.');
+   }
+ 
+   const content = [];
+-  if (imageBase64) {
++  for (const img of images ?? []) {
+     content.push({
+       type: 'image',
+-      source: { type: 'base64', media_type: imageMediaType || 'image/jpeg', data: imageBase64 },
++      source: { type: 'base64', media_type: img.mimeType || 'image/jpeg', data: img.base64 },
+     });
+   }
+-  content.push({ type: 'text', text: text?.trim() ? `Pasted plan text:\n${text.trim()}` : 'Read the plan from the attached photo.' });
++  content.push({ type: 'text', text: text?.trim() ? `Pasted plan text:\n${text.trim()}` : 'Read the plan from the attached photo(s).' });
+   content.push({ type: 'text', text: buildPrompt() });
+ 
+   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });

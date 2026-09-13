@@ -1,0 +1,30 @@
+diff --git a/app/src/screens/ImportWorkoutScreen.tsx b/app/src/screens/ImportWorkoutScreen.tsx
+index 7043e32..fb5bb5f 100644
+--- a/app/src/screens/ImportWorkoutScreen.tsx
++++ b/app/src/screens/ImportWorkoutScreen.tsx
+@@ -57,7 +57,13 @@ export default function ImportWorkoutScreen() {
+     const asset = result.assets[0];
+     setImages((prev) => [
+       ...prev,
+-      { base64: asset.base64!, mimeType: asset.mimeType ?? 'image/jpeg', uri: asset.uri },
++      // PICKER_OPTS sets quality: 0.5, which forces a JPEG re-encode
++      // regardless of the source format — a screenshot is PNG, but
++      // asset.mimeType still reports that original source type, not what it
++      // actually got compressed to. Sending that stale mimeType to the
++      // backend makes Anthropic reject the request as a media-type mismatch,
++      // so always declare it as what the compression setting guarantees.
++      { base64: asset.base64!, mimeType: 'image/jpeg', uri: asset.uri },
+     ]);
+     setError(null);
+   };
+@@ -118,8 +124,8 @@ export default function ImportWorkoutScreen() {
+       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+         <Text style={styles.blurb}>
+           Paste a plan you already have, or add a photo of it — a screenshot, a printout, even your own
+-          handwriting. ATLAS matches each exercise to the library and builds the rest of any it doesn't
+-          recognise.
++          handwriting. Upload up to 3 photos if your plan runs long. ATLAS matches each exercise to the
++          library and builds the rest of any it doesn't recognise.
+         </Text>
+ 
+         <Text style={styles.label}>PASTE TEXT</Text>

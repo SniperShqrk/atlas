@@ -1,0 +1,27 @@
+diff --git a/app/src/store/workoutStore.ts b/app/src/store/workoutStore.ts
+index 4015264..57fa16b 100644
+--- a/app/src/store/workoutStore.ts
++++ b/app/src/store/workoutStore.ts
+@@ -288,13 +288,18 @@ export const useWorkoutStore = create<WorkoutStoreState>()(
+         if (active.entries.some((e) => e.exerciseId === exerciseId)) return;
+         // No target (empty session, library add) -> one empty set, as before.
+         // A target from a plan day/routine -> that many sets, reps prefilled
+-        // from it; weight is left at 0 since neither source has any signal
+-        // for what the user should actually load the bar with.
++        // from it. Weight is seeded from whatever was actually logged for
++        // this exercise last time (matched set-for-set, carrying the last
++        // value forward if this session has more sets than that one did) —
++        // that's a real starting value the set can be completed with as-is,
++        // not just a placeholder hint, and it's still fully editable. Falls
++        // back to 0 the first time an exercise is ever logged.
+         const repsSeed = parseRepsSeed(target?.targetReps);
+         const setCount = Math.max(1, target?.targetSets ?? 1);
+-        const sets = Array.from({ length: setCount }, () => ({
++        const previous = getPreviousSets(get().sessions, exerciseId);
++        const sets = Array.from({ length: setCount }, (_, i) => ({
+           id: uid(),
+-          weightKg: 0,
++          weightKg: previous?.[Math.min(i, previous.length - 1)]?.weightKg ?? 0,
+           reps: repsSeed,
+           completed: false,
+         }));

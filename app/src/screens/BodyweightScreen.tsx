@@ -9,6 +9,7 @@ import { radius, spacing, typography } from '@/theme/theme';
 import { makeStyles, useTheme } from '@/theme/ThemeProvider';
 import { useWorkoutStore } from '@/store/workoutStore';
 import { displayWeight, parseBodyweightInput } from '@/utils/units';
+import { syncBodyweightToSupabase, deleteBodyweightFromSupabase } from '@/lib/dataSync';
 
 export default function BodyweightScreen() {
   const { colors } = useTheme();
@@ -33,7 +34,9 @@ export default function BodyweightScreen() {
   const onSave = () => {
     const kg = parseBodyweightInput(value, unit);
     if (kg <= 0) return;
-    logBodyweight(kg);
+    const { entry, replacedIds } = logBodyweight(kg);
+    syncBodyweightToSupabase(entry);
+    for (const id of replacedIds) deleteBodyweightFromSupabase(id);
     setProfile({ weightKg: kg });
     navigation.goBack();
   };
@@ -89,7 +92,13 @@ export default function BodyweightScreen() {
                 <View key={b.id} style={[styles.row, i > 0 && styles.rowBorder]}>
                   <Text style={styles.rowDate}>{format(new Date(b.at), 'EEE d MMM')}</Text>
                   <Text style={styles.rowWeight}>{displayWeight(b.weightKg, unit)}{unit}</Text>
-                  <Pressable onPress={() => removeBodyweight(b.id)} hitSlop={10}>
+                  <Pressable
+                    onPress={() => {
+                      removeBodyweight(b.id);
+                      deleteBodyweightFromSupabase(b.id);
+                    }}
+                    hitSlop={10}
+                  >
                     <Icon name="close" size={15} color={colors.textFaint} strokeWidth={1.7} />
                   </Pressable>
                 </View>

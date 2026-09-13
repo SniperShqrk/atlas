@@ -1,0 +1,160 @@
+diff --git a/app/src/components/RpeGuide.tsx b/app/src/components/RpeGuide.tsx
+new file mode 100644
+index 0000000..184ec9a
+--- /dev/null
++++ b/app/src/components/RpeGuide.tsx
+@@ -0,0 +1,100 @@
++import React from 'react';
++import { View, Text, Modal, Pressable } from 'react-native';
++import { radius, spacing, typography } from '@/theme/theme';
++import { makeStyles, useTheme } from '@/theme/ThemeProvider';
++import { Icon } from '@/components/Icon';
++
++/**
++ * The standard RIR-based RPE scale used in autoregulated training. Kept to
++ * whole numbers for readability — the RPE input itself still accepts
++ * decimals (e.g. 7.5) for finer control.
++ */
++const RPE_SCALE: { rpe: string; rir: string; feel: string }[] = [
++  { rpe: '10', rir: '0', feel: 'Max effort — no more reps possible' },
++  { rpe: '9', rir: '1', feel: '1 rep left in the tank' },
++  { rpe: '8', rir: '2', feel: '2 reps left — a normal working set' },
++  { rpe: '7', rir: '3', feel: '3 reps left — solid but submaximal' },
++  { rpe: '6', rir: '4', feel: 'Light — closer to a back-off set' },
++  { rpe: '≤5', rir: '5+', feel: 'Very light, or a warm-up set' },
++];
++
++export function RpeGuide({ visible, onClose }: { visible: boolean; onClose: () => void }) {
++  const { colors } = useTheme();
++  const styles = useStyles();
++
++  return (
++    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
++      <Pressable style={styles.backdrop} onPress={onClose}>
++        <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
++          <View style={styles.header}>
++            <Icon name="info" size={20} color={colors.bronze} strokeWidth={1.6} />
++            <Text style={styles.title}>What's RPE?</Text>
++            <Pressable onPress={onClose} hitSlop={10}>
++              <Icon name="close" size={18} color={colors.textDim} strokeWidth={1.7} />
++            </Pressable>
++          </View>
++
++          <Text style={styles.intro}>
++            Rate of Perceived Exertion — roughly how many more reps you had left in the tank when
++            you racked the set.
++          </Text>
++
++          <View style={styles.table}>
++            <View style={styles.tableHeadRow}>
++              <Text style={[styles.tableHeadCell, styles.colRpe]}>RPE</Text>
++              <Text style={[styles.tableHeadCell, styles.colRir]}>RIR</Text>
++              <Text style={[styles.tableHeadCell, styles.colFeel]}>FEELS LIKE</Text>
++            </View>
++            {RPE_SCALE.map((row) => (
++              <View key={row.rpe} style={styles.tableRow}>
++                <Text style={[styles.tableCell, styles.colRpe, styles.rpeValue]}>{row.rpe}</Text>
++                <Text style={[styles.tableCell, styles.colRir]}>{row.rir}</Text>
++                <Text style={[styles.tableCell, styles.colFeel]}>{row.feel}</Text>
++              </View>
++            ))}
++          </View>
++
++          <Text style={styles.footnote}>
++            Leave it blank and ATLAS assumes RPE 8 for that set, so a skipped rating doesn't quietly
++            understate how fatigued the muscle actually is.
++          </Text>
++        </Pressable>
++      </Pressable>
++    </Modal>
++  );
++}
++
++const useStyles = makeStyles((c) => ({
++  backdrop: {
++    flex: 1,
++    backgroundColor: 'rgba(0,0,0,0.72)',
++    justifyContent: 'center',
++    padding: spacing.lg,
++  },
++  sheet: {
++    backgroundColor: c.bgElevated,
++    borderRadius: radius.xl,
++    borderWidth: 1,
++    borderColor: c.border,
++    padding: spacing.lg,
++  },
++  header: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
++  title: { ...typography.h3, color: c.text, flex: 1 },
++  intro: { ...typography.body, color: c.textDim, marginTop: spacing.sm, lineHeight: 20 },
++  table: { marginTop: spacing.lg },
++  tableHeadRow: {
++    flexDirection: 'row',
++    borderBottomWidth: 1,
++    borderBottomColor: c.border,
++    paddingBottom: spacing.sm,
++    marginBottom: spacing.xs,
++  },
++  tableHeadCell: { ...typography.micro, color: c.textFaint },
++  tableRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 7 },
++  tableCell: { ...typography.caption, color: c.textSecondary },
++  rpeValue: { ...typography.bodyMedium, color: c.text },
++  colRpe: { width: 34 },
++  colRir: { width: 44 },
++  colFeel: { flex: 1 },
++  footnote: { ...typography.caption, color: c.textFaint, marginTop: spacing.lg, lineHeight: 17 },
++}));
+diff --git a/app/src/screens/WorkoutScreen.tsx b/app/src/screens/WorkoutScreen.tsx
+index 9d81f62..8a27ebc 100644
+--- a/app/src/screens/WorkoutScreen.tsx
++++ b/app/src/screens/WorkoutScreen.tsx
+@@ -15,6 +15,7 @@ import { Screen, Button, EmptyState, InfoButton } from '@/components/ui';
+ import { RestTimer } from '@/components/RestTimer';
+ import { PlateCalculator } from '@/components/PlateCalculator';
+ import { WorkoutGuide } from '@/components/WorkoutGuide';
++import { RpeGuide } from '@/components/RpeGuide';
+ import { TopInset, BottomInset } from '@/components/ScreenLayout';
+ import { Icon } from '@/components/Icon';
+ import { haptics } from '@/lib/haptics';
+@@ -75,6 +76,7 @@ export default function WorkoutScreen() {
+   const [plateTarget, setPlateTarget] = useState<number | null>(null);
+   const [justUnlocked, setJustUnlocked] = useState<AchievementProgress[]>([]);
+   const [showGuide, setShowGuide] = useState(false);
++  const [showRpeGuide, setShowRpeGuide] = useState(false);
+ 
+   // seeded a day ahead of the home screen's quote so the two don't echo
+   // each other, and filtered to lines about starting rather than enduring
+@@ -320,7 +322,14 @@ export default function WorkoutScreen() {
+                   <Text style={[styles.th, styles.colPrev]}>PREVIOUS</Text>
+                   <Text style={[styles.th, styles.colInput, styles.center]}>{unit.toUpperCase()}</Text>
+                   <Text style={[styles.th, styles.colInput, styles.center]}>REPS</Text>
+-                  <Text style={[styles.th, styles.colRpe, styles.center]}>RPE</Text>
++                  <Pressable
++                    style={[styles.colRpe, styles.rpeHeader]}
++                    onPress={() => setShowRpeGuide(true)}
++                    hitSlop={6}
++                  >
++                    <Text style={styles.th}>RPE</Text>
++                    <Icon name="info" size={11} color={colors.textFaint} strokeWidth={1.6} />
++                  </Pressable>
+                   <View style={styles.colCheck} />
+                 </View>
+ 
+@@ -471,6 +480,7 @@ export default function WorkoutScreen() {
+         onClose={() => setPlateTarget(null)}
+       />
+       <WorkoutGuide visible={showGuide} onClose={() => setShowGuide(false)} />
++      <RpeGuide visible={showRpeGuide} onClose={() => setShowRpeGuide(false)} />
+     </Screen>
+   );
+ }
+@@ -579,7 +589,8 @@ const useStyles = makeStyles((c) => ({
+   colSet: { width: 34, flexDirection: 'row', alignItems: 'center', gap: 3 },
+   colPrev: { flex: 1 },
+   colInput: { width: 54 },
+-  colRpe: { width: 38 },
++  colRpe: { width: 44 },
++  rpeHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 3 },
+   colCheck: { width: 36, alignItems: 'flex-end' },
+   setRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 5, borderRadius: radius.sm, gap: 4 },
+   setRowDone: { backgroundColor: 'rgba(255,255,255,0.03)' },
