@@ -10,7 +10,8 @@ import { radius, spacing, typography } from '@/theme/theme';
 import { makeStyles, useTheme } from '@/theme/ThemeProvider';
 import { useWorkoutStore, sessionVolume, sessionSetCount } from '@/store/workoutStore';
 import { computeMuscleLoads } from '@/store/recovery';
-import { consistency } from '@/store/analytics';
+import { consistency, monthOverMonth } from '@/store/analytics';
+import { promptStartWorkout } from '@/lib/startWorkoutFlow';
 import {
   EXERCISES,
   MUSCLE_LABELS,
@@ -22,6 +23,7 @@ import {
 import { quoteOfTheDay } from '@/data/quotes';
 import { StoicQuote } from '@/components/StoicQuote';
 import { kgToLb } from '@/utils/units';
+import { ProactiveCoachCard } from '@/components/ProactiveCoachCard';
 
 // A fixed, well-rounded set rather than anything computed — "popular" has no
 // real signal to draw on yet (no cross-user data), so this is a deliberate
@@ -55,8 +57,11 @@ export default function HomeScreen() {
   const activeSession = useWorkoutStore((s) => s.activeSession);
   const startSession = useWorkoutStore((s) => s.startSession);
   const currentPlan = useWorkoutStore((s) => s.currentPlan);
+  const routines = useWorkoutStore((s) => s.routines);
+  const savedPlans = useWorkoutStore((s) => s.savedPlans);
   const customExercises = useWorkoutStore((s) => s.customExercises);
   const recentlyViewed = useWorkoutStore((s) => s.recentlyViewed);
+  const mom = useMemo(() => monthOverMonth(sessions), [sessions]);
   const [view, setView] = useState<'front' | 'back'>('front');
 
   const popularExercises = useMemo(
@@ -178,12 +183,49 @@ export default function HomeScreen() {
               label="Start Workout"
               size="lg"
               onPress={() => {
-                startSession();
-                navigation.navigate('WorkoutTab');
+                promptStartWorkout({
+                  hasPlanOrRoutines: routines.length > 0 || savedPlans.length > 0 || !!currentPlan,
+                  startSession: () => {
+                    startSession();
+                    navigation.navigate('WorkoutTab');
+                  },
+                  onCreatePlan: () => navigation.navigate('PlanTab'),
+                  onChoosePlanOrRoutine: () => navigation.navigate('WorkoutTab'),
+                });
               }}
               style={{ marginTop: spacing.lg }}
             />
           )}
+
+          {/* this month (private) — mirrors the Progress screen's own card via
+              the shared monthOverMonth() helper, so the two can't disagree */}
+          <View style={{ marginTop: spacing.xl }}>
+            <SectionHeader title="This Month" action="See Progress" onAction={() => navigation.navigate('ProgressTab')} />
+            <Card onPress={() => navigation.navigate('ProgressTab')}>
+              <View style={styles.statRow}>
+                <StatTile label="Sessions" value={String(mom.current.sessionCount)} />
+                <StatTile label="Sets" value={String(mom.current.totalSets)} />
+                <StatTile
+                  label="Volume"
+                  value={(() => {
+                    const v = unit === 'lb' ? kgToLb(mom.current.totalVolumeKg) : mom.current.totalVolumeKg;
+                    return v >= 10000 ? `${Math.round(v / 1000)}k` : String(Math.round(v));
+                  })()}
+                  unit={unit}
+                />
+              </View>
+              <View style={styles.deltaRow}>
+                <HomeDelta label="sessions" pct={mom.sessionChangePct} />
+                <HomeDelta label="volume" pct={mom.volumeChangePct} />
+                <Text style={styles.deltaNote}>trailing 30 days · visible only to you</Text>
+              </View>
+            </Card>
+          </View>
+
+          {/* proactive coach — gated explicitly on !activeSession rather than
+              relying on the Start/Resume button swap alone, so the sacred-
+              gym-screen rule holds even if this section ever moves */}
+          {!activeSession && <ProactiveCoachCard />}
 
           {/* recovery map */}
           <View style={{ marginTop: spacing.xl }}>
@@ -385,10 +427,29 @@ function Legend({ color, label }: { color: string; label: string }) {
   );
 }
 
+// Mirrors AnalyticsScreen's own Delta component so the two "this month" cards
+// read identically — kept as a separate copy since the two screens don't
+// currently share a component module.
+function HomeDelta({ label, pct }: { label: string; pct: number | null }) {
+  const { colors } = useTheme();
+  const styles = useStyles();
+  if (pct === null) return null;
+  const tone = pct > 0 ? colors.bronze : pct < 0 ? colors.accent : colors.textDim;
+  return (
+    <Text style={[styles.delta, { color: tone }]}>
+      {pct > 0 ? '+' : ''}
+      {pct}% {label}
+    </Text>
+  );
+}
+
 const useStyles = makeStyles((c) => ({
   greetingRow: { flexDirection: 'row', alignItems: 'flex-start' },
   greeting: { ...typography.hero, color: c.text },
   subGreeting: { ...typography.body, color: c.textDim, marginTop: 2 },
+  deltaRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: spacing.sm, flexWrap: 'wrap' },
+  delta: { ...typography.captionBold },
+  deltaNote: { ...typography.caption, color: c.textDim },
   streakChip: {
     flexDirection: 'row',
     alignItems: 'center',

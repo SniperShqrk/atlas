@@ -18,7 +18,9 @@ import { isValidBetaCode } from '@/lib/betaCodes';
 export type ProFeature =
   | 'atlas_insights'
   | 'ai_planner'
+  | 'ai_coach'
   | 'import_workouts'
+  | 'custom_exercises'
   | 'more_routines'
   | 'advanced_analytics'
   | 'volume_landmarks'
@@ -44,6 +46,14 @@ export const PRO_FEATURES: Record<ProFeature, { title: string; blurb: string }> 
   ai_planner: {
     title: 'AI Workout Planner',
     blurb: 'Builds a split around your goal, equipment, schedule, injuries and current recovery.',
+  },
+  ai_coach: {
+    title: 'AI Coach',
+    blurb: 'Ask about your plan in plain language — swap a lift, cut a session short, or ask why something stalled — and review the change before it applies.',
+  },
+  custom_exercises: {
+    title: 'Custom Exercises',
+    blurb: "Add your own exercise when the library doesn't have it — full metadata, right alongside the built-in library.",
   },
   import_workouts: {
     title: 'Import Workouts',
@@ -77,6 +87,10 @@ interface EntitlementState {
   proSource: 'dev' | 'beta' | 'revenuecat' | null;
   /** counts how often a locked feature was opened, useful for tuning the paywall later */
   paywallViews: Record<string, number>;
+  /** set when "Remind me later" is tapped on the paywall — a real dismissal
+   *  distinct from just backing out, for future logic that wants to hold
+   *  off on re-showing a paywall nudge for a while after someone said not now */
+  remindLaterAt: number | null;
 
   /**
    * Local dev/testing toggle. This is the ONLY thing that flips `isPro` when
@@ -92,6 +106,7 @@ interface EntitlementState {
    *  an error instead of silently doing nothing. */
   redeemBetaCode: (code: string) => boolean;
   recordPaywallView: (feature: ProFeature) => void;
+  setRemindLater: () => void;
   /** Called with the real CustomerInfo after a purchase, restore, or a
    *  background entitlement-change push from RevenueCat. This is the
    *  source of truth once purchases.ts is configured. */
@@ -105,6 +120,9 @@ export const useEntitlements = create<EntitlementState>()(
       proSince: null,
       proSource: null,
       paywallViews: {},
+      remindLaterAt: null,
+
+      setRemindLater: () => set({ remindLaterAt: Date.now() }),
 
       setPro: (value) =>
         set({ isPro: value, proSince: value ? Date.now() : null, proSource: value ? 'dev' : null }),

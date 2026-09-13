@@ -9,6 +9,8 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Animated,
+  PanResponder,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Screen, Button, EmptyState, InfoButton } from '@/components/ui';
@@ -29,13 +31,18 @@ import {
 } from '@/store/workoutStore';
 import { suggestNext } from '@/store/progression';
 import { getExerciseById } from '@/data/exercises';
+import { substitutionsFor, Substitution } from '@/data/exerciseRelations';
 import { syncSession } from '@/api/client';
 import { syncStatsToSupabase } from '@/lib/socialSync';
 import { syncSessionToSupabase } from '@/lib/dataSync';
+import { promptStartWorkout } from '@/lib/startWorkoutFlow';
 import { quoteByTheme } from '@/data/quotes';
 import { StoicQuote } from '@/components/StoicQuote';
-import { computeAchievements, newlyUnlocked, AchievementProgress } from '@/data/achievements';
+import { computeAchievements, newlyUnlocked } from '@/data/achievements';
+import { prTimeline } from '@/store/analytics';
 import { displayWeight, parseWeightInput, parseReps } from '@/utils/units';
+import { useEntitlements } from '@/store/entitlements';
+import { useCoach } from '@/store/coach';
 
 function elapsed(startedAt: number | null, now: number) {
   // still building the plan — nothing logged yet, so the clock hasn't started
@@ -110,6 +117,247 @@ function DecimalInput({
   );
 }
 
+/**
+ * Compact +/- stepper wrapped around the weight DecimalInput, in fixed
+ * 0.5kg increments regardless of display unit (kg is the unit the user
+ * actually loads plates in). A tap steps once; holding either button
+ * auto-repeats after a short delay, like a native stepper.
+ */
+function WeightStepper({
+  committed,
+  isBodyweight,
+  unit,
+  placeholderKg,
+  onChange,
+  done,
+  styles,
+  colors,
+}: {
+  committed: number;
+  isBodyweight: boolean;
+  unit: 'kg' | 'lb';
+  placeholderKg: number;
+  onChange: (kg: number) => void;
+  done: boolean;
+  styles: any;
+  colors: any;
+}) {
+  const STEP_KG = 0.5;
+  const repeatDelay = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const repeatTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const step = (dir: 1 | -1) => {
+    haptics.tapMedium();
+    const base = committed || 0;
+    const next = Math.max(0, Math.round((base + dir * STEP_KG) * 2) / 2);
+    onChange(next);
+  };
+
+  const stopRepeat = () => {
+    if (repeatDelay.current) clearTimeout(repeatDelay.current);
+    if (repeatTimer.current) clearInterval(repeatTimer.current);
+    repeatDelay.current = null;
+    repeatTimer.current = null;
+  };
+
+  const startRepeat = (dir: 1 | -1) => {
+    step(dir);
+    repeatDelay.current = setTimeout(() => {
+      repeatTimer.current = setInterval(() => step(dir), 90);
+    }, 350);
+  };
+
+  useEffect(() => stopRepeat, []);
+
+  return (
+    <View style={styles.stepperRow}>
+      <Pressable
+        style={styles.stepperBtn}
+        onPressIn={() => startRepeat(-1)}
+        onPressOut={stopRepeat}
+        hitSlop={4}
+      >
+        <Text style={styles.stepperBtnText}>–</Text>
+      </Pressable>
+      <DecimalInput
+        style={[styles.input, styles.stepperInput, done && styles.inputDone]}
+        placeholder={isBodyweight ? '–' : String(displayWeight(placeholderKg || 0, unit))}
+        placeholderTextColor={colors.textFaint}
+        committed={committed || undefined}
+        parse={(t) => parseWeightInput(t, unit)}
+        format={(kg) => (kg ? String(displayWeight(kg, unit)) : '')}
+        onCommit={(kg) => onChange(kg ?? 0)}
+      />
+      <Pressable
+        style={styles.stepperBtn}
+        onPressIn={() => startRepeat(1)}
+        onPressOut={stopRepeat}
+        hitSlop={4}
+      >
+        <Text style={styles.stepperBtnText}>+</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+/**
+ * One set row, as a real component rather than inline JSX inside a `.map` —
+ * it needs its own PanResponder/Animated.Value per row, and hooks can't live
+ * inside a loop body safely once sets are added/removed.
+ *
+ * Swipe right to complete, swipe left to undo — replaces the old tap-target
+ * checkbox with a full-width gesture and a strong, distinctive haptic
+ * (haptics.setComplete, now Heavy) so completing a set is felt without
+ * looking at the phone.
+ */
+function SetRow({
+  exercise,
+  entry,
+  s,
+  workingIndex,
+  prev,
+  isPr,
+  unit,
+  suggestion,
+  styles,
+  colors,
+  updateSet,
+  removeSet,
+  toggleSetComplete,
+}: {
+  exercise: ReturnType<typeof getExerciseById>;
+  entry: { exerciseId: string };
+  s: { id: string; weightKg: number; reps: number; rpe?: number; completed: boolean; warmup?: boolean };
+  workingIndex: number;
+  prev: { weightKg: number; reps: number } | undefined;
+  isPr: boolean;
+  unit: 'kg' | 'lb';
+  suggestion: { weightKg: number; reps: number };
+  styles: any;
+  colors: any;
+  updateSet: (exerciseId: string, setId: string, patch: any) => void;
+  removeSet: (exerciseId: string, setId: string) => void;
+  toggleSetComplete: (exerciseId: string, setId: string) => void;
+}) {
+  const translateX = useRef(new Animated.Value(0)).current;
+  const isBodyweight = exercise?.equipment === 'bodyweight';
+  const SWIPE_THRESHOLD = 72;
+  const MAX_SWIPE = 96;
+  // panResponder closes over `s.completed` via a ref so release logic always
+  // sees the latest value without having to recreate the responder per render
+  const completedRef = useRef(s.completed);
+  completedRef.current = s.completed;
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_evt, g) =>
+        Math.abs(g.dx) > 10 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
+      onPanResponderMove: (_evt, g) => {
+        const dx = completedRef.current ? Math.min(0, g.dx) : Math.max(0, g.dx);
+        translateX.setValue(Math.max(-MAX_SWIPE, Math.min(MAX_SWIPE, dx)));
+      },
+      onPanResponderRelease: (_evt, g) => {
+        const crossed = completedRef.current
+          ? g.dx < -SWIPE_THRESHOLD
+          : g.dx > SWIPE_THRESHOLD;
+        if (crossed) {
+          (completedRef.current ? haptics.tap : haptics.setComplete)();
+          toggleSetComplete(entry.exerciseId, s.id);
+        }
+        Animated.spring(translateX, { toValue: 0, useNativeDriver: true, bounciness: 6 }).start();
+      },
+      onPanResponderTerminate: () => {
+        Animated.spring(translateX, { toValue: 0, useNativeDriver: true, bounciness: 6 }).start();
+      },
+    })
+  ).current;
+
+  return (
+    <View style={styles.setRowWrap}>
+      <View
+        style={[
+          styles.swipeBackdrop,
+          { backgroundColor: s.completed ? colors.cardAlt : colors.bronzeSoft },
+        ]}
+        pointerEvents="none"
+      >
+        {!s.completed && (
+          <View style={styles.swipeIconLeft}>
+            <Icon name="check" size={16} color={colors.bronze} strokeWidth={2.4} />
+          </View>
+        )}
+        {s.completed && (
+          <View style={styles.swipeIconRight}>
+            <Icon name="close" size={16} color={colors.textFaint} strokeWidth={2.4} />
+          </View>
+        )}
+      </View>
+
+      <Animated.View
+        {...panResponder.panHandlers}
+        style={[styles.setRow, s.completed && styles.setRowDone, { transform: [{ translateX }] }]}
+      >
+        <Pressable
+          style={styles.colSet}
+          onPress={() => updateSet(entry.exerciseId, s.id, { warmup: !s.warmup })}
+          onLongPress={() => removeSet(entry.exerciseId, s.id)}
+        >
+          {s.warmup ? (
+            <Text style={styles.warmupTag}>W</Text>
+          ) : (
+            <Text style={styles.setNumber}>{workingIndex}</Text>
+          )}
+          {isPr && <Icon name="trophy" size={11} color={colors.bronze} strokeWidth={2} />}
+        </Pressable>
+
+        <Text style={[styles.prevText, styles.colPrev]} numberOfLines={1}>
+          {prev ? `${displayWeight(prev.weightKg, unit)}${unit} × ${prev.reps}` : '—'}
+        </Text>
+
+        <View style={styles.colWeight}>
+          <WeightStepper
+            committed={s.weightKg}
+            isBodyweight={isBodyweight}
+            unit={unit}
+            placeholderKg={prev?.weightKg ?? suggestion.weightKg ?? 0}
+            onChange={(kg) => updateSet(entry.exerciseId, s.id, { weightKg: kg })}
+            done={s.completed}
+            styles={styles}
+            colors={colors}
+          />
+        </View>
+
+        <View style={styles.colInput}>
+          <TextInput
+            style={[styles.input, s.completed && styles.inputDone]}
+            keyboardType="number-pad"
+            placeholder={prev ? String(prev.reps) : String(suggestion.reps || 0)}
+            placeholderTextColor={colors.textFaint}
+            value={s.reps ? String(s.reps) : ''}
+            onChangeText={(t) => updateSet(entry.exerciseId, s.id, { reps: parseReps(t) })}
+          />
+        </View>
+
+        <View style={styles.colRpe}>
+          <DecimalInput
+            style={[styles.input, styles.rpeInput, s.completed && styles.inputDone]}
+            placeholder="–"
+            placeholderTextColor={colors.textFaint}
+            committed={s.rpe}
+            parse={(t) => {
+              const v = parseFloat(t);
+              return Number.isFinite(v) ? Math.min(10, Math.max(1, v)) : undefined;
+            }}
+            format={(v) => (v ? String(v) : '')}
+            onCommit={(v) => updateSet(entry.exerciseId, s.id, { rpe: v })}
+          />
+        </View>
+      </Animated.View>
+    </View>
+  );
+}
+
 export default function WorkoutScreen() {
   const { colors } = useTheme();
   const styles = useStyles();
@@ -130,13 +378,37 @@ export default function WorkoutScreen() {
   const toggleSetComplete = useWorkoutStore((s) => s.toggleSetComplete);
   const removeSet = useWorkoutStore((s) => s.removeSet);
   const removeExercise = useWorkoutStore((s) => s.removeExerciseFromActive);
+  const swapExerciseInActive = useWorkoutStore((s) => s.swapExerciseInActive);
   const finishSession = useWorkoutStore((s) => s.finishSession);
   const discard = useWorkoutStore((s) => s.discardActiveSession);
+  const isPro = useEntitlements((s) => s.isPro);
+  const recordPaywallView = useEntitlements((s) => s.recordPaywallView);
+  const openCoach = useCoach((s) => s.openCoach);
+
+  const onAskCoach = (exerciseId: string) => {
+    if (!isPro) {
+      recordPaywallView('ai_coach');
+      navigation.navigate('Paywall', { feature: 'ai_coach' });
+      return;
+    }
+    // Best-effort: only meaningful if this exercise is actually part of the
+    // saved plan (it usually is, since sessions are normally started from
+    // one) — the coach still works fine without a day index, just with a
+    // little less to point at.
+    const dayIndex = currentPlan?.days.findIndex((d) =>
+      d.exercises.some((e) => e.exerciseId === exerciseId)
+    );
+    openCoach({
+      entryPoint: 'exercise',
+      seed: { exerciseId, dayIndex: dayIndex != null && dayIndex >= 0 ? dayIndex : null },
+    });
+  };
 
   const [now, setNow] = useState(Date.now());
   const [plateTarget, setPlateTarget] = useState<number | null>(null);
-  const [justUnlocked, setJustUnlocked] = useState<AchievementProgress[]>([]);
   const [showGuide, setShowGuide] = useState(false);
+  // exerciseId currently showing its swap-alternatives strip, or null
+  const [swapFor, setSwapFor] = useState<string | null>(null);
 
   // seeded a day ahead of the home screen's quote so the two don't echo
   // each other, and filtered to lines about starting rather than enduring
@@ -150,6 +422,19 @@ export default function WorkoutScreen() {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, [active]);
+
+  /** The empty-state CTA used to jump straight to an empty session, which
+   *  buried the routines/plans lists already sitting right below it as the
+   *  more useful default for anyone who has one. Now it asks first — unless
+   *  there's genuinely nothing to choose from yet, in which case asking would
+   *  just be a pointless extra tap. */
+  const onStartWorkoutPress = () => {
+    promptStartWorkout({
+      hasPlanOrRoutines: routines.length > 0 || savedPlans.length > 0 || !!currentPlan,
+      startSession,
+      onCreatePlan: () => navigation.navigate('PlanTab'),
+    });
+  };
 
   if (!active) {
     return (
@@ -167,27 +452,6 @@ export default function WorkoutScreen() {
           </Pressable>
         </View>
         <ScrollView contentContainerStyle={{ paddingHorizontal: spacing.lg }}>
-          {justUnlocked.length > 0 && (
-            <Pressable
-              style={styles.unlockBanner}
-              onPress={() => {
-                setJustUnlocked([]);
-                navigation.navigate('Achievements');
-              }}
-            >
-              <Icon name="trophy" size={20} color={colors.bronze} strokeWidth={1.6} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.unlockTitle}>
-                  {justUnlocked.length === 1 ? 'Milestone unlocked' : `${justUnlocked.length} milestones unlocked`}
-                </Text>
-                <Text style={styles.unlockDetail} numberOfLines={1}>
-                  {justUnlocked.map((a) => a.tier.label).join(' · ')}
-                </Text>
-              </View>
-              <Icon name="chevron" size={16} color={colors.bronze} strokeWidth={1.7} />
-            </Pressable>
-          )}
-
           {!currentPlan && (
             <Pressable style={styles.planNudge} onPress={() => navigation.navigate('PlanTab')}>
               <Icon name="plan" size={20} color={colors.bronze} strokeWidth={1.6} />
@@ -203,7 +467,7 @@ export default function WorkoutScreen() {
             title="Ready to train"
             subtitle="Start an empty session, or pick up one of your routines."
           />
-          <Button label="Start Empty Workout" size="lg" onPress={() => startSession()} />
+          <Button label="Start Workout" size="lg" onPress={onStartWorkoutPress} />
 
           {routines.length > 0 && (
             <View style={{ marginTop: spacing.xl }}>
@@ -283,7 +547,11 @@ export default function WorkoutScreen() {
       const allSessions = [...sessions, finished];
       syncStatsToSupabase(useWorkoutStore.getState().records, allSessions);
       const after = computeAchievements(allSessions, profile.daysPerWeek);
-      setJustUnlocked(newlyUnlocked(before, after));
+      const justUnlocked = newlyUnlocked(before, after);
+      // real PRs only — a genuinely new best e1RM logged in the set that was
+      // just finished, not the whole history's records
+      const prEvents = prTimeline(allSessions).filter((e) => e.at === finished.completedAt);
+      navigation.navigate('PostWorkoutSummary', { session: finished, prEvents, justUnlocked });
     }
   };
 
@@ -352,6 +620,10 @@ export default function WorkoutScreen() {
             const pr = records[entry.exerciseId];
             const suggestion = suggestNext(exercise, sessions, profile.goal, unit);
             const usesBar = exercise.equipment === 'barbell' || exercise.equipment === 'smith';
+            const swapCandidates: Substitution[] | null =
+              swapFor === entry.exerciseId
+                ? substitutionsFor(exercise, { allowed: profile.equipment, limit: 6 })
+                : null;
 
             return (
               <View key={entry.exerciseId} style={styles.exerciseBlock}>
@@ -366,6 +638,26 @@ export default function WorkoutScreen() {
                     <InfoButton
                       onPress={() => navigation.navigate('ExerciseDetail', { exerciseId: entry.exerciseId })}
                     />
+                    <Pressable
+                      style={styles.swapBtn}
+                      onPress={() => {
+                        haptics.tap();
+                        setSwapFor(swapFor === entry.exerciseId ? null : entry.exerciseId);
+                      }}
+                      hitSlop={6}
+                    >
+                      <Text style={styles.swapBtnText}>Swap</Text>
+                    </Pressable>
+                    <Pressable
+                      style={styles.swapBtn}
+                      onPress={() => {
+                        haptics.tap();
+                        onAskCoach(entry.exerciseId);
+                      }}
+                      hitSlop={6}
+                    >
+                      <Text style={styles.swapBtnText}>Coach</Text>
+                    </Pressable>
                     <Pressable onPress={() => removeExercise(entry.exerciseId)} hitSlop={8}>
                       <Icon name="close" size={17} color={colors.textDim} strokeWidth={1.7} />
                     </Pressable>
@@ -378,13 +670,43 @@ export default function WorkoutScreen() {
                   <Text style={styles.suggestionText}>{suggestion.label}</Text>
                 </View>
 
+                {swapCandidates && (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.swapRow}
+                    style={styles.swapScroll}
+                  >
+                    {swapCandidates.length === 0 && (
+                      <Text style={styles.swapEmpty}>No close substitutes with your equipment</Text>
+                    )}
+                    {swapCandidates.map((cand) => (
+                      <Pressable
+                        key={cand.exercise.id}
+                        style={styles.swapCard}
+                        onPress={() => {
+                          haptics.select();
+                          swapExerciseInActive(entry.exerciseId, cand.exercise.id);
+                          setSwapFor(null);
+                        }}
+                      >
+                        <Text style={styles.swapCardName} numberOfLines={2}>
+                          {cand.exercise.name}
+                        </Text>
+                        <Text style={styles.swapCardReason} numberOfLines={1}>
+                          {cand.reason}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+                )}
+
                 <View style={styles.tableHeader}>
                   <Text style={[styles.th, styles.colSet]}>SET</Text>
                   <Text style={[styles.th, styles.colPrev]}>PREVIOUS</Text>
-                  <Text style={[styles.th, styles.colInput, styles.center]}>{unit.toUpperCase()}</Text>
+                  <Text style={[styles.th, styles.colWeight, styles.center]}>{unit.toUpperCase()}</Text>
                   <Text style={[styles.th, styles.colInput, styles.center]}>REPS</Text>
                   <Text style={[styles.th, styles.colRpe, styles.center]}>RPE</Text>
-                  <View style={styles.colCheck} />
                 </View>
 
                 {entry.sets.map((s, idx) => {
@@ -394,87 +716,22 @@ export default function WorkoutScreen() {
                     entry.sets.slice(0, idx + 1).filter((x) => !x.warmup).length;
 
                   return (
-                    <View key={s.id} style={[styles.setRow, s.completed && styles.setRowDone]}>
-                      {/* tap the set number to flag it as a warm-up */}
-                      <Pressable
-                        style={styles.colSet}
-                        onPress={() => updateSet(entry.exerciseId, s.id, { warmup: !s.warmup })}
-                        onLongPress={() => removeSet(entry.exerciseId, s.id)}
-                      >
-                        {s.warmup ? (
-                          <Text style={styles.warmupTag}>W</Text>
-                        ) : (
-                          <Text style={styles.setNumber}>{workingIndex}</Text>
-                        )}
-                        {isPr && <Icon name="trophy" size={11} color={colors.bronze} strokeWidth={2} />}
-                      </Pressable>
-
-                      <Text style={[styles.prevText, styles.colPrev]} numberOfLines={1}>
-                        {prev ? `${displayWeight(prev.weightKg, unit)}${unit} × ${prev.reps}` : '—'}
-                      </Text>
-
-                      <View style={styles.colInput}>
-                        <DecimalInput
-                          style={[styles.input, s.completed && styles.inputDone]}
-                          placeholder={
-                            prev
-                              ? String(displayWeight(prev.weightKg, unit))
-                              : String(displayWeight(suggestion.weightKg || 0, unit))
-                          }
-                          placeholderTextColor={colors.textFaint}
-                          committed={s.weightKg}
-                          parse={(t) => parseWeightInput(t, unit)}
-                          format={(kg) => (kg ? String(displayWeight(kg, unit)) : '')}
-                          onCommit={(kg) => updateSet(entry.exerciseId, s.id, { weightKg: kg ?? 0 })}
-                        />
-                      </View>
-
-                      <View style={styles.colInput}>
-                        <TextInput
-                          style={[styles.input, s.completed && styles.inputDone]}
-                          keyboardType="number-pad"
-                          placeholder={prev ? String(prev.reps) : String(suggestion.reps || 0)}
-                          placeholderTextColor={colors.textFaint}
-                          value={s.reps ? String(s.reps) : ''}
-                          onChangeText={(t) =>
-                            updateSet(entry.exerciseId, s.id, { reps: parseReps(t) })
-                          }
-                        />
-                      </View>
-
-                      <View style={styles.colRpe}>
-                        <DecimalInput
-                          style={[styles.input, styles.rpeInput, s.completed && styles.inputDone]}
-                          placeholder="–"
-                          placeholderTextColor={colors.textFaint}
-                          committed={s.rpe}
-                          parse={(t) => {
-                            const v = parseFloat(t);
-                            return Number.isFinite(v) ? Math.min(10, Math.max(1, v)) : undefined;
-                          }}
-                          format={(v) => (v ? String(v) : '')}
-                          onCommit={(v) => updateSet(entry.exerciseId, s.id, { rpe: v })}
-                        />
-                      </View>
-
-                      <Pressable
-                        style={styles.colCheck}
-                        onPress={() => {
-                          (s.completed ? haptics.tap : haptics.setComplete)();
-                          toggleSetComplete(entry.exerciseId, s.id);
-                        }}
-                        hitSlop={6}
-                      >
-                        <View style={[styles.checkbox, s.completed && styles.checkboxDone]}>
-                          <Icon
-                            name="check"
-                            size={15}
-                            color={s.completed ? colors.onAccent : colors.textFaint}
-                            strokeWidth={2.4}
-                          />
-                        </View>
-                      </Pressable>
-                    </View>
+                    <SetRow
+                      key={s.id}
+                      exercise={exercise}
+                      entry={entry}
+                      s={s}
+                      workingIndex={workingIndex}
+                      prev={prev}
+                      isPr={isPr}
+                      unit={unit}
+                      suggestion={suggestion}
+                      styles={styles}
+                      colors={colors}
+                      updateSet={updateSet}
+                      removeSet={removeSet}
+                      toggleSetComplete={toggleSetComplete}
+                    />
                   );
                 })}
 
@@ -579,19 +836,6 @@ const useStyles = makeStyles((c) => ({
   summaryLabel: { ...typography.caption, color: c.textDim },
   content: { padding: spacing.lg },
   sectionLabel: { ...typography.micro, color: c.textFaint, marginBottom: spacing.md },
-  unlockBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: c.bronzeSoft,
-    borderWidth: 1,
-    borderColor: 'rgba(192,138,62,0.4)',
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    marginTop: spacing.lg,
-  },
-  unlockTitle: { ...typography.bodyMedium, color: c.text },
-  unlockDetail: { ...typography.caption, color: c.bronze, marginTop: 2 },
   planNudge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -640,9 +884,32 @@ const useStyles = makeStyles((c) => ({
   colSet: { width: 34, flexDirection: 'row', alignItems: 'center', gap: 3 },
   colPrev: { flex: 1 },
   colInput: { width: 54 },
+  colWeight: { width: 104, flexDirection: 'row', alignItems: 'center', gap: 2 },
   colRpe: { width: 38 },
-  colCheck: { width: 36, alignItems: 'flex-end' },
-  setRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 5, borderRadius: radius.sm, gap: 4 },
+  setRowWrap: {
+    borderRadius: radius.sm,
+    overflow: 'hidden',
+    marginBottom: 1,
+  },
+  swipeBackdrop: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  swipeIconLeft: { paddingLeft: spacing.md },
+  swipeIconRight: { flex: 1, alignItems: 'flex-end', paddingRight: spacing.md },
+  setRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 5,
+    borderRadius: radius.sm,
+    gap: 4,
+    backgroundColor: c.bg,
+  },
   setRowDone: { backgroundColor: 'rgba(255,255,255,0.03)' },
   setNumber: { ...typography.bodyMedium, color: c.textSecondary },
   warmupTag: { ...typography.captionBold, color: c.textFaint },
@@ -655,17 +922,39 @@ const useStyles = makeStyles((c) => ({
     textAlign: 'center',
     ...typography.bodyMedium,
   },
-  rpeInput: { fontSize: 13 },
-  inputDone: { backgroundColor: 'transparent' },
-  checkbox: {
-    width: 30,
+  stepperRow: { flexDirection: 'row', alignItems: 'center', gap: 2, flex: 1 },
+  stepperBtn: {
+    width: 22,
     height: 30,
     borderRadius: radius.sm,
     backgroundColor: c.cardAlt,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  checkboxDone: { backgroundColor: c.bronze },
+  stepperBtnText: { ...typography.bodyMedium, color: c.textSecondary, fontWeight: '700' },
+  stepperInput: { flex: 1, minWidth: 50 },
+  rpeInput: { fontSize: 13 },
+  inputDone: { backgroundColor: 'transparent' },
+  swapBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radius.pill,
+    backgroundColor: c.cardAlt,
+  },
+  swapBtnText: { ...typography.caption, color: c.textSecondary, fontWeight: '600' },
+  swapScroll: { marginBottom: spacing.sm },
+  swapRow: { flexDirection: 'row', gap: spacing.sm, paddingVertical: 2 },
+  swapCard: {
+    width: 140,
+    backgroundColor: c.card,
+    borderWidth: 1,
+    borderColor: c.border,
+    borderRadius: radius.md,
+    padding: spacing.sm,
+  },
+  swapCardName: { ...typography.bodyMedium, color: c.text },
+  swapCardReason: { ...typography.caption, color: c.textDim, marginTop: 4 },
+  swapEmpty: { ...typography.caption, color: c.textFaint, paddingVertical: spacing.sm },
   exerciseFooter: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
   addSetBtn: {
     flex: 1,

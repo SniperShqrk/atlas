@@ -7,7 +7,7 @@ import { ModalHeader, BottomInset } from '@/components/ScreenLayout';
 import { Icon, IconName } from '@/components/Icon';
 import { radius, spacing, typography } from '@/theme/theme';
 import { makeStyles, useTheme } from '@/theme/ThemeProvider';
-import { useEntitlements, PRO_FEATURES, ProFeature } from '@/store/entitlements';
+import { useEntitlements, PRO_FEATURES, ProFeature, FREE_LIMITS, PRO_LIMITS } from '@/store/entitlements';
 import { fetchOfferings, isPurchasesConfigured, purchase, restore } from '@/store/purchases';
 import { EXERCISES } from '@/data/exercises';
 
@@ -43,12 +43,34 @@ const FEATURE_ICONS: Record<ProFeature, IconName> = {
   csv_export: 'edit',
 };
 
-const FREE_FOREVER = [
-  'Unlimited workout logging — no session caps',
-  `All ${EXERCISES.length} exercises with full instructions`,
-  'Muscle recovery map and full history',
-  'Rest timer, PR detection, plate calculator',
-  'Progression suggestions on every lift',
+/** One specific value statement per trigger feature, rather than a generic
+ *  pitch — whatever locked feature actually sent someone here becomes the
+ *  headline, since that's the one thing they were just trying to do. */
+const VALUE_HEADLINE: Record<ProFeature, string> = {
+  atlas_insights: 'Know exactly what to change',
+  ai_planner: 'Never guess your program again',
+  import_workouts: 'Turn any plan into a ready week',
+  more_routines: 'Keep every routine you build',
+  advanced_analytics: 'See the trend, not just the numbers',
+  volume_landmarks: 'Train each muscle exactly enough',
+  csv_export: 'Your data, never locked in',
+};
+const DEFAULT_FEATURE: ProFeature = 'ai_planner';
+
+/** The whole free-vs-premium picture in one glance, replacing two separate
+ *  walls of text (a card per Pro feature, then a bulleted "always free"
+ *  list) with a single compact table. */
+const COMPARISON: { label: string; free: boolean | string; pro: boolean | string }[] = [
+  { label: 'Workout logging', free: true, pro: true },
+  { label: `All ${EXERCISES.length} exercises`, free: true, pro: true },
+  { label: 'Recovery map & history', free: true, pro: true },
+  { label: 'Saved routines', free: `${FREE_LIMITS.routines}`, pro: `${PRO_LIMITS.routines}` },
+  { label: 'AI Workout Planner', free: false, pro: true },
+  { label: 'ATLAS Insights', free: false, pro: true },
+  { label: 'Import Workouts', free: false, pro: true },
+  { label: 'Strength & volume charts', free: false, pro: true },
+  { label: 'Volume landmarks', free: false, pro: true },
+  { label: 'CSV export', free: false, pro: true },
 ];
 
 export default function PaywallScreen() {
@@ -64,6 +86,8 @@ export default function PaywallScreen() {
   const setPro = useEntitlements((s) => s.setPro);
   const syncFromRevenueCat = useEntitlements((s) => s.syncFromRevenueCat);
   const redeemBetaCode = useEntitlements((s) => s.redeemBetaCode);
+  const setRemindLater = useEntitlements((s) => s.setRemindLater);
+  const feature = highlight ?? DEFAULT_FEATURE;
   const [plan, setPlan] = useState<(typeof PLANS)[number]['id']>('yearly');
   const [offering, setOffering] = useState<PurchasesOffering | null>(null);
   const [purchasing, setPurchasing] = useState(false);
@@ -76,9 +100,10 @@ export default function PaywallScreen() {
     if (isPurchasesConfigured()) fetchOfferings().then(setOffering);
   }, []);
 
-  const ordered = (Object.keys(PRO_FEATURES) as ProFeature[]).sort((a, b) =>
-    a === highlight ? -1 : b === highlight ? 1 : 0
-  );
+  const onRemindLater = () => {
+    setRemindLater();
+    navigation.goBack();
+  };
 
   const onSubscribe = async () => {
     const selected = PLANS.find((p) => p.id === plan)!;
@@ -143,36 +168,47 @@ export default function PaywallScreen() {
     <Screen>
       <ModalHeader onBack={() => navigation.goBack()} />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {/* One value statement — whatever locked feature actually sent
+            someone here, not a tour of all seven. */}
         <View style={styles.hero}>
-          <Icon name="sparkle" size={30} color={colors.bronze} strokeWidth={1.5} />
-          <Text style={styles.title}>ATLAS Premium</Text>
+          <Icon name={FEATURE_ICONS[feature]} size={30} color={colors.bronze} strokeWidth={1.5} />
+          <Text style={styles.title}>{VALUE_HEADLINE[feature]}</Text>
           <Text style={styles.subtitle}>
-            {dayZero
-              ? 'Everything you need to train is free, forever — no trial to expire and no session caps. Premium adds the thinking.'
-              : 'Everything you need to train is free, forever. Premium adds the thinking.'}
+            {PRO_FEATURES[feature].blurb}
+            {dayZero ? ' No trial to expire, no session caps — the free tier is permanent.' : ''}
           </Text>
         </View>
 
-        {ordered.map((f) => {
-          const meta = PRO_FEATURES[f];
-          const isHighlight = f === highlight;
-          return (
-            <View key={f} style={[styles.feature, isHighlight && styles.featureHighlight]}>
-              <Icon name={FEATURE_ICONS[f]} size={22} color={colors.bronze} strokeWidth={1.6} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.featureTitle}>{meta.title}</Text>
-                <Text style={styles.featureBlurb}>{meta.blurb}</Text>
+        <Text style={styles.sectionLabel}>FREE VS PREMIUM</Text>
+        <View style={styles.compareCard}>
+          <View style={styles.compareHeaderRow}>
+            <Text style={[styles.compareHeaderCell, { flex: 1.4 }]} />
+            <Text style={styles.compareHeaderCell}>Free</Text>
+            <Text style={[styles.compareHeaderCell, { color: colors.bronze }]}>Premium</Text>
+          </View>
+          {COMPARISON.map((row, i) => (
+            <View key={row.label} style={[styles.compareRow, i > 0 && styles.compareRowBorder]}>
+              <Text style={[styles.compareLabel, { flex: 1.4 }]} numberOfLines={1}>
+                {row.label}
+              </Text>
+              <View style={styles.compareCell}>
+                {typeof row.free === 'boolean' ? (
+                  row.free ? (
+                    <Icon name="check" size={15} color={colors.textDim} strokeWidth={2.2} />
+                  ) : (
+                    <Text style={styles.compareDash}>–</Text>
+                  )
+                ) : (
+                  <Text style={styles.compareValue}>{row.free}</Text>
+                )}
               </View>
-            </View>
-          );
-        })}
-
-        <Text style={styles.sectionLabel}>ALWAYS FREE</Text>
-        <View style={styles.freeCard}>
-          {FREE_FOREVER.map((f) => (
-            <View key={f} style={styles.freeRow}>
-              <Icon name="check" size={16} color={colors.textDim} strokeWidth={2.2} />
-              <Text style={styles.freeText}>{f}</Text>
+              <View style={styles.compareCell}>
+                {typeof row.pro === 'boolean' ? (
+                  <Icon name="check" size={15} color={colors.bronze} strokeWidth={2.4} />
+                ) : (
+                  <Text style={[styles.compareValue, { color: colors.bronze }]}>{row.pro}</Text>
+                )}
+              </View>
             </View>
           ))}
         </View>
@@ -213,6 +249,14 @@ export default function PaywallScreen() {
           disabled={purchasing || restoring}
           style={{ marginTop: spacing.lg }}
         />
+        <Pressable
+          onPress={onRemindLater}
+          disabled={purchasing || restoring}
+          style={styles.remindLaterBtn}
+        >
+          <Text style={styles.remindLaterText}>Remind me later</Text>
+        </Pressable>
+
         <Pressable onPress={onRestore} disabled={purchasing || restoring} style={styles.restoreBtn}>
           <Text style={styles.restoreText}>{restoring ? 'Restoring…' : 'Restore Purchases'}</Text>
         </Pressable>
@@ -264,28 +308,33 @@ const useStyles = makeStyles((c) => ({
     lineHeight: 21,
     paddingHorizontal: spacing.md,
   },
-  feature: {
-    flexDirection: 'row',
-    gap: spacing.md,
+  sectionLabel: { ...typography.micro, color: c.textFaint, marginTop: spacing.xl, marginBottom: spacing.md },
+  compareCard: {
     backgroundColor: c.card,
     borderWidth: 1,
     borderColor: c.border,
     borderRadius: radius.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.sm,
+    overflow: 'hidden',
   },
-  featureHighlight: { borderColor: 'rgba(192,138,62,0.45)', backgroundColor: c.bronzeSoft },
-  featureTitle: { ...typography.h3, color: c.text },
-  featureBlurb: { ...typography.caption, color: c.textDim, marginTop: 3, lineHeight: 19 },
-  sectionLabel: { ...typography.micro, color: c.textFaint, marginTop: spacing.xl, marginBottom: spacing.md },
-  freeCard: {
+  compareHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
     backgroundColor: c.cardAlt,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    gap: spacing.sm,
   },
-  freeRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start' },
-  freeText: { ...typography.caption, color: c.textSecondary, flex: 1, lineHeight: 19 },
+  compareHeaderCell: { ...typography.captionBold, color: c.textDim, flex: 1, textAlign: 'center' },
+  compareRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm + 2,
+  },
+  compareRowBorder: { borderTopWidth: 1, borderTopColor: c.border },
+  compareLabel: { ...typography.caption, color: c.text },
+  compareCell: { flex: 1, alignItems: 'center' },
+  compareValue: { ...typography.captionBold, color: c.textDim },
+  compareDash: { ...typography.body, color: c.textFaint },
   plans: { gap: spacing.sm },
   plan: {
     flexDirection: 'row',
@@ -308,7 +357,9 @@ const useStyles = makeStyles((c) => ({
   },
   planNoteText: { ...typography.micro, color: c.accent, fontSize: 10 },
   planPrice: { ...typography.h3, color: c.text },
-  restoreBtn: { alignItems: 'center', marginTop: spacing.lg, padding: spacing.sm },
+  remindLaterBtn: { alignItems: 'center', marginTop: spacing.md, padding: spacing.sm },
+  remindLaterText: { ...typography.bodyMedium, color: c.textSecondary, fontWeight: '600' },
+  restoreBtn: { alignItems: 'center', marginTop: spacing.sm, padding: spacing.sm },
   restoreText: { ...typography.bodyMedium, color: c.textDim },
   codeBlock: { marginTop: spacing.lg },
   codeRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },

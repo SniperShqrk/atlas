@@ -63,7 +63,40 @@ function setsForExperience(experience, mechanic) {
   return mechanic === 'compound' ? base + 1 : base;
 }
 
-export function generateRuleBasedPlan(profile, recentSessions = []) {
+/** Single-day requests choose from the same buckets a normal split day would
+ *  use, keyed by the human-readable focus label the client sends up. */
+const SINGLE_DAY_BUCKETS = {
+  Push: { push: 5 },
+  Pull: { pull: 5 },
+  Legs: { legs: 5, core: 1 },
+  Upper: { push: 3, pull: 3 },
+  'Full Body': { push: 2, pull: 2, legs: 2 },
+};
+
+/** No focus given for a one-off day: pick whichever of push/pull/legs is, on
+ *  average, least recovered — the same "train what's fresh" logic the AI
+ *  prompt is told to apply — rather than defaulting to Push every time. */
+function autoPickFocus(loads) {
+  const groups = {
+    Push: ['chest', 'front_delts', 'side_delts', 'triceps'],
+    Pull: ['lats', 'traps', 'rear_delts', 'biceps'],
+    Legs: ['quads', 'hamstrings', 'glutes', 'calves'],
+  };
+  let best = 'Push';
+  let bestScore = Infinity;
+  for (const [label, muscles] of Object.entries(groups)) {
+    const scores = muscles.map((m) => loads[m]?.recoveryPct ?? 100);
+    const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+    if (avg < bestScore) {
+      bestScore = avg;
+      best = label;
+    }
+  }
+  return best;
+}
+
+export function generateRuleBasedPlan(profile, recentSessions = [], options = {}) {
+  const { scope = 'week', focus = null } = options;
   // Profiles now carry the actual owned-equipment list (see the app's
   // UserProfile.equipment) rather than one of three coarse tiers. Fall back to
   // the old tiers only for a profile shape saved before that change.
@@ -72,8 +105,19 @@ export function generateRuleBasedPlan(profile, recentSessions = []) {
     : EQUIPMENT_MAP[profile.equipmentAccess] ?? EQUIPMENT_MAP.full_gym;
   const available = exercisesByEquipment(allowedEquipment);
   const loads = computeMuscleLoads(recentSessions);
-  const template = SPLITS_BY_DAYS[profile.daysPerWeek] ?? SPLITS_BY_DAYS[4];
   const reps = repsForGoal(profile.goal);
+
+  const isSingleDay = scope === 'day';
+  const chosenFocus = isSingleDay ? focus ?? autoPickFocus(loads) : null;
+  const template = isSingleDay
+    ? [
+        {
+          label: 'Day 1',
+          focus: chosenFocus,
+          buckets: SINGLE_DAY_BUCKETS[chosenFocus] ?? SINGLE_DAY_BUCKETS['Full Body'],
+        },
+      ]
+    : SPLITS_BY_DAYS[profile.daysPerWeek] ?? SPLITS_BY_DAYS[4];
 
   // avoid repeating the same exercise across the whole week where possible
   const usedCounts = {};
@@ -141,10 +185,14 @@ export function generateRuleBasedPlan(profile, recentSessions = []) {
     id: `rb_${Date.now()}`,
     createdAt: Date.now(),
     source: 'rule_based',
-    summary: `A ${profile.daysPerWeek}-day ${profile.goal.replace(
-      '_',
-      ' '
-    )} split for ${profile.experience} level. Compounds are prioritised first in each session, and exercise selection favours muscle groups that have recovered most since your recent training.`,
+    summary: isSingleDay
+      ? `A single ${chosenFocus} session for ${profile.experience} level${
+          focus ? '' : ` — ${chosenFocus} was picked automatically since it's had the least recovery time`
+        }. Compounds lead, and exercise selection favours muscle groups that have recovered most since your recent training.`
+      : `A ${profile.daysPerWeek}-day ${profile.goal.replace(
+          '_',
+          ' '
+        )} split for ${profile.experience} level. Compounds are prioritised first in each session, and exercise selection favours muscle groups that have recovered most since your recent training.`,
     days,
   };
 }

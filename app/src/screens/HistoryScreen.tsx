@@ -1,12 +1,12 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { format } from 'date-fns';
 import { Screen, Card, EmptyState, StatTile } from '@/components/ui';
 import { TopInset } from '@/components/ScreenLayout';
 import { spacing, typography } from '@/theme/theme';
 import { makeStyles, useTheme } from '@/theme/ThemeProvider';
-import { useWorkoutStore, sessionVolume, sessionSetCount } from '@/store/workoutStore';
+import { useWorkoutStore, sessionVolume, sessionSetCount, WorkoutSession } from '@/store/workoutStore';
 import { getExerciseById } from '@/data/exercises';
 import { displayWeight, kgToLb } from '@/utils/units';
 
@@ -20,8 +20,16 @@ function duration(sec?: number) {
 export default function HistoryScreen() {
   const styles = useStyles();
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
   const sessions = useWorkoutStore((s) => s.sessions);
   const unit = useWorkoutStore((s) => s.profile.unit);
+  const listRef = useRef<FlatList<WorkoutSession>>(null);
+
+  // arriving from a chart point on the Progress tab — jump straight to the
+  // session that point came from and give it a brief highlight so it's
+  // obvious which row is the one being pointed at
+  const highlightId: string | undefined = route.params?.highlightSessionId;
+  const [flashId, setFlashId] = useState<string | null>(null);
 
   const sorted = useMemo(
     () =>
@@ -30,6 +38,25 @@ export default function HistoryScreen() {
       ),
     [sessions]
   );
+
+  useEffect(() => {
+    if (!highlightId) return;
+    const index = sorted.findIndex((s) => s.id === highlightId);
+    if (index === -1) return;
+    setFlashId(highlightId);
+    const t = setTimeout(
+      () => listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.2 }),
+      50
+    );
+    const fade = setTimeout(() => setFlashId(null), 2200);
+    return () => {
+      clearTimeout(t);
+      clearTimeout(fade);
+    };
+    // only re-run if a *new* highlight request comes in, not on every
+    // session-list change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [highlightId]);
 
   const totals = useMemo(() => {
     const volume = sessions.reduce((sum, s) => sum + sessionVolume(s), 0);
@@ -60,9 +87,20 @@ export default function HistoryScreen() {
         )}
 
         <FlatList
+          ref={listRef}
           data={sorted}
           keyExtractor={(s) => s.id}
           contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.xxxl }}
+          onScrollToIndexFailed={(info) => {
+            // rows are variable height, so a first-attempt miss is normal —
+            // scroll to the best estimate and let the list settle, then the
+            // effect's own retry (via the ref) isn't needed since this
+            // fallback already lands close enough for a 12-row-ish list
+            listRef.current?.scrollToOffset({
+              offset: info.averageItemLength * info.index,
+              animated: true,
+            });
+          }}
           ListEmptyComponent={
             <EmptyState
               title="No workouts yet"
@@ -70,7 +108,12 @@ export default function HistoryScreen() {
             />
           }
           renderItem={({ item }) => (
-            <Card style={{ marginBottom: spacing.md }}>
+            <Card
+              style={{
+                marginBottom: spacing.md,
+                ...(item.id === flashId ? styles.flashCard : null),
+              }}
+            >
               <View style={styles.rowHeader}>
                 <Text style={styles.sessionName}>{item.name}</Text>
                 <Text style={styles.sessionDate}>
@@ -125,6 +168,7 @@ export default function HistoryScreen() {
 const useStyles = makeStyles((c) => ({
   header: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.md },
   title: { ...typography.hero, color: c.text },
+  flashCard: { borderWidth: 1.5, borderColor: c.bronze },
   rowHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
   sessionName: { ...typography.h3, color: c.text },
   sessionDate: { ...typography.caption, color: c.textDim },

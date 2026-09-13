@@ -1,17 +1,54 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, TextInput, ScrollView, Alert } from 'react-native';
+import React, { useMemo, useRef, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  TextInput,
+  ScrollView,
+  Alert,
+  Animated,
+  PanResponder,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Screen, Card, Button, SectionHeader, EmptyState, Chip, InfoButton } from '@/components/ui';
 import { ScreenLayout } from '@/components/ScreenLayout';
 import { ProBadge } from '@/components/Pro';
 import { Icon } from '@/components/Icon';
+import { ExerciseThumb } from '@/components/ExerciseThumb';
 import { radius, spacing, typography } from '@/theme/theme';
 import { makeStyles, useTheme } from '@/theme/ThemeProvider';
 import { useWorkoutStore, SplitPreference } from '@/store/workoutStore';
 import { useEntitlements } from '@/store/entitlements';
-import { getExerciseById, MUSCLE_LABELS, MuscleGroup } from '@/data/exercises';
+import {
+  EXERCISES,
+  getExerciseById,
+  MUSCLE_LABELS,
+  MuscleGroup,
+  Exercise,
+} from '@/data/exercises';
+import { filterExercises } from '@/data/exerciseRelations';
+import { PREBUILT_PROGRAMS } from '@/data/programs';
 import { generatePlan } from '@/api/client';
 import { haptics } from '@/lib/haptics';
+import { useCoach } from '@/store/coach';
+
+const PROGRAM_SOURCE_LABEL: Record<string, string> = {
+  ai: 'AI generated',
+  imported: 'Imported',
+  preset: 'Program',
+  rule_based: 'Offline generator',
+};
+
+/** Bounding box in screen (page) coordinates, from measureInWindow. */
+interface Bounds {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+const LONG_PRESS_MS = 280;
 
 const SPLITS: { key: SplitPreference; label: string }[] = [
   { key: 'auto', label: 'Let it choose' },
@@ -24,10 +61,48 @@ const SPLITS: { key: SplitPreference; label: string }[] = [
 const SESSION_LENGTHS = [30, 45, 60, 75, 90];
 const DAYS_PER_WEEK_OPTIONS = [2, 3, 4, 5, 6];
 
+/** "Auto" (null) lets the backend pick a focus from recovery data rather
+ *  than always defaulting to Push. */
+const DAY_FOCUS_OPTIONS: (string | null)[] = [null, 'Push', 'Pull', 'Legs', 'Upper', 'Full Body'];
+
 const EMPHASIS_OPTIONS: MuscleGroup[] = [
   'chest', 'lats', 'side_delts', 'rear_delts', 'biceps', 'triceps',
   'quads', 'hamstrings', 'glutes', 'calves', 'abs', 'traps',
 ];
+
+/**
+ * One row in the embedded library. The PanResponder (built per-row by
+ * makeRowResponder, above) owns the drag gesture; a plain onPress alongside
+ * it is the non-drag fallback — a quick tap just isn't part of the same
+ * gesture the responder ever claims (it only claims on a held, then moved,
+ * touch), so both can live on the same row without conflict.
+ */
+function LibraryDragRow({
+  exercise,
+  bordered,
+  styles,
+  responder,
+}: {
+  exercise: Exercise;
+  bordered: boolean;
+  styles: any;
+  responder: ReturnType<typeof PanResponder.create>;
+}) {
+  return (
+    <View style={[styles.libraryRow, bordered && styles.exRowBorder]} {...responder.panHandlers}>
+      <ExerciseThumb exercise={exercise} />
+      <View style={{ flex: 1 }}>
+        <Text style={styles.exName} numberOfLines={1}>
+          {exercise.name}
+        </Text>
+        <Text style={styles.exMuscles} numberOfLines={1}>
+          {exercise.primaryMuscles.map((m) => MUSCLE_LABELS[m]).join(' · ')}
+        </Text>
+      </View>
+      <Text style={styles.dragHandle}>⠿</Text>
+    </View>
+  );
+}
 
 export default function PlanScreen() {
   const { colors } = useTheme();
@@ -48,13 +123,125 @@ export default function PlanScreen() {
   const removePlanExercise = useWorkoutStore((s) => s.removePlanExercise);
   const removePlanDay = useWorkoutStore((s) => s.removePlanDay);
   const addPlanDay = useWorkoutStore((s) => s.addPlanDay);
+  const addExerciseToPlanDay = useWorkoutStore((s) => s.addExerciseToPlanDay);
+  const loadPresetProgram = useWorkoutStore((s) => s.loadPresetProgram);
+  const customExercises = useWorkoutStore((s) => s.customExercises);
   const isPro = useEntitlements((s) => s.isPro);
   const recordPaywallView = useEntitlements((s) => s.recordPaywallView);
+  const openCoach = useCoach((s) => s.openCoach);
+
+  const onAskCoach = () => {
+    if (!isPro) {
+      recordPaywallView('ai_coach');
+      navigation.navigate('Paywall', { feature: 'ai_coach' });
+      return;
+    }
+    openCoach({ entryPoint: 'plan' });
+  };
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
+  const [libraryQuery, setLibraryQuery] = useState('');
+
+  // ---- drag-and-drop: pick up a library row, drop it on a day card ----
+  const [dragExercise, setDragExercise] = useState<Exercise | null>(null);
+  const [dropTargetDay, setDropTargetDay] = useState<number | null>(null);
+  const [planScope, setPlanScope] = useState<'week' | 'day'>('week');
+  const [dayFocus, setDayFocus] = useState<string | null>(null);
+  const dragPos = useRef(new Animated.ValueXY()).current;
+  const dayCardNodes = useRef<Record<number, any>>({});
+  const dayCardBounds = useRef<Record<number, Bounds>>({});
+
+  const measureDayBounds = () => {
+    Object.entries(dayCardNodes.current).forEach(([key, node]) => {
+      if (!node?.measureInWindow) return;
+      node.measureInWindow((x: number, y: number, width: number, height: number) => {
+        dayCardBounds.current[Number(key)] = { x, y, width, height };
+      });
+    });
+  };
+
+  const hitTestDay = (pageX: number, pageY: number): number | null => {
+    for (const [key, b] of Object.entries(dayCardBounds.current)) {
+      if (pageX >= b.x && pageX <= b.x + b.width && pageY >= b.y && pageY <= b.y + b.height) {
+        return Number(key);
+      }
+    }
+    return null;
+  };
+
+  /** One PanResponder factory per library row. Claims nothing at touch-down
+   *  (so the library list still scrolls normally) — it only starts arming a
+   *  drag after LONG_PRESS_MS of holding still, via a ref flag checked in
+   *  onMoveShouldSetPanResponderCapture. That's the standard technique for a
+   *  "long-press then drag" gesture inside a ScrollView without pulling in
+   *  react-native-gesture-handler for a single interaction. */
+  const makeRowResponder = (exercise: Exercise) => {
+    const ready = { current: false };
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let origin = { x: 0, y: 0 };
+
+    const clear = () => {
+      if (timer) clearTimeout(timer);
+      timer = null;
+      ready.current = false;
+    };
+
+    return PanResponder.create({
+      onStartShouldSetPanResponder: (evt) => {
+        origin = { x: evt.nativeEvent.pageX, y: evt.nativeEvent.pageY };
+        clear();
+        timer = setTimeout(() => {
+          ready.current = true;
+        }, LONG_PRESS_MS);
+        return false;
+      },
+      onMoveShouldSetPanResponderCapture: (_evt, g) =>
+        ready.current && Math.abs(g.dx) + Math.abs(g.dy) > 2,
+      onPanResponderGrant: () => {
+        haptics.tapMedium();
+        dragPos.setValue({ x: origin.x - 70, y: origin.y - 34 });
+        setDragExercise(exercise);
+        measureDayBounds();
+      },
+      onPanResponderMove: (evt, g) => {
+        dragPos.setValue({ x: origin.x - 70 + g.dx, y: origin.y - 34 + g.dy });
+        setDropTargetDay(hitTestDay(evt.nativeEvent.pageX, evt.nativeEvent.pageY));
+      },
+      onPanResponderRelease: (evt) => {
+        const hit = hitTestDay(evt.nativeEvent.pageX, evt.nativeEvent.pageY);
+        if (ready.current && hit != null) {
+          haptics.success();
+          addExerciseToPlanDay(hit, exercise.id);
+        } else if (ready.current) {
+          haptics.tap();
+        }
+        clear();
+        setDragExercise(null);
+        setDropTargetDay(null);
+      },
+      onPanResponderTerminate: () => {
+        clear();
+        setDragExercise(null);
+        setDropTargetDay(null);
+      },
+      onPanResponderTerminationRequest: () => true,
+    });
+  };
+
+  const allExercises = useMemo(
+    () => (customExercises.length ? [...EXERCISES, ...customExercises] : EXERCISES),
+    [customExercises]
+  );
+  const libraryResults = useMemo(
+    () =>
+      editing
+        ? filterExercises(allExercises, { query: libraryQuery }, MUSCLE_LABELS, {}).slice(0, 40)
+        : [],
+    [editing, allExercises, libraryQuery]
+  );
 
   const isPlanSaved = !!currentPlan && savedPlans.some((p) => p.id === currentPlan.id);
 
@@ -71,7 +258,10 @@ export default function PlanScreen() {
     setError(null);
     try {
       const recent = [...sessions].sort((a, b) => b.startedAt - a.startedAt).slice(0, 10);
-      const plan = await generatePlan(profile, recent);
+      const plan = await generatePlan(profile, recent, {
+        scope: planScope,
+        focus: planScope === 'day' ? dayFocus : undefined,
+      });
       setCurrentPlan(plan);
       // Land straight in Edit Plan mode — the set/rep steppers and Add
       // Exercise row so editing is immediately available rather than making
@@ -116,11 +306,44 @@ export default function PlanScreen() {
             Plan CTA above instead of a second, redundant lock panel here. */}
         {isPro && (
           <View style={{ marginTop: spacing.lg }}>
+            {/* Plan the whole week, or just today — before this, the planner
+                only ever wrote a full week, which meant asking it for "just
+                today's session" meant regenerating (and losing) the rest of
+                an otherwise-fine week. */}
+            <View style={styles.chipRow}>
+              <Chip label="Plan the Week" active={planScope === 'week'} onPress={() => setPlanScope('week')} />
+              <Chip label="Plan 1 Day" active={planScope === 'day'} onPress={() => setPlanScope('day')} />
+            </View>
+
+            {planScope === 'day' && (
+              <View style={[styles.chipRow, { marginTop: spacing.sm }]}>
+                {DAY_FOCUS_OPTIONS.map((f) => (
+                  <Chip
+                    key={f ?? 'auto'}
+                    label={f ?? 'Auto'}
+                    active={dayFocus === f}
+                    onPress={() => setDayFocus(f)}
+                  />
+                ))}
+              </View>
+            )}
+
             <Button
-              label={loading ? 'Building your week…' : currentPlan ? 'Regenerate Plan' : 'Generate Plan'}
+              label={
+                loading
+                  ? planScope === 'day'
+                    ? 'Building your session…'
+                    : 'Building your week…'
+                  : currentPlan
+                  ? 'Regenerate Plan'
+                  : planScope === 'day'
+                  ? 'Generate Day'
+                  : 'Generate Plan'
+              }
               onPress={onGenerate}
               loading={loading}
               size="lg"
+              style={{ marginTop: spacing.lg }}
             />
             <Button
               label="Import Workout"
@@ -128,6 +351,12 @@ export default function PlanScreen() {
               onPress={() => navigation.navigate('ImportWorkout')}
               style={{ marginTop: spacing.sm }}
             />
+            {currentPlan && (
+              <Pressable onPress={onAskCoach} style={styles.askCoachRow}>
+                <Icon name="info" size={15} color={colors.bronze} strokeWidth={1.7} />
+                <Text style={styles.askCoachText}>Ask the coach to adjust this plan</Text>
+              </Pressable>
+            )}
             {error && <Text style={styles.error}>{error}</Text>}
             {currentPlan?.source === 'rule_based' && !loading && (
               <Text style={styles.note}>
@@ -161,7 +390,7 @@ export default function PlanScreen() {
                       {p.name}
                     </Text>
                     <Text style={styles.planRowMeta}>
-                      {p.days.length} days · {p.source === 'ai' ? 'AI generated' : p.source === 'imported' ? 'Imported' : 'Offline generator'}
+                      {p.days.length} days · {PROGRAM_SOURCE_LABEL[p.source] ?? 'Offline generator'}
                       {currentPlan?.id === p.id ? ' · Open now' : ''}
                     </Text>
                   </View>
@@ -308,6 +537,37 @@ export default function PlanScreen() {
           />
         )}
 
+        {/* Ready-made programs — free, no generator required. Loading one just
+            opens it as a normal, editable plan, same as anything the AI
+            writes or you import. */}
+        <View style={{ marginTop: spacing.xl }}>
+          <SectionHeader title="Quick-Start Programs" />
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.programRow}
+            style={{ marginTop: spacing.sm }}
+          >
+            {PREBUILT_PROGRAMS.map((program) => (
+              <Pressable
+                key={program.name}
+                style={styles.programCard}
+                onPress={() => {
+                  haptics.tap();
+                  loadPresetProgram(program);
+                  setEditing(false);
+                }}
+              >
+                <Text style={styles.programCardName}>{program.name}</Text>
+                <Text style={styles.programCardMeta}>{program.days.length}-day split</Text>
+                <Text style={styles.programCardSummary} numberOfLines={3}>
+                  {program.summary}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+
         {currentPlan && (
           <>
             <Card style={{ marginTop: spacing.xl }}>
@@ -338,7 +598,13 @@ export default function PlanScreen() {
             )}
 
             {currentPlan.days.map((day, i) => (
-              <View key={i} style={{ marginTop: spacing.xl }}>
+              <View
+                key={i}
+                ref={(node) => {
+                  dayCardNodes.current[i] = node;
+                }}
+                style={[{ marginTop: spacing.xl }, editing && dropTargetDay === i && styles.dayCardDropActive]}
+              >
                 <SectionHeader
                   title={`${day.label} · ${day.focus}`}
                   action={editing ? 'Remove Day' : 'Start'}
@@ -465,7 +731,67 @@ export default function PlanScreen() {
             )}
           </>
         )}
+
+        {/* Exercise library, moved here from its own screen — this is the
+            drag source for the builder above. Search narrows it since
+            dragging is the point, not scrolling through 176 rows. Only shown
+            while editing: it has nothing to do once there's no day to drop
+            an exercise onto. */}
+        {editing && currentPlan && (
+          <View style={{ marginTop: spacing.xl }}>
+            <SectionHeader title="Exercise Library" />
+            <Text style={styles.libraryHint}>
+              Long-press an exercise, then drag it onto a day above to add it there.
+            </Text>
+            <View style={styles.librarySearchWrap}>
+              <Icon name="search" size={16} color={colors.textDim} strokeWidth={1.6} />
+              <TextInput
+                style={styles.librarySearch}
+                placeholder="Search exercise, muscle or equipment"
+                placeholderTextColor={colors.textFaint}
+                value={libraryQuery}
+                onChangeText={setLibraryQuery}
+                autoCorrect={false}
+              />
+              {libraryQuery.length > 0 && (
+                <Pressable onPress={() => setLibraryQuery('')} hitSlop={8}>
+                  <Icon name="close" size={14} color={colors.textDim} strokeWidth={1.7} />
+                </Pressable>
+              )}
+            </View>
+            <Card style={{ padding: 0, marginTop: spacing.sm }}>
+              {libraryResults.length === 0 && (
+                <Text style={styles.libraryEmpty}>
+                  {libraryQuery ? 'No matches.' : 'Type to search the exercise library.'}
+                </Text>
+              )}
+              {libraryResults.map((exercise, idx) => (
+                <LibraryDragRow
+                  key={exercise.id}
+                  exercise={exercise}
+                  bordered={idx > 0}
+                  styles={styles}
+                  responder={makeRowResponder(exercise)}
+                />
+              ))}
+            </Card>
+          </View>
+        )}
       </ScreenLayout>
+
+      {dragExercise && (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.dragGhost,
+            { transform: [{ translateX: dragPos.x }, { translateY: dragPos.y }] },
+          ]}
+        >
+          <Text style={styles.dragGhostText} numberOfLines={1}>
+            {dragExercise.name}
+          </Text>
+        </Animated.View>
+      )}
     </Screen>
   );
 }
@@ -509,6 +835,14 @@ const useStyles = makeStyles((c) => ({
     ...typography.body,
   },
   error: { ...typography.caption, color: c.danger, marginTop: spacing.md },
+  askCoachRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'center',
+    marginTop: spacing.md,
+  },
+  askCoachText: { ...typography.captionBold, color: c.bronze },
   importLink: { ...typography.captionBold, color: c.bronze, textAlign: 'center' },
   note: { ...typography.caption, color: c.bronze, marginTop: spacing.md, lineHeight: 18 },
   summary: { ...typography.body, color: c.textSecondary, lineHeight: 22 },
@@ -577,4 +911,63 @@ const useStyles = makeStyles((c) => ({
     paddingHorizontal: spacing.lg,
   },
   addExerciseText: { ...typography.bodyMedium, color: c.bronze },
+  programRow: { flexDirection: 'row', gap: spacing.sm, paddingRight: spacing.lg },
+  programCard: {
+    width: 220,
+    backgroundColor: c.card,
+    borderWidth: 1,
+    borderColor: c.border,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+  },
+  programCardName: { ...typography.h3, color: c.text },
+  programCardMeta: { ...typography.caption, color: c.bronze, marginTop: 2, fontWeight: '600' },
+  programCardSummary: { ...typography.caption, color: c.textDim, marginTop: spacing.sm, lineHeight: 17 },
+  dayCardDropActive: {
+    borderWidth: 1.5,
+    borderColor: c.bronze,
+    borderRadius: radius.lg,
+    backgroundColor: c.bronzeSoft,
+  },
+  libraryHint: { ...typography.caption, color: c.textDim, marginTop: spacing.sm, lineHeight: 17 },
+  librarySearchWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.md,
+    gap: spacing.sm,
+    backgroundColor: c.cardAlt,
+    borderRadius: radius.md,
+  },
+  librarySearch: { flex: 1, color: c.text, paddingVertical: 10, ...typography.body },
+  libraryEmpty: {
+    ...typography.caption,
+    color: c.textFaint,
+    padding: spacing.lg,
+    textAlign: 'center',
+  },
+  libraryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+  },
+  dragHandle: { color: c.textFaint, fontSize: 16 },
+  dragGhost: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    backgroundColor: c.bronze,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    maxWidth: 200,
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+  },
+  dragGhostText: { ...typography.bodyMedium, color: c.onAccent, fontWeight: '700' },
 }));

@@ -28,6 +28,7 @@ import {
   liftSeries,
   muscleBalance,
   balanceScore,
+  monthOverMonth,
   pctChange,
   prTimeline,
   previousWindow,
@@ -46,6 +47,7 @@ import { prCard } from '@/share/cards';
 import { getExerciseById, MUSCLE_LABELS, MuscleGroup } from '@/data/exercises';
 import { useEntitlements } from '@/store/entitlements';
 import { displayWeight, kgToLb } from '@/utils/units';
+import { strengthStandard } from '@/data/strengthStandards';
 
 /**
  * ATLAS — Progress.
@@ -63,6 +65,7 @@ export default function AnalyticsScreen() {
   const sessions = useWorkoutStore((s) => s.sessions);
   const bodyweight = useWorkoutStore((s) => s.bodyweight);
   const profile = useWorkoutStore((s) => s.profile);
+  const records = useWorkoutStore((s) => s.records);
   const unit = profile.unit;
   const isPro = useEntitlements((s) => s.isPro);
 
@@ -127,6 +130,35 @@ export default function AnalyticsScreen() {
 
   const volumeChange = pctChange(metrics.totalVolumeKg, prevMetrics.totalVolumeKg);
   const setsChange = pctChange(metrics.totalSets, prevMetrics.totalSets);
+
+  // Deliberately independent of the range selector above — flipping to 7D to
+  // check this week shouldn't lose the answer to "am I doing more than last
+  // month", so this always compares the trailing 30 days to the 30 before
+  // it, no matter what's selected. Never shown anywhere shareable — this
+  // stays a private read on your own trend, not a card anyone else sees.
+  // Shared with Home's own snapshot card via monthOverMonth() so the two
+  // screens can never quietly disagree about "this month".
+  const mom = useMemo(() => monthOverMonth(sessions, now), [sessions, now]);
+  const monthMetrics = mom.current;
+  const prevMonthMetrics = mom.previous;
+  const monthVolumeChange = mom.volumeChangePct;
+  const monthSessionChange = mom.sessionChangePct;
+
+  // Bodyweight-relative strength standard for whichever lift is selected in
+  // the Strength Trend chip row below — most recent weigh-in first, falling
+  // back to the profile's stored weight, and quietly absent (not an error
+  // state) for any lift without a standard table or with no bodyweight yet.
+  const latestBodyweightKg = useMemo(() => {
+    if (!bodyweight.length) return profile.weightKg ?? null;
+    return bodyweight.reduce((latest, b) => (!latest || b.at > latest.at ? b : latest)).weightKg;
+  }, [bodyweight, profile.weightKg]);
+
+  const standard = useMemo(() => {
+    if (!activeLift) return null;
+    const e1rm = records[activeLift]?.bestE1rm;
+    if (!e1rm) return null;
+    return strengthStandard(activeLift, e1rm, latestBodyweightKg, profile.gender ?? 'male');
+  }, [activeLift, records, latestBodyweightKg, profile.gender]);
 
   const exportCsv = async () => {
     const rows = ['date,exercise,set,weight_kg,reps,rpe,warmup'];
@@ -252,6 +284,30 @@ export default function AnalyticsScreen() {
           </View>
         </Card>
 
+        {/* ---------------- month over month (private) ---------------- */}
+        <View style={{ marginTop: spacing.xl }}>
+          <SectionHeader title="This Month vs Last" />
+          <Card>
+            <View style={{ flexDirection: 'row' }}>
+              <StatTile label="Sessions" value={String(monthMetrics.sessionCount)} />
+              <StatTile label="Sets" value={String(monthMetrics.totalSets)} />
+              <StatTile
+                label="Volume"
+                value={(() => {
+                  const v = unit === 'lb' ? kgToLb(monthMetrics.totalVolumeKg) : monthMetrics.totalVolumeKg;
+                  return v >= 10000 ? `${Math.round(v / 1000)}k` : String(Math.round(v));
+                })()}
+                unit={unit}
+              />
+            </View>
+            <View style={styles.deltaRow}>
+              <Delta label="sessions" pct={monthSessionChange} />
+              <Delta label="volume" pct={monthVolumeChange} />
+              <Text style={styles.deltaNote}>trailing 30 days · visible only to you</Text>
+            </View>
+          </Card>
+        </View>
+
         {/* ---------------- ATLAS insights ---------------- */}
         <View style={{ marginTop: spacing.xl }}>
           <SectionHeader title="ATLAS Insights" />
@@ -278,6 +334,79 @@ export default function AnalyticsScreen() {
               <InsightCard insight={sampleInsight()} unlocked onUnlock={() => {}} />
             </View>
           )}
+        </View>
+
+        {/* ---------------- strength ----------------
+            Promoted above Muscle Balance: "am I getting stronger" is the
+            single most universal thing a lifter checks, ahead of ATLAS's own
+            differentiator chart. Bodyweight-relative standard framing turns
+            the raw e1RM number into something with a real reference point,
+            and tapping any point on the line jumps straight to the session
+            that logged it. */}
+        <View style={{ marginTop: spacing.xl }}>
+          <SectionHeader title="Strength Trend" />
+          <ProGate feature="advanced_analytics">
+            <Card>
+              {lifts.length === 0 ? (
+                <Text style={styles.note}>No lifts logged in this period.</Text>
+              ) : (
+                <>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.liftRow}
+                  >
+                    {lifts.map((id) => {
+                      const ex = getExerciseById(id);
+                      const on = id === activeLift;
+                      return (
+                        <Pressable
+                          key={id}
+                          onPress={() => setSelectedLift(id)}
+                          style={[styles.liftChip, on && styles.liftChipOn]}
+                        >
+                          <Text
+                            style={[styles.liftChipText, on && { color: colors.onAccent }]}
+                            numberOfLines={1}
+                          >
+                            {ex?.name ?? id}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </ScrollView>
+
+                  {standard && (
+                    <View style={styles.standardRow}>
+                      <Text style={styles.standardTier}>
+                        {standard.tier ?? 'Building toward Beginner'}
+                      </Text>
+                      {standard.nextTier && (
+                        <Text style={styles.standardNote}>
+                          {standard.pctToNext}% to {standard.nextTier} · {standard.ratio.toFixed(2)}×
+                          bodyweight (rough estimate)
+                        </Text>
+                      )}
+                    </View>
+                  )}
+
+                  <View style={{ marginTop: spacing.md }}>
+                    <TrendChart
+                      points={series.map((p) => ({
+                        at: p.at,
+                        e1rm: Math.round(unit === 'lb' ? kgToLb(p.e1rm) : p.e1rm),
+                      }))}
+                      unit={unit}
+                      onPointPress={(i) =>
+                        navigation.navigate('History', { highlightSessionId: series[i].sessionId })
+                      }
+                    />
+                    <Text style={styles.tapHint}>Tap a point to jump to that session</Text>
+                  </View>
+                </>
+              )}
+            </Card>
+          </ProGate>
         </View>
 
         {/* ---------------- muscle balance ---------------- */}
@@ -319,55 +448,6 @@ export default function AnalyticsScreen() {
               </Card>
             </View>
           )}
-        </View>
-
-        {/* ---------------- strength ---------------- */}
-        <View style={{ marginTop: spacing.xl }}>
-          <SectionHeader title="Strength Trend" />
-          <ProGate feature="advanced_analytics">
-            <Card>
-              {lifts.length === 0 ? (
-                <Text style={styles.note}>No lifts logged in this period.</Text>
-              ) : (
-                <>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.liftRow}
-                  >
-                    {lifts.map((id) => {
-                      const ex = getExerciseById(id);
-                      const on = id === activeLift;
-                      return (
-                        <Pressable
-                          key={id}
-                          onPress={() => setSelectedLift(id)}
-                          style={[styles.liftChip, on && styles.liftChipOn]}
-                        >
-                          <Text
-                            style={[styles.liftChipText, on && { color: colors.onAccent }]}
-                            numberOfLines={1}
-                          >
-                            {ex?.name ?? id}
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
-                  </ScrollView>
-
-                  <View style={{ marginTop: spacing.md }}>
-                    <TrendChart
-                      points={series.map((p) => ({
-                        at: p.at,
-                        e1rm: Math.round(unit === 'lb' ? kgToLb(p.e1rm) : p.e1rm),
-                      }))}
-                      unit={unit}
-                    />
-                  </View>
-                </>
-              )}
-            </Card>
-          </ProGate>
         </View>
 
         {/* ---------------- movers ---------------- */}
@@ -592,4 +672,8 @@ const useStyles = makeStyles((c) => ({
   },
   liftChipOn: { backgroundColor: c.accent, borderColor: c.accent },
   liftChipText: { ...typography.caption, color: c.textSecondary },
+  standardRow: { marginTop: spacing.md },
+  standardTier: { ...typography.bodyMedium, color: c.bronze, fontWeight: '700' },
+  standardNote: { ...typography.caption, color: c.textFaint, marginTop: 2 },
+  tapHint: { ...typography.caption, color: c.textFaint, textAlign: 'center', marginTop: spacing.sm },
 }));

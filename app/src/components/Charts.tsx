@@ -4,17 +4,27 @@ import Svg, { Polyline, Circle, Line as SvgLine } from 'react-native-svg';
 import { radius, spacing, typography } from '@/theme/theme';
 import { makeStyles, useTheme } from '@/theme/ThemeProvider';
 
-/** Minimal line chart — estimated 1RM over time for one lift. */
+/**
+ * Minimal line chart — estimated 1RM (or any single value) over time.
+ *
+ * `onPointPress`, when given, makes every plotted point tappable — the
+ * caller gets the point's index back and decides what it means (for the
+ * strength trend, that's "jump to the session that produced this number").
+ * A larger transparent circle sits over the visible dot so the tap target
+ * is comfortable well past what the 2.5px dot itself would allow.
+ */
 export function TrendChart({
   points,
   height = 130,
   width = 300,
   unit = 'kg',
+  onPointPress,
 }: {
   points: { at: number; e1rm: number }[];
   height?: number;
   width?: number;
   unit?: string;
+  onPointPress?: (index: number) => void;
 }) {
   const { colors } = useTheme();
   const styles = useStyles();
@@ -63,13 +73,23 @@ export function TrendChart({
           strokeLinecap="round"
         />
         {points.map((p, i) => (
-          <Circle
-            key={i}
-            cx={x(i)}
-            cy={y(p.e1rm)}
-            r={i === points.length - 1 ? 4 : 2.5}
-            fill={i === points.length - 1 ? colors.accent : colors.bronze}
-          />
+          <React.Fragment key={i}>
+            <Circle
+              cx={x(i)}
+              cy={y(p.e1rm)}
+              r={i === points.length - 1 ? 4 : 2.5}
+              fill={i === points.length - 1 ? colors.accent : colors.bronze}
+            />
+            {onPointPress && (
+              <Circle
+                cx={x(i)}
+                cy={y(p.e1rm)}
+                r={14}
+                fill="transparent"
+                onPress={() => onPointPress(i)}
+              />
+            )}
+          </React.Fragment>
         ))}
       </Svg>
       <View style={styles.trendFooter}>

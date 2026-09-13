@@ -426,6 +426,63 @@ export function pctChange(current: number, previous: number): number | null {
   return Math.round(((current - previous) / previous) * 100);
 }
 
+export interface MonthOverMonth {
+  current: RangeMetrics;
+  previous: RangeMetrics;
+  volumeChangePct: number | null;
+  sessionChangePct: number | null;
+}
+
+/**
+ * The trailing-30-days-vs-the-30-before comparison, factored out here so
+ * Home's snapshot card and the Progress screen's own "This Month vs Last"
+ * card can't drift apart — both read the same numbers. Deliberately
+ * independent of any range selector: "this month" always means this month.
+ */
+export function monthOverMonth(sessions: WorkoutSession[], now: number = Date.now()): MonthOverMonth {
+  const window = rangeWindow(sessions, '30D', now);
+  const current = computeRangeMetrics(sessions, window);
+  const previous = computeRangeMetrics(sessions, previousWindow(window));
+  return {
+    current,
+    previous,
+    volumeChangePct: pctChange(current.totalVolumeKg, previous.totalVolumeKg),
+    sessionChangePct: pctChange(current.sessionCount, previous.sessionCount),
+  };
+}
+
+export interface WeekOverWeek {
+  current: RangeMetrics;
+  previous: RangeMetrics;
+  sessionChangePct: number | null;
+  volumeChangePct: number | null;
+  targetDaysPerWeek: number;
+}
+
+/**
+ * This calendar week (Monday to now) vs the one before it — the one number
+ * the Phase-3 weekly check-in card needs. Deliberately calendar-aligned
+ * (unlike the rolling 7D range elsewhere) so "this week" means the same
+ * thing here as it does to a human glancing at a calendar.
+ */
+export function weekOverWeek(
+  sessions: WorkoutSession[],
+  targetDaysPerWeek: number,
+  now: number = Date.now()
+): WeekOverWeek {
+  const thisWeekStart = startOfWeek(now);
+  const lastWeekStart = thisWeekStart - 7 * DAY;
+  const current = computeRangeMetrics(sessions, { from: thisWeekStart, to: now, days: (now - thisWeekStart) / DAY || 1 / 7 });
+  const previous = computeRangeMetrics(sessions, { from: lastWeekStart, to: thisWeekStart, days: 7 });
+  return {
+    current,
+    previous,
+    sessionChangePct: pctChange(current.sessionCount, previous.sessionCount),
+    volumeChangePct: pctChange(current.totalVolumeKg, previous.totalVolumeKg),
+    targetDaysPerWeek,
+  };
+}
+
 /* ------------------------------------------------------------------ */
 /* Frequency, streaks and consistency                                  */
 /* ------------------------------------------------------------------ */
@@ -582,6 +639,7 @@ export interface LiftPoint {
   e1rm: number;
   bestWeightKg: number;
   bestReps: number;
+  sessionId: string;
 }
 
 /** Best estimated 1RM per session for one lift, oldest first. */
@@ -600,6 +658,7 @@ export function liftSeries(sessions: WorkoutSession[], exerciseId: string): Lift
             e1rm: Math.round(e1rm),
             bestWeightKg: s.weightKg,
             bestReps: s.reps,
+            sessionId: session.id,
           };
         }
       }

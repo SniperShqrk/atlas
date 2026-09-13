@@ -7,6 +7,7 @@ import { Icon } from '@/components/Icon';
 import { Insight, InsightReport, isUnlocked } from '@/store/insights';
 import type { Palette } from '@/theme/palettes';
 import { useEntitlements } from '@/store/entitlements';
+import { useCoach } from '@/store/coach';
 
 /**
  * The ATLAS Insights block.
@@ -79,8 +80,35 @@ export function InsightCard({
 }) {
   const { colors } = useTheme();
   const styles = useStyles();
+  const navigation = useNavigation<any>();
   const [open, setOpen] = useState(false);
   const tone = severityTone(insight.severity, colors);
+  const isPro = useEntitlements((s) => s.isPro);
+  const recordPaywallView = useEntitlements((s) => s.recordPaywallView);
+  const openCoach = useCoach((s) => s.openCoach);
+
+  // Insights being unlocked (Premium, or the one free reveal) doesn't imply
+  // the coach is unlocked too — ai_coach is its own Pro feature, checked
+  // separately so a free user's single revealed insight doesn't get a free
+  // side door into the coach.
+  const onAskAboutThis = () => {
+    if (!isPro) {
+      recordPaywallView('ai_coach');
+      navigation.navigate('Paywall', { feature: 'ai_coach' });
+      return;
+    }
+    openCoach({
+      entryPoint: 'insight',
+      seed: {
+        kind: insight.kind,
+        severity: insight.severity,
+        headline: insight.headline,
+        preview: insight.preview,
+        action: insight.action,
+        metrics: insight.metrics,
+      },
+    });
+  };
 
   return (
     <Pressable
@@ -128,6 +156,11 @@ export function InsightCard({
             <Text style={styles.actionKicker}>DO THIS</Text>
             <Text style={styles.actionText}>{insight.action}</Text>
           </View>
+
+          <Pressable onPress={onAskAboutThis} style={styles.askCoachRow}>
+            <Icon name="sparkle" size={13} color={colors.bronze} strokeWidth={1.6} />
+            <Text style={styles.askCoachText}>Ask the coach about this</Text>
+          </Pressable>
         </View>
       )}
 
@@ -271,6 +304,8 @@ const useStyles = makeStyles((c) => ({
     lineHeight: 21,
     fontSize: 14,
   },
+  askCoachRow: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start' },
+  askCoachText: { ...typography.captionBold, color: c.bronze },
 
   lockedFoot: {
     flexDirection: 'row',

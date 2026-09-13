@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, StyleSheet, TextInput, Alert, DevSettings } from 'react-native';
+import { View, Text, Pressable, StyleSheet, TextInput, Alert, DevSettings, Switch } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Screen, Card, SectionHeader, StatTile, Chip, Button } from '@/components/ui';
 import { ScreenLayout } from '@/components/ScreenLayout';
@@ -12,6 +12,7 @@ import { useWorkoutStore, UserProfile, sessionVolume, sessionSetCount } from '@/
 import { useEntitlements, FREE_LIMITS, PRO_LIMITS } from '@/store/entitlements';
 import { useOnboarding } from '@/store/onboarding';
 import { useAuth } from '@/store/auth';
+import { useCoachEvents } from '@/store/coachEvents';
 import { getExerciseById, CATEGORY_LABELS, EQUIPMENT_LABELS, EQUIPMENT_OPTIONS } from '@/data/exercises';
 import { computeAchievements } from '@/data/achievements';
 import { displayWeight, kgToLb } from '@/utils/units';
@@ -58,10 +59,13 @@ export default function ProfileScreen() {
   const customExercises = useWorkoutStore((s) => s.customExercises);
   const deleteCustomExercise = useWorkoutStore((s) => s.deleteCustomExercise);
   const isPro = useEntitlements((s) => s.isPro);
+  const recordPaywallView = useEntitlements((s) => s.recordPaywallView);
   const setPro = useEntitlements((s) => s.setPro);
   const resetOnboarding = useOnboarding((s) => s.reset);
   const authSession = useAuth((s) => s.session);
   const authProfile = useAuth((s) => s.profile);
+  const proactiveEnabled = useCoachEvents((s) => s.proactiveEnabled);
+  const setProactiveEnabled = useCoachEvents((s) => s.setProactiveEnabled);
 
   // Local buffer for the height field: clamping heightCm on every keystroke
   // (the old behaviour) snaps to 100 the instant you type a single digit
@@ -226,7 +230,14 @@ export default function ProfileScreen() {
           <SectionHeader
             title="Custom Exercises"
             action="Add"
-            onAction={() => navigation.navigate('AddCustomExercise')}
+            onAction={() => {
+              if (!isPro) {
+                recordPaywallView('custom_exercises');
+                navigation.navigate('Paywall', { feature: 'custom_exercises' });
+                return;
+              }
+              navigation.navigate('AddCustomExercise');
+            }}
           />
           <Card style={{ padding: customExercises.length ? 0 : spacing.lg }}>
             {customExercises.length === 0 ? (
@@ -440,6 +451,28 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        <View style={{ marginTop: spacing.xl }}>
+          <SectionHeader title="Coach" />
+          <Card>
+            <View style={styles.settingRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.settingLabel}>Proactive coach suggestions</Text>
+                <Text style={styles.settingNote}>
+                  Occasional cards on Home when the coach notices something — a
+                  stalled lift, a check-in. Off just means the coach only
+                  speaks when you ask it something.
+                </Text>
+              </View>
+              <Switch
+                value={proactiveEnabled}
+                onValueChange={setProactiveEnabled}
+                trackColor={{ false: colors.border, true: colors.bronze }}
+                thumbColor={colors.card}
+              />
+            </View>
+          </Card>
+        </View>
+
         {/* dev affordance — remove once billing is wired up */}
         {isPro && (
           <Button
@@ -469,6 +502,9 @@ export default function ProfileScreen() {
 
 const useStyles = makeStyles((c) => ({
   title: { ...typography.hero, color: c.text },
+  settingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  settingLabel: { ...typography.body, color: c.text, fontWeight: '600' },
+  settingNote: { ...typography.caption, color: c.textDim, marginTop: 4, lineHeight: 18 },
   proCard: {
     flexDirection: 'row',
     alignItems: 'center',

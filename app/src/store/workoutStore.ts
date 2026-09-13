@@ -94,7 +94,7 @@ export interface GeneratedPlan {
   /** set when the plan is saved to the plan library (see savePlan) — an
    *  unsaved just-generated plan has none yet. */
   name?: string;
-  source: 'ai' | 'rule_based' | 'imported';
+  source: 'ai' | 'rule_based' | 'imported' | 'preset';
   /** model id, when the plan came from the AI planner */
   model?: string;
   summary: string;
@@ -173,6 +173,11 @@ interface WorkoutStoreState {
   /** target, when given, comes from a plan day or a saved Routine's exercise (both carry targetSets/targetReps) — seeds that many sets with that rep target instead of one empty 0/0 set, so starting a planned day doesn't throw away everything the plan already decided. */
   addExerciseToActive: (exerciseId: string, target?: { targetSets?: number; targetReps?: string }) => void;
   removeExerciseFromActive: (exerciseId: string) => void;
+  /** Replaces one exercise in the active session with another, in place —
+   *  same slot, same number of queued sets — and re-seeds those sets' weight
+   *  and reps from the *new* exercise's own history (not the old exercise's
+   *  numbers, which belong to a different lift). Used by the swap picker. */
+  swapExerciseInActive: (oldExerciseId: string, newExerciseId: string) => void;
   addSet: (exerciseId: string) => void;
   updateSet: (exerciseId: string, setId: string, patch: Partial<SetEntry>) => void;
   toggleSetComplete: (exerciseId: string, setId: string) => void;
@@ -181,6 +186,10 @@ interface WorkoutStoreState {
   discardActiveSession: () => void;
   setProfile: (patch: Partial<UserProfile>) => void;
   setCurrentPlan: (plan: GeneratedPlan) => void;
+  /** Turns one of the ready-made programs in data/programs.ts into a real,
+   *  editable GeneratedPlan on the Plan tab — same downstream behavior as an
+   *  AI-generated or imported plan (editable, saveable, startable). */
+  loadPresetProgram: (preset: Omit<GeneratedPlan, 'id' | 'createdAt' | 'source'>) => void;
   /** Internal plumbing shared by every plan-editing action — not meant to be
    *  called directly from UI code, use the specific action instead. */
   syncPlanEdit: (plan: GeneratedPlan) => void;
@@ -302,18 +311,28 @@ export const useWorkoutStore = create<WorkoutStoreState>()(
         const active = get().activeSession;
         if (!active) return;
         if (active.entries.some((e) => e.exerciseId === exerciseId)) return;
-        // No target (empty session, library add) -> one empty set, as before.
-        // A target from a plan day/routine -> that many sets, reps prefilled
-        // from it; weight is left at 0 since neither source has any signal
-        // for what the user should actually load the bar with.
+        const exercise = getExerciseById(exerciseId);
+        const isBodyweight = exercise?.equipment === 'bodyweight';
+        // Carry the previous session's own numbers forward as real, committed,
+        // editable values — not just a placeholder hint — since that's the
+        // single most consistently praised mechanic across every competitor
+        // logger researched. A target from a plan day/routine still wins on
+        // set *count* (the plan knows what it wants), but weight/reps come
+        // from history when it's there.
+        const previous = getPreviousSets(get().sessions, exerciseId);
         const repsSeed = parseRepsSeed(target?.targetReps);
-        const setCount = Math.max(1, target?.targetSets ?? 1);
-        const sets = Array.from({ length: setCount }, () => ({
-          id: uid(),
-          weightKg: 0,
-          reps: repsSeed,
-          completed: false,
-        }));
+        const setCount = Math.max(1, target?.targetSets ?? previous?.length ?? 1);
+        const sets = Array.from({ length: setCount }, (_, i) => {
+          const prev = previous?.[i];
+          return {
+            id: uid(),
+            // bodyweight lifts default to "no added load", not last session's
+            // number, since 0 is the meaningful/expected value there
+            weightKg: !isBodyweight && prev ? prev.weightKg : 0,
+            reps: repsSeed || prev?.reps || 0,
+            completed: false,
+          };
+        });
         set({
           activeSession: {
             ...active,
@@ -331,6 +350,30 @@ export const useWorkoutStore = create<WorkoutStoreState>()(
             entries: active.entries.filter((e) => e.exerciseId !== exerciseId),
           },
         });
+      },
+
+      swapExerciseInActive: (oldExerciseId, newExerciseId) => {
+        const active = get().activeSession;
+        if (!active) return;
+        if (oldExerciseId === newExerciseId) return;
+        if (active.entries.some((e) => e.exerciseId === newExerciseId)) return;
+        const exercise = getExerciseById(newExerciseId);
+        const isBodyweight = exercise?.equipment === 'bodyweight';
+        const previous = getPreviousSets(get().sessions, newExerciseId);
+        const entries = active.entries.map((e) => {
+          if (e.exerciseId !== oldExerciseId) return e;
+          const sets = e.sets.map((s, i) => {
+            const prev = previous?.[i];
+            return {
+              ...s,
+              weightKg: !isBodyweight && prev ? prev.weightKg : 0,
+              reps: prev?.reps ?? s.reps,
+              completed: false,
+            };
+          });
+          return { ...e, exerciseId: newExerciseId, sets };
+        });
+        set({ activeSession: { ...active, entries } });
       },
 
       addSet: (exerciseId) => {
@@ -466,6 +509,12 @@ export const useWorkoutStore = create<WorkoutStoreState>()(
       setProfile: (patch) => set({ profile: { ...get().profile, ...patch } }),
 
       setCurrentPlan: (plan) => set({ currentPlan: plan }),
+
+      loadPresetProgram: (preset) => {
+        set({
+          currentPlan: { ...preset, id: uid(), createdAt: Date.now(), source: 'preset' },
+        });
+      },
 
       // Every plan-editing action below funnels through here: it updates
       // currentPlan (what the Plan tab is showing) and, if that plan is

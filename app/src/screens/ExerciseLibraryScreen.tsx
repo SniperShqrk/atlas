@@ -18,6 +18,7 @@ import {
 import { PATTERN_GROUPS } from '@/data/patterns';
 import { filterExercises } from '@/data/exerciseRelations';
 import { useWorkoutStore } from '@/store/workoutStore';
+import { useEntitlements } from '@/store/entitlements';
 import { ExerciseThumb } from '@/components/ExerciseThumb';
 
 const CATEGORIES: (Category | 'all')[] = ['all', 'chest', 'back', 'shoulders', 'arms', 'legs', 'core'];
@@ -54,6 +55,17 @@ export default function ExerciseLibraryScreen() {
   const activeSession = useWorkoutStore((s) => s.activeSession);
   const startSession = useWorkoutStore((s) => s.startSession);
   const customExercises = useWorkoutStore((s) => s.customExercises);
+  const isPro = useEntitlements((s) => s.isPro);
+  const recordPaywallView = useEntitlements((s) => s.recordPaywallView);
+
+  const onAddCustom = () => {
+    if (!isPro) {
+      recordPaywallView('custom_exercises');
+      navigation.navigate('Paywall', { feature: 'custom_exercises' });
+      return;
+    }
+    navigation.navigate('AddCustomExercise', { picker: isPicker, planDayIndex, planExerciseIndex, initialName: query });
+  };
 
   const allExercises = useMemo(
     () => (customExercises.length ? [...EXERCISES, ...customExercises] : EXERCISES),
@@ -127,11 +139,7 @@ export default function ExerciseLibraryScreen() {
           <Text style={styles.title}>{!isPicker ? 'Exercises' : planExerciseIndex != null ? 'Swap Exercise' : 'Add Exercise'}</Text>
           <View style={styles.headerRight}>
             <Text style={styles.count}>{filtered.length} of {allExercises.length}</Text>
-            <Pressable
-              onPress={() => navigation.navigate('AddCustomExercise', { picker: isPicker, planDayIndex, planExerciseIndex, initialName: query })}
-              hitSlop={10}
-              style={styles.addButton}
-            >
+            <Pressable onPress={onAddCustom} hitSlop={10} style={styles.addButton}>
               <Icon name="plus" size={18} color={colors.accent} strokeWidth={2} />
             </Pressable>
           </View>
@@ -260,10 +268,7 @@ export default function ExerciseLibraryScreen() {
           ListEmptyComponent={
             <View>
               <EmptyState title="No matches" subtitle="Try a different search or clear the filters." />
-              <Pressable
-                style={styles.createRow}
-                onPress={() => navigation.navigate('AddCustomExercise', { picker: isPicker, planDayIndex, planExerciseIndex, initialName: query })}
-              >
+              <Pressable style={styles.createRow} onPress={onAddCustom}>
                 <Icon name="plus" size={16} color={colors.accent} strokeWidth={2} />
                 <Text style={styles.createRowText}>
                   {query ? `Create "${query}" as a custom exercise` : 'Create a custom exercise'}

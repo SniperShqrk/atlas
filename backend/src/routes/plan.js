@@ -6,11 +6,15 @@ import { savePlan } from '../data/db.js';
 export const planRouter = Router();
 
 planRouter.post('/generate', async (req, res) => {
-  const { profile, recentSessions } = req.body ?? {};
+  // scope: 'week' (default, the usual full-week plan) or 'day' for a single
+  // one-off session; focus is an optional human-readable label (e.g. "Push")
+  // that only applies to a 'day' request — omitted/null lets the generator
+  // pick based on recovery.
+  const { profile, recentSessions, scope, focus } = req.body ?? {};
   if (!profile) return res.status(400).json({ error: 'profile is required' });
 
   try {
-    const plan = await generatePlan(profile, recentSessions ?? []);
+    const plan = await generatePlan(profile, recentSessions ?? [], { scope, focus });
     await savePlan(plan);
     res.json(plan);
   } catch (err) {

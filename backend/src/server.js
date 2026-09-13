@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import { planRouter } from './routes/plan.js';
 import { sessionsRouter } from './routes/sessions.js';
+import { coachRouter } from './routes/coach.js';
 
 const app = express();
 app.use(cors());
@@ -12,6 +13,7 @@ app.use(express.json({ limit: '20mb' }));
 app.get('/health', (req, res) => res.json({ ok: true }));
 app.use('/api/plan', planRouter);
 app.use('/api/sessions', sessionsRouter);
+app.use('/api/coach', coachRouter);
 
 const PORT = process.env.PORT ?? 4000;
 app.listen(PORT, () => {

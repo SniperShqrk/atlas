@@ -16,6 +16,8 @@ import {
 import { useAuth } from '@/store/auth';
 import { useWorkoutStore } from '@/store/workoutStore';
 import { pullCloudBackup, pushFullBackup } from '@/lib/dataSync';
+import { initNotificationHandling, scheduleTrainingReminder } from '@/lib/notifications';
+import { CoachSheet } from '@/components/CoachSheet';
 
 // No-op (and no network calls at all) when EXPO_PUBLIC_SENTRY_DSN isn't set,
 // which is the normal state for local dev — nobody needs a Sentry project
@@ -137,15 +139,40 @@ function useCloudBackupSync() {
   }, [userId, hydrateFromCloud]);
 }
 
+/**
+ * The one local notification the app sends (see lib/notifications.ts) —
+ * registered once at launch, then rescheduled for "tomorrow at the usual
+ * hour" every time sessions changes (a workout finished, or cloud history
+ * just hydrated in). Deliberately keyed on sessions itself rather than a
+ * dedicated "session just finished" event, so a fresh install that pulls
+ * existing history from the cloud gets a correctly-timed reminder too.
+ */
+function useTrainingReminder() {
+  const sessions = useWorkoutStore((s) => s.sessions);
+
+  useEffect(() => {
+    initNotificationHandling();
+  }, []);
+
+  useEffect(() => {
+    scheduleTrainingReminder(sessions);
+  }, [sessions]);
+}
+
 function App() {
   usePurchasesSync();
   useAuthInit();
   useCloudBackupSync();
+  useTrainingReminder();
   return (
     <ThemeProvider>
       <SafeAreaProvider>
         <ThemedStatusBar />
         <Gate />
+        {/* Mounted once at the root so any screen can raise it via
+            useCoach().openCoach() without owning a modal itself — the bottom-
+            sheet-not-a-tab decision from the AI-coach scoping doc, §3.1. */}
+        <CoachSheet />
       </SafeAreaProvider>
     </ThemeProvider>
   );

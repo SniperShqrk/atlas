@@ -40,7 +40,7 @@ function weeklySets(sessions) {
   return counts;
 }
 
-function buildPrompt(profile, recentSessions, loads) {
+function buildPrompt(profile, recentSessions, loads, { dayCount, focus } = {}) {
   // Profiles now carry the actual owned-equipment list (see the app's
   // UserProfile.equipment) rather than one of three coarse tiers. Fall back to
   // the old tiers only for a profile shape saved before that change.
@@ -101,13 +101,23 @@ function buildPrompt(profile, recentSessions, loads) {
   const minExercises = Math.max(3, Math.round(targetSets / 5));
   const maxExercises = Math.max(minExercises + 1, Math.round(targetSets / 3));
 
-  return `You are an experienced strength coach writing a training week for one lifter.
+  const isSingleDay = dayCount === 1;
+  const focusLine = isSingleDay
+    ? focus
+      ? `- This session's focus: ${focus} (requested by the lifter — build the day around it)`
+      : `- This session's focus: not specified — pick whichever major movement pattern (push/pull/legs) is least recovered per the numbers below, and say which you picked and why in the summary`
+    : '';
+
+  return `You are an experienced strength coach writing ${
+    isSingleDay ? 'a single training session' : 'a training week'
+  } for one lifter.
 
 LIFTER
 - Goal: ${profile.goal}
 - Experience: ${profile.experience}
-- Training days per week: ${profile.daysPerWeek}
+- Training days per week (their usual routine): ${profile.daysPerWeek}
 - Time available per session: ${sessionMinutes} minutes — that's a budget of about ${targetSets} total working sets per day at ~3 min/set including rest
+${focusLine}
 - Equipment: ${allowed.join(', ')}
 - Preferred split: ${profile.preferredSplit ?? 'no preference — choose what fits the day count'}
 - Wants extra emphasis on: ${(profile.emphasis ?? []).join(', ') || 'nothing in particular'}
@@ -127,7 +137,9 @@ EXERCISE CATALOG — you may ONLY use these ids
 ${catalog}
 
 RULES
-1. Use exactly ${profile.daysPerWeek} training days.
+1. Use exactly ${dayCount} training day${dayCount === 1 ? '' : 's'}.${
+    isSingleDay ? ' This is one standalone session, not a full week — label it "Day 1".' : ''
+  }
 2. Every exerciseId must come from the catalog above, spelled exactly.
 3. Each day must total ${minSets}-${targetSets} working sets (warm-up sets don't count) to actually fill the ${sessionMinutes}-minute session — do not undershoot this. That usually means ${minExercises}-${maxExercises} exercises per day, mixing compounds (3-5 sets each) with accessories/isolation (2-4 sets each); use the low end of that exercise range for a short session and the high end for a long one, not a flat 4-5 exercises regardless of time.
 4. Open each day with its heaviest compound, then accessories, then isolation.
@@ -172,21 +184,23 @@ function tryParsePlanJSON(text) {
   return parsed;
 }
 
-export async function generatePlan(profile, recentSessions = []) {
+export async function generatePlan(profile, recentSessions = [], options = {}) {
+  const { scope = 'week', focus = null } = options;
+  const dayCount = scope === 'day' ? 1 : profile.daysPerWeek;
   const loads = computeMuscleLoads(recentSessions);
 
   if (!process.env.ANTHROPIC_API_KEY) {
-    return generateRuleBasedPlan(profile, recentSessions);
+    return generateRuleBasedPlan(profile, recentSessions, { scope, focus });
   }
 
   try {
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
     const message = await anthropic.messages.create({
       model: MODEL,
-      max_tokens: 3000,
+      max_tokens: scope === 'day' ? 1200 : 3000,
       // a low temperature keeps exercise selection sane and repeatable
       temperature: 0.4,
-      messages: [{ role: 'user', content: buildPrompt(profile, recentSessions, loads) }],
+      messages: [{ role: 'user', content: buildPrompt(profile, recentSessions, loads, { dayCount, focus }) }],
     });
 
     const text = message.content.map((b) => (b.type === 'text' ? b.text : '')).join('');
@@ -202,6 +216,6 @@ export async function generatePlan(profile, recentSessions = []) {
     };
   } catch (err) {
     console.error('AI plan generation failed, falling back to the built-in generator:', err.message);
-    return generateRuleBasedPlan(profile, recentSessions);
+    return generateRuleBasedPlan(profile, recentSessions, { scope, focus });
   }
 }

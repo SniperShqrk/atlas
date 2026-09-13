@@ -1,5 +1,10 @@
 import React from 'react';
-import { NavigationContainer, DarkTheme, DefaultTheme } from '@react-navigation/native';
+import {
+  NavigationContainer,
+  DarkTheme,
+  DefaultTheme,
+  createNavigationContainerRef,
+} from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { View, StyleSheet } from 'react-native';
@@ -31,9 +36,16 @@ import SocialScreen from '@/screens/SocialScreen';
 import GroupDetailScreen from '@/screens/GroupDetailScreen';
 import CompareScreen from '@/screens/CompareScreen';
 import ImportWorkoutScreen from '@/screens/ImportWorkoutScreen';
+import PostWorkoutSummaryScreen from '@/screens/PostWorkoutSummaryScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
+
+/** Lets code outside the component tree (the training-reminder notification's
+ *  tap handler, see lib/notifications.ts) navigate without a hook — there's
+ *  no screen mounted yet to hold a useNavigation() ref when a notification
+ *  is what's launching the app in the first place. */
+export const navigationRef = createNavigationContainerRef<any>();
 
 const ICONS: Record<string, IconName> = {
   HomeTab: 'home',
@@ -113,7 +125,7 @@ export default function RootNavigator() {
   const { colors } = useTheme();
   const hasOnboarded = useOnboarding((s) => s.hasOnboarded);
   return (
-    <NavigationContainer theme={navThemeFor(colors)}>
+    <NavigationContainer ref={navigationRef} theme={navThemeFor(colors)}>
       <Stack.Navigator
         screenOptions={{ headerShown: false }}
         initialRouteName={hasOnboarded ? 'Tabs' : 'Onboarding'}
@@ -147,6 +159,11 @@ export default function RootNavigator() {
         <Stack.Screen name="GroupDetail" component={GroupDetailScreen} options={{ presentation: 'modal' }} />
         <Stack.Screen name="Compare" component={CompareScreen} options={{ presentation: 'modal' }} />
         <Stack.Screen name="ImportWorkout" component={ImportWorkoutScreen} options={{ presentation: 'modal' }} />
+        <Stack.Screen
+          name="PostWorkoutSummary"
+          component={PostWorkoutSummaryScreen}
+          options={{ presentation: 'modal' }}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );

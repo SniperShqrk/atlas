@@ -25,8 +25,10 @@ export const haptics = {
   /** Toggling a choice on/off — chips, checkboxes, filters. */
   select: () => safe(() => Haptics.selectionAsync()),
 
-  /** A set gets checked off mid-workout — the single most-repeated tap in the app. */
-  setComplete: () => safe(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)),
+  /** A set gets checked off mid-workout via the swipe gesture — the single
+   *  most-repeated action in the app, so it gets the strongest, most
+   *  distinctive impact style rather than sharing Medium with lesser taps. */
+  setComplete: () => safe(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)),
 
   /** Workout finished, PR hit, achievement unlocked — anything worth celebrating. */
   success: () => safe(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)),

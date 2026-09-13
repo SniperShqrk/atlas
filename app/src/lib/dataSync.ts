@@ -199,7 +199,7 @@ export async function pushFullBackup(data: CloudBackup): Promise<void> {
     const userId = await signedInUserId();
     if (!userId) return;
 
-    const jobs: Promise<unknown>[] = [];
+    const jobs: PromiseLike<unknown>[] = [];
 
     if (data.sessions.length) {
       jobs.push(
