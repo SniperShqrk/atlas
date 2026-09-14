@@ -9,8 +9,6 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  Animated,
-  PanResponder,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Screen, Button, EmptyState, InfoButton } from '@/components/ui';
@@ -241,13 +239,9 @@ function WeightStepper({
 
 /**
  * One set row, as a real component rather than inline JSX inside a `.map` —
- * it needs its own PanResponder/Animated.Value per row, and hooks can't live
- * inside a loop body safely once sets are added/removed.
+ * keeps the per-row bits (checkbox, inputs) tidy and easy to reason about.
  *
- * Swipe right to complete, swipe left to undo — replaces the old tap-target
- * checkbox with a full-width gesture and a strong, distinctive haptic
- * (haptics.setComplete, now Heavy) so completing a set is felt without
- * looking at the phone.
+ * Tap the checkbox to mark a set complete/incomplete.
  */
 function SetRow({
   exercise,
@@ -278,127 +272,79 @@ function SetRow({
   removeSet: (exerciseId: string, setId: string) => void;
   toggleSetComplete: (exerciseId: string, setId: string) => void;
 }) {
-  const translateX = useRef(new Animated.Value(0)).current;
   const isBodyweight = exercise?.equipment === 'bodyweight';
-  // Lowered from 72/10/1.5 — the old numbers made the gesture feel like it
-  // wasn't registering unless the swipe was long and near-perfectly
-  // horizontal. This is a full-width, single gesture with nothing else to
-  // conflict with underneath it, so there's no reason to make it that strict.
-  const SWIPE_THRESHOLD = 52;
-  const MAX_SWIPE = 96;
-  // panResponder closes over `s.completed` via a ref so release logic always
-  // sees the latest value without having to recreate the responder per render
-  const completedRef = useRef(s.completed);
-  completedRef.current = s.completed;
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
-      onMoveShouldSetPanResponder: (_evt, g) =>
-        Math.abs(g.dx) > 6 && Math.abs(g.dx) > Math.abs(g.dy) * 1.1,
-      onPanResponderMove: (_evt, g) => {
-        const dx = completedRef.current ? Math.min(0, g.dx) : Math.max(0, g.dx);
-        translateX.setValue(Math.max(-MAX_SWIPE, Math.min(MAX_SWIPE, dx)));
-      },
-      onPanResponderRelease: (_evt, g) => {
-        const crossed = completedRef.current
-          ? g.dx < -SWIPE_THRESHOLD
-          : g.dx > SWIPE_THRESHOLD;
-        if (crossed) {
-          (completedRef.current ? haptics.tap : haptics.setComplete)();
-          toggleSetComplete(entry.exerciseId, s.id);
-        }
-        Animated.spring(translateX, { toValue: 0, useNativeDriver: true, bounciness: 6 }).start();
-      },
-      onPanResponderTerminate: () => {
-        Animated.spring(translateX, { toValue: 0, useNativeDriver: true, bounciness: 6 }).start();
-      },
-    })
-  ).current;
 
   return (
-    <View style={styles.setRowWrap}>
-      <View
+    <View style={[styles.setRow, s.completed && styles.setRowDone]}>
+      <Pressable
         style={[
-          styles.swipeBackdrop,
-          { backgroundColor: s.completed ? colors.cardAlt : colors.bronzeSoft },
+          styles.checkbox,
+          s.completed && { backgroundColor: colors.bronzeSoft, borderColor: colors.bronze },
         ]}
-        pointerEvents="none"
+        onPress={() => {
+          haptics.tapMedium();
+          toggleSetComplete(entry.exerciseId, s.id);
+        }}
+        hitSlop={8}
       >
-        {!s.completed && (
-          <View style={styles.swipeHintLeft}>
-            <Text style={[styles.swipeArrow, { color: colors.bronze }]}>→</Text>
-            <Text style={[styles.swipeHintText, { color: colors.bronze }]}>SWIPE TO COMPLETE</Text>
-          </View>
+        {s.completed && <Icon name="check" size={12} color={colors.bronze} strokeWidth={2.5} />}
+      </Pressable>
+
+      <Pressable
+        style={styles.colSet}
+        onPress={() => updateSet(entry.exerciseId, s.id, { warmup: !s.warmup })}
+        onLongPress={() => removeSet(entry.exerciseId, s.id)}
+      >
+        {s.warmup ? (
+          <Text style={styles.warmupTag}>W</Text>
+        ) : (
+          <Text style={styles.setNumber}>{workingIndex}</Text>
         )}
-        {s.completed && (
-          <View style={styles.swipeHintRight}>
-            <Text style={[styles.swipeHintText, { color: colors.textFaint }]}>SWIPE TO UNDO</Text>
-            <Text style={[styles.swipeArrow, { color: colors.textFaint }]}>←</Text>
-          </View>
-        )}
+        {isPr && <Icon name="trophy" size={11} color={colors.bronze} strokeWidth={2} />}
+      </Pressable>
+
+      <Text style={[styles.prevText, styles.colPrev]} numberOfLines={1}>
+        {prev ? `${displayWeight(prev.weightKg, unit)}${unit} × ${prev.reps}` : '—'}
+      </Text>
+
+      <View style={styles.colWeight}>
+        <WeightStepper
+          committed={s.weightKg}
+          isBodyweight={isBodyweight}
+          unit={unit}
+          placeholderKg={prev?.weightKg ?? suggestion.weightKg ?? 0}
+          onChange={(kg) => updateSet(entry.exerciseId, s.id, { weightKg: kg })}
+          done={s.completed}
+          styles={styles}
+          colors={colors}
+        />
       </View>
 
-      <Animated.View
-        {...panResponder.panHandlers}
-        style={[styles.setRow, s.completed && styles.setRowDone, { transform: [{ translateX }] }]}
-      >
-        <Pressable
-          style={styles.colSet}
-          onPress={() => updateSet(entry.exerciseId, s.id, { warmup: !s.warmup })}
-          onLongPress={() => removeSet(entry.exerciseId, s.id)}
-        >
-          {s.warmup ? (
-            <Text style={styles.warmupTag}>W</Text>
-          ) : (
-            <Text style={styles.setNumber}>{workingIndex}</Text>
-          )}
-          {isPr && <Icon name="trophy" size={11} color={colors.bronze} strokeWidth={2} />}
-        </Pressable>
+      <View style={styles.colInput}>
+        <TextInput
+          style={[styles.input, s.completed && styles.inputDone]}
+          keyboardType="number-pad"
+          placeholder={prev ? String(prev.reps) : String(suggestion.reps || 0)}
+          placeholderTextColor={colors.textFaint}
+          value={s.reps ? String(s.reps) : ''}
+          onChangeText={(t) => updateSet(entry.exerciseId, s.id, { reps: parseReps(t) })}
+        />
+      </View>
 
-        <Text style={[styles.prevText, styles.colPrev]} numberOfLines={1}>
-          {prev ? `${displayWeight(prev.weightKg, unit)}${unit} × ${prev.reps}` : '—'}
-        </Text>
-
-        <View style={styles.colWeight}>
-          <WeightStepper
-            committed={s.weightKg}
-            isBodyweight={isBodyweight}
-            unit={unit}
-            placeholderKg={prev?.weightKg ?? suggestion.weightKg ?? 0}
-            onChange={(kg) => updateSet(entry.exerciseId, s.id, { weightKg: kg })}
-            done={s.completed}
-            styles={styles}
-            colors={colors}
-          />
-        </View>
-
-        <View style={styles.colInput}>
-          <TextInput
-            style={[styles.input, s.completed && styles.inputDone]}
-            keyboardType="number-pad"
-            placeholder={prev ? String(prev.reps) : String(suggestion.reps || 0)}
-            placeholderTextColor={colors.textFaint}
-            value={s.reps ? String(s.reps) : ''}
-            onChangeText={(t) => updateSet(entry.exerciseId, s.id, { reps: parseReps(t) })}
-          />
-        </View>
-
-        <View style={styles.colRpe}>
-          <DecimalInput
-            style={[styles.input, styles.rpeInput, s.completed && styles.inputDone]}
-            placeholder="–"
-            placeholderTextColor={colors.textFaint}
-            committed={s.rpe}
-            parse={(t) => {
-              const v = parseFloat(t);
-              return Number.isFinite(v) ? Math.min(10, Math.max(1, v)) : undefined;
-            }}
-            format={(v) => (v ? String(v) : '')}
-            onCommit={(v) => updateSet(entry.exerciseId, s.id, { rpe: v })}
-          />
-        </View>
-      </Animated.View>
+      <View style={styles.colRpe}>
+        <DecimalInput
+          style={[styles.input, styles.rpeInput, s.completed && styles.inputDone]}
+          placeholder="–"
+          placeholderTextColor={colors.textFaint}
+          committed={s.rpe}
+          parse={(t) => {
+            const v = parseFloat(t);
+            return Number.isFinite(v) ? Math.min(10, Math.max(1, v)) : undefined;
+          }}
+          format={(v) => (v ? String(v) : '')}
+          onCommit={(v) => updateSet(entry.exerciseId, s.id, { rpe: v })}
+        />
+      </View>
     </View>
   );
 }
@@ -418,6 +364,8 @@ export default function WorkoutScreen() {
   const startSession = useWorkoutStore((s) => s.startSession);
   const startFromRoutine = useWorkoutStore((s) => s.startFromRoutine);
   const startFromPlanDay = useWorkoutStore((s) => s.startFromPlanDay);
+  const deleteRoutine = useWorkoutStore((s) => s.deleteRoutine);
+  const deleteSavedPlan = useWorkoutStore((s) => s.deleteSavedPlan);
   const addSet = useWorkoutStore((s) => s.addSet);
   const updateSet = useWorkoutStore((s) => s.updateSet);
   const toggleSetComplete = useWorkoutStore((s) => s.toggleSetComplete);
@@ -527,6 +475,18 @@ export default function WorkoutScreen() {
                     <Text style={styles.routineName}>{r.name}</Text>
                     <Text style={styles.routineMeta}>{r.exercises.length} exercises</Text>
                   </View>
+                  <Pressable
+                    onPress={() =>
+                      Alert.alert('Delete this routine?', r.name, [
+                        { text: 'Cancel', style: 'cancel' },
+                        { text: 'Delete', style: 'destructive', onPress: () => deleteRoutine(r.id) },
+                      ])
+                    }
+                    hitSlop={8}
+                    style={{ marginRight: spacing.sm }}
+                  >
+                    <Icon name="trash" size={16} color={colors.textFaint} strokeWidth={1.7} />
+                  </Pressable>
                   <Icon name="chevron" size={18} color={colors.textDim} strokeWidth={1.7} />
                 </Pressable>
               ))}
@@ -542,9 +502,22 @@ export default function WorkoutScreen() {
               <Text style={styles.sectionLabel}>YOUR PLANS</Text>
               {savedPlans.map((p) => (
                 <View key={p.id} style={{ marginBottom: spacing.md }}>
-                  <Text style={styles.planGroupName} numberOfLines={1}>
-                    {p.name}
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text style={[styles.planGroupName, { flex: 1 }]} numberOfLines={1}>
+                      {p.name}
+                    </Text>
+                    <Pressable
+                      onPress={() =>
+                        Alert.alert('Delete this plan?', p.name ?? 'Untitled plan', [
+                          { text: 'Cancel', style: 'cancel' },
+                          { text: 'Delete', style: 'destructive', onPress: () => deleteSavedPlan(p.id) },
+                        ])
+                      }
+                      hitSlop={8}
+                    >
+                      <Icon name="trash" size={15} color={colors.textFaint} strokeWidth={1.7} />
+                    </Pressable>
+                  </View>
                   {p.days.map((day, di) => (
                     <Pressable
                       key={di}
@@ -574,6 +547,16 @@ export default function WorkoutScreen() {
 
   const volume = sessionVolume(active);
   const setCount = sessionSetCount(active);
+
+  // "Save as Routine" is pointless when this session's exercises are
+  // exactly what an existing routine already has — same exercises, same
+  // count, order doesn't matter. Only the exercise list is compared, not
+  // sets/reps/weight, since those change every session by design.
+  const matchesSavedRoutine = routines.some((r) => {
+    if (r.exercises.length !== active.entries.length) return false;
+    const routineIds = new Set(r.exercises.map((e) => e.exerciseId));
+    return active.entries.every((e) => routineIds.has(e.exerciseId));
+  });
 
   const onFinish = () => {
     if (setCount === 0) {
@@ -656,7 +639,18 @@ export default function WorkoutScreen() {
           showsVerticalScrollIndicator={false}
         >
           {active.entries.length === 0 && (
-            <EmptyState title="No exercises yet" subtitle="Add your first exercise to start logging." />
+            <>
+              <EmptyState
+                title="No exercises yet"
+                subtitle="Add exercises from the Exercise Library to start logging."
+              />
+              <Button
+                label="+ Add Exercise"
+                variant="secondary"
+                onPress={() => navigation.navigate('ExerciseLibrary', { picker: true })}
+                style={{ marginTop: spacing.md }}
+              />
+            </>
           )}
 
           {active.entries.map((entry) => {
@@ -811,12 +805,14 @@ export default function WorkoutScreen() {
             onPress={() => navigation.navigate('ExerciseLibrary', { picker: true })}
             style={{ marginTop: spacing.lg }}
           />
-          <Button
-            label="Save as Routine"
-            variant="success"
-            onPress={() => navigation.navigate('SaveRoutine')}
-            style={{ marginTop: spacing.sm }}
-          />
+          {!matchesSavedRoutine && active.entries.length > 0 && (
+            <Button
+              label="Save as Routine"
+              variant="success"
+              onPress={() => navigation.navigate('SaveRoutine')}
+              style={{ marginTop: spacing.sm }}
+            />
+          )}
           <Button
             label="Discard Workout"
             variant="danger"
@@ -932,47 +928,25 @@ const useStyles = makeStyles((c) => ({
   colInput: { width: 54 },
   colWeight: { width: 104, flexDirection: 'row', alignItems: 'center', gap: 2 },
   colRpe: { width: 38 },
-  setRowWrap: {
-    borderRadius: radius.sm,
-    overflow: 'hidden',
-    marginBottom: 3,
-  },
-  swipeBackdrop: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  swipeHintLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingLeft: spacing.md,
-  },
-  swipeHintRight: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: 6,
-    paddingRight: spacing.md,
-  },
-  swipeArrow: { fontSize: 16, fontWeight: '700' },
-  swipeHintText: { ...typography.micro, fontSize: 10, fontWeight: '700', letterSpacing: 0.4 },
   setRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    // taller than before (5 -> 11) — a bigger swipe target, and more room
-    // for the "SWIPE TO COMPLETE" hint text to sit comfortably underneath
-    paddingVertical: 11,
+    paddingVertical: 5,
     borderRadius: radius.sm,
     gap: 4,
-    backgroundColor: c.bg,
+    marginBottom: 2,
   },
   setRowDone: { backgroundColor: 'rgba(255,255,255,0.03)' },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: radius.sm,
+    borderWidth: 1.5,
+    borderColor: c.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 2,
+  },
   setNumber: { ...typography.bodyMedium, color: c.textSecondary },
   warmupTag: { ...typography.captionBold, color: c.textFaint },
   prevText: { ...typography.caption, color: c.textFaint },

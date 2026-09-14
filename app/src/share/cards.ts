@@ -135,9 +135,9 @@ export function sessionCard(session: WorkoutSession, sessions: WorkoutSession[])
   return {
     kind: 'session',
     eyebrow: session.name,
-    hero: totals.volumeKg >= 10000
-      ? `${Math.round(totals.volumeKg / 1000)}k`
-      : String(Math.round(totals.volumeKg)),
+    // Always the full number, never "6.4k" — that reads as "6.4kg" once the
+    // "kg" unit sits right next to it.
+    hero: Math.round(totals.volumeKg).toLocaleString(),
     heroUnit: 'kg',
     title: 'Session complete',
     subtitle: dateOf(at),
@@ -162,7 +162,7 @@ export function weekCard(sessions: WorkoutSession[], now = Date.now()): ShareCar
     subtitle: 'Last seven days',
     stats: [
       { label: 'Sets', value: String(m.totalSets) },
-      { label: 'Volume', value: `${Math.round(m.totalVolumeKg / 1000)}k kg` },
+      { label: 'Volume', value: `${Math.round(m.totalVolumeKg).toLocaleString()} kg` },
       { label: 'Avg time', value: `${m.avgDurationMin || '—'} min` },
     ],
     at: now,

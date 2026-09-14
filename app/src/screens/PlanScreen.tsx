@@ -32,6 +32,7 @@ import { PREBUILT_PROGRAMS } from '@/data/programs';
 import { generatePlan } from '@/api/client';
 import { haptics } from '@/lib/haptics';
 import { useCoach } from '@/store/coach';
+import { promptStartWorkout } from '@/lib/startWorkoutFlow';
 
 const PROGRAM_SOURCE_LABEL: Record<string, string> = {
   ai: 'AI generated',
@@ -63,7 +64,9 @@ const SESSION_LENGTHS = [30, 45, 60, 75, 90];
 
 /** "Auto" (null) lets the backend pick a focus from recovery data rather
  *  than always defaulting to Push. */
-const DAY_FOCUS_OPTIONS: (string | null)[] = [null, 'Push', 'Pull', 'Legs', 'Upper', 'Full Body'];
+const DAY_FOCUS_OPTIONS: (string | null)[] = [
+  null, 'Push', 'Pull', 'Legs', 'Upper', 'Lower', 'Full Body',
+];
 
 const EMPHASIS_OPTIONS: MuscleGroup[] = [
   'chest', 'lats', 'side_delts', 'rear_delts', 'biceps', 'triceps',
@@ -114,6 +117,7 @@ export default function PlanScreen() {
   const currentPlan = useWorkoutStore((s) => s.currentPlan);
   const setCurrentPlan = useWorkoutStore((s) => s.setCurrentPlan);
   const savedPlans = useWorkoutStore((s) => s.savedPlans);
+  const routines = useWorkoutStore((s) => s.routines);
   const savePlan = useWorkoutStore((s) => s.savePlan);
   const loadSavedPlan = useWorkoutStore((s) => s.loadSavedPlan);
   const deleteSavedPlan = useWorkoutStore((s) => s.deleteSavedPlan);
@@ -254,8 +258,13 @@ export default function PlanScreen() {
     if (!currentPlan) return;
     const label = `${profile.goal.replace('_', ' ')} · ${new Date(currentPlan.createdAt).toLocaleDateString()}`;
     savePlan(currentPlan.name ?? label);
+    setEditing(false);
     setJustSaved(true);
     setTimeout(() => setJustSaved(false), 2500);
+    // Saved plans live in "My Plans" — clear currentPlan so the screen
+    // resets to the build/generate state instead of leaving the just-saved
+    // plan open here too.
+    useWorkoutStore.setState({ currentPlan: null });
   };
 
   const onGenerate = async () => {
@@ -307,33 +316,70 @@ export default function PlanScreen() {
           {profile.daysPerWeek} days · {profile.sessionMinutes} min · {profile.goal.replace('_', ' ')}
         </Text>
 
-        {/* ---- how to build a plan: two parallel, equally-visible paths ----
-            Free: Build Your Own, a blank plan you fill by dragging exercises
-            in below (same mechanism as editing any other plan). Pro: AI
-            Planner, which expands in place into the actual generation
-            controls instead of those living in a permanently-open settings
-            card whether or not anyone was about to use it — that card was
-            most of what made this screen feel crowded. */}
+        {/* Same "how do you want to start" chooser as Home and the Workout
+            tab — lets you skip straight past building anything and just
+            train, right from here. */}
+        <Button
+          label="Start Workout"
+          variant="secondary"
+          size="md"
+          onPress={() =>
+            promptStartWorkout({
+              hasPlanOrRoutines: routines.length > 0 || savedPlans.length > 0 || !!currentPlan,
+              startSession,
+              onCreatePlan: () => createBlankPlan(),
+              onChoosePlanOrRoutine: () => navigation.navigate('WorkoutTab'),
+            })
+          }
+          style={{ marginTop: spacing.lg }}
+        />
+
+        {/* ---- how to build something: two parallel, equally-visible paths ----
+            A Plan is a whole week of days; a Routine is one single day you
+            reuse — same free drag-and-drop builder either way, just a
+            different scope. Pro's AI Planner writes a whole week for you. */}
         {!currentPlan && (
-          <Pressable
-            onPress={() => {
-              haptics.tap();
-              createBlankPlan();
-              setEditing(true);
-            }}
-            style={({ pressed }) => [styles.buildCard, pressed && { opacity: 0.9 }, { marginTop: spacing.lg }]}
-          >
-            <View style={styles.buildIconWrap}>
-              <Icon name="dragHandle" size={20} color={colors.textSecondary} strokeWidth={2.6} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.buildTitle}>Build Your Own</Text>
-              <Text style={styles.buildBlurb}>
-                Pick your own exercises and drag them into each day — free, no limits
-              </Text>
-            </View>
-            <Icon name="chevron" size={18} color={colors.textFaint} strokeWidth={1.8} />
-          </Pressable>
+          <>
+            <Pressable
+              onPress={() => {
+                haptics.tap();
+                createBlankPlan();
+                setEditing(true);
+              }}
+              style={({ pressed }) => [styles.buildCard, pressed && { opacity: 0.9 }, { marginTop: spacing.lg }]}
+            >
+              <View style={styles.buildIconWrap}>
+                <Icon name="dragHandle" size={20} color={colors.textSecondary} strokeWidth={2.6} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.buildTitle}>Create Weekly Plan</Text>
+                <Text style={styles.buildBlurb}>
+                  Pick your own exercises and drag them into each day — free, no limits
+                </Text>
+              </View>
+              <Icon name="chevron" size={18} color={colors.textFaint} strokeWidth={1.8} />
+            </Pressable>
+
+            <Pressable
+              onPress={() => {
+                haptics.tap();
+                startSession();
+                navigation.navigate('WorkoutTab');
+              }}
+              style={({ pressed }) => [styles.buildCard, pressed && { opacity: 0.9 }, { marginTop: spacing.sm }]}
+            >
+              <View style={styles.buildIconWrap}>
+                <Icon name="workout" size={20} color={colors.textSecondary} strokeWidth={1.8} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.buildTitle}>Create a Routine</Text>
+                <Text style={styles.buildBlurb}>
+                  One reusable day — log it once on the Workout tab, then tap Save as Routine
+                </Text>
+              </View>
+              <Icon name="chevron" size={18} color={colors.textFaint} strokeWidth={1.8} />
+            </Pressable>
+          </>
         )}
 
         <Pressable
@@ -423,17 +469,25 @@ export default function PlanScreen() {
               ))}
             </View>
 
-            <Text style={[styles.paramLabel, { marginTop: spacing.lg }]}>SPLIT STYLE</Text>
-            <View style={styles.chipRow}>
-              {SPLITS.map((s) => (
-                <Chip
-                  key={s.key}
-                  label={s.label}
-                  active={profile.preferredSplit === s.key}
-                  onPress={() => setProfile({ preferredSplit: s.key })}
-                />
-              ))}
-            </View>
+            {/* Split style picks the weekly pattern a full-week plan follows
+                — meaningless for a single day, which already picked its
+                focus (Push/Pull/Legs/...) right above. Asking for both was
+                the same choice twice. */}
+            {planScope === 'week' && (
+              <>
+                <Text style={[styles.paramLabel, { marginTop: spacing.lg }]}>SPLIT STYLE</Text>
+                <View style={styles.chipRow}>
+                  {SPLITS.map((s) => (
+                    <Chip
+                      key={s.key}
+                      label={s.label}
+                      active={profile.preferredSplit === s.key}
+                      onPress={() => setProfile({ preferredSplit: s.key })}
+                    />
+                  ))}
+                </View>
+              </>
+            )}
 
             <Text style={[styles.paramLabel, { marginTop: spacing.lg }]}>
               EMPHASIS · PICK UP TO 3
@@ -570,6 +624,10 @@ export default function PlanScreen() {
           </View>
         )}
 
+        {justSaved && (
+          <Text style={[styles.note, { marginTop: spacing.lg }]}>Saved to My Plans.</Text>
+        )}
+
         {currentPlan && (
           <>
             <Card style={{ marginTop: spacing.xl }}>
@@ -604,10 +662,6 @@ export default function PlanScreen() {
                 style={{ marginTop: spacing.sm }}
               />
             )}
-            {justSaved && !loading && (
-              <Text style={[styles.note, { marginTop: spacing.sm }]}>Saved to My Plans.</Text>
-            )}
-
             {currentPlan.days.map((day, i) => (
               <View
                 key={i}

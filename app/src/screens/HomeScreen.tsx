@@ -171,7 +171,7 @@ export default function HomeScreen() {
           {/* week snapshot */}
           <Card style={{ marginTop: spacing.lg }}>
             <View style={styles.statRow}>
-              <StatTile label="Workouts" value={String(weekSessions.length)} />
+              <StatTile label="This week" value={String(weekSessions.length)} />
               <StatTile label="Sets" value={String(weekSets)} />
               <StatTile
                 label="Volume"

@@ -641,7 +641,11 @@ export function buildInsights(
   // the pitch — ATLAS tells you for free what is working, and asks to be paid
   // for what is not.
   const goodNews = all.filter((i) => i.severity === 'good');
-  const free = [...findings.slice(0, freeCount), ...goodNews];
+  // Free shows exactly `freeCount` insights total (findings first, good
+  // news filling any remainder) — not `freeCount` findings PLUS every
+  // good-news item uncapped, which let the free tier show more than
+  // freeCount insights whenever more than one muscle group came back clean.
+  const free = [...findings.slice(0, freeCount), ...goodNews].slice(0, freeCount);
   const locked = findings.slice(freeCount);
 
   return { headline, free, locked, all, hasEnoughData: true, balance, balanceScore: score };

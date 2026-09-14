@@ -72,6 +72,9 @@ export interface UserProfile {
   weightKg?: number;
   heightCm?: number;
   barKg: number;
+  /** id from share/marbleStyles — the chosen stone colour for share cards;
+   *  unset falls back to the default (Sienna Bronze) */
+  marbleStyle?: string;
 }
 
 export interface BodyweightEntry {
@@ -184,6 +187,7 @@ interface WorkoutStoreState {
   removeSet: (exerciseId: string, setId: string) => void;
   finishSession: () => WorkoutSession | null;
   discardActiveSession: () => void;
+  deleteSession: (sessionId: string) => void;
   setProfile: (patch: Partial<UserProfile>) => void;
   setCurrentPlan: (plan: GeneratedPlan) => void;
   /** Turns one of the ready-made programs in data/programs.ts into a real,
@@ -509,6 +513,14 @@ export const useWorkoutStore = create<WorkoutStoreState>()(
       },
 
       discardActiveSession: () => set({ activeSession: null, restEndsAt: null }),
+
+      // Removes a past workout from history. Deliberately leaves `records`
+      // (personal-best tracking) untouched — recomputing PRs from the
+      // remaining history is more surprising than useful here, and simpler
+      // to reason about: deleting an old session never silently changes
+      // today's PR banner.
+      deleteSession: (sessionId) =>
+        set({ sessions: get().sessions.filter((s) => s.id !== sessionId) }),
 
       setProfile: (patch) => set({ profile: { ...get().profile, ...patch } }),
 

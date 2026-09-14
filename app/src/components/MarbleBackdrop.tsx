@@ -12,6 +12,7 @@ import Svg, {
 import { useTheme } from '@/theme/ThemeProvider';
 import { marbleGeometry, seedFrom } from '@/components/marbleGeometry';
 import { Artwork, artworkImage } from '@/share/artwork';
+import { MarbleTone } from '@/share/marbleStyles';
 
 /**
  * The backdrop behind a share card.
@@ -22,26 +23,35 @@ import { Artwork, artworkImage } from '@/share/artwork';
  * lands. Either way a scrim goes over the top — the card has to stay readable
  * regardless of what is behind it, and that is not something to leave to luck
  * with a photograph whose contents vary.
+ *
+ * `styleOverride` is the user's chosen marble colour (see share/marbleStyles)
+ * — when set, it replaces the artwork's own tone so every card renders in
+ * the same stone regardless of which object backs it. The artwork's photo
+ * (when one exists) and its credits are untouched either way.
  */
 export function MarbleBackdrop({
   artwork,
   width,
   height,
   seed,
+  styleOverride,
 }: {
   artwork: Artwork;
   width: number;
   height: number;
   /** any stable string — the same seed always yields the same slab */
   seed: string;
+  styleOverride?: MarbleTone;
 }) {
   const { colors } = useTheme();
+  const tone = styleOverride ?? artwork.tone;
   const geo = useMemo(
-    () => marbleGeometry(width, height, seedFrom(seed), artwork.tone.lightAngle),
-    [width, height, seed, artwork.tone.lightAngle]
+    () => marbleGeometry(width, height, seedFrom(seed), tone.lightAngle),
+    [width, height, seed, tone.lightAngle]
   );
+  const veinColor = tone.veinColor ?? colors.marbleLight;
 
-  const image = artworkImage(artwork.id);
+  const image = styleOverride ? null : artworkImage(artwork.id);
   const gid = `stone-${artwork.id}`;
   const sid = `scrim-${artwork.id}`;
 
@@ -70,9 +80,9 @@ export function MarbleBackdrop({
             x2={geo.light.x2}
             y2={geo.light.y2}
           >
-            <Stop offset="0%" stopColor={artwork.tone.highlight} />
-            <Stop offset="55%" stopColor={artwork.tone.base} />
-            <Stop offset="100%" stopColor={artwork.tone.base} />
+            <Stop offset="0%" stopColor={tone.highlight} />
+            <Stop offset="55%" stopColor={tone.base} />
+            <Stop offset="100%" stopColor={tone.base} />
           </LinearGradient>
           <LinearGradient id={sid} x1="0" y1="0" x2="0" y2="1">
             <Stop offset="0%" stopColor="#000000" stopOpacity={0.3} />
@@ -90,7 +100,7 @@ export function MarbleBackdrop({
                 key={`v${i}`}
                 d={v.d}
                 fill="none"
-                stroke={colors.marbleLight}
+                stroke={veinColor}
                 strokeWidth={v.width}
                 strokeOpacity={v.opacity}
                 strokeLinecap="round"
@@ -102,7 +112,7 @@ export function MarbleBackdrop({
                 cx={s.x}
                 cy={s.y}
                 r={s.r}
-                fill={colors.marbleLight}
+                fill={veinColor}
                 fillOpacity={s.opacity}
               />
             ))}

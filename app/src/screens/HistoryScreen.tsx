@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { View, Text, FlatList, StyleSheet, Pressable, Alert } from 'react-native';
+import { Icon } from '@/components/Icon';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { format } from 'date-fns';
 import { Screen, Card, EmptyState, StatTile } from '@/components/ui';
-import { TopInset } from '@/components/ScreenLayout';
+import { ModalHeader } from '@/components/ScreenLayout';
 import { spacing, typography } from '@/theme/theme';
 import { makeStyles, useTheme } from '@/theme/ThemeProvider';
 import { useWorkoutStore, sessionVolume, sessionSetCount, WorkoutSession } from '@/store/workoutStore';
@@ -22,7 +23,15 @@ export default function HistoryScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const sessions = useWorkoutStore((s) => s.sessions);
+  const deleteSession = useWorkoutStore((s) => s.deleteSession);
   const unit = useWorkoutStore((s) => s.profile.unit);
+
+  const onDelete = (item: WorkoutSession) => {
+    Alert.alert('Delete workout?', `"${item.name}" will be permanently removed.`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => deleteSession(item.id) },
+    ]);
+  };
   const listRef = useRef<FlatList<WorkoutSession>>(null);
 
   // arriving from a chart point on the Progress tab — jump straight to the
@@ -66,11 +75,8 @@ export default function HistoryScreen() {
 
   return (
     <Screen>
-      <TopInset />
+      <ModalHeader title="History" onBack={() => navigation.goBack()} />
       <View style={{ flex: 1 }}>
-        <View style={styles.header}>
-          <Text style={styles.title}>History</Text>
-        </View>
 
         {sessions.length > 0 && (
           <Card style={{ marginHorizontal: spacing.lg, marginBottom: spacing.lg }}>
@@ -116,9 +122,14 @@ export default function HistoryScreen() {
             >
               <View style={styles.rowHeader}>
                 <Text style={styles.sessionName}>{item.name}</Text>
-                <Text style={styles.sessionDate}>
-                  {format(new Date(item.completedAt ?? item.startedAt), 'MMM d')}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                  <Text style={styles.sessionDate}>
+                    {format(new Date(item.completedAt ?? item.startedAt), 'MMM d')}
+                  </Text>
+                  <Pressable onPress={() => onDelete(item)} hitSlop={8}>
+                    <Icon name="trash" size={15} color={styles.deleteIcon.color} strokeWidth={1.7} />
+                  </Pressable>
+                </View>
               </View>
 
               <View style={styles.metaRow}>
@@ -166,12 +177,11 @@ export default function HistoryScreen() {
 }
 
 const useStyles = makeStyles((c) => ({
-  header: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.md },
-  title: { ...typography.hero, color: c.text },
   flashCard: { borderWidth: 1.5, borderColor: c.bronze },
   rowHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
   sessionName: { ...typography.h3, color: c.text },
   sessionDate: { ...typography.caption, color: c.textDim },
+  deleteIcon: { color: c.textFaint },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
   metaItem: { ...typography.caption, color: c.accent },
   metaDot: { color: c.textFaint, fontSize: 10 },

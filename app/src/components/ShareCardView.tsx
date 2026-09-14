@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { makeStyles, useTheme } from '@/theme/ThemeProvider';
 import { MarbleBackdrop } from '@/components/MarbleBackdrop';
 import { getArtwork } from '@/share/artwork';
+import { getMarbleStyle } from '@/share/marbleStyles';
 import { ShareCard, CardFormat, CARD_FORMATS } from '@/share/cards';
 
 /**
@@ -21,12 +22,16 @@ export const ShareCardView = forwardRef<View, {
   format: CardFormat;
   /** rendered width in points; height follows from the format */
   width: number;
-}>(function ShareCardView({ card, format, width }, ref) {
+  /** id from share/marbleStyles — the user's chosen stone colour, the same
+   *  across every card regardless of which object would back it */
+  marbleStyle?: string;
+}>(function ShareCardView({ card, format, width, marbleStyle }, ref) {
   const { colors } = useTheme();
   const styles = useStyles();
   const f = CARD_FORMATS[format];
   const height = (width * f.h) / f.w;
   const art = getArtwork(card.artworkId);
+  const tone = getMarbleStyle(marbleStyle).tone;
   const s = width / RATIO; // scale factor
 
   const when = new Date(card.at).toLocaleDateString(undefined, {
@@ -46,6 +51,7 @@ export const ShareCardView = forwardRef<View, {
         width={f.w}
         height={f.h}
         seed={`${card.kind}${card.artworkId}${card.title}`}
+        styleOverride={tone}
       />
 
       {/* a hairline inset frame — the one classical gesture on the card */}

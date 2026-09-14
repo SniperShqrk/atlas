@@ -24,6 +24,7 @@ import {
 } from '@/share/cards';
 import { shareCard } from '@/share/capture';
 import { artworkCredits } from '@/share/artwork';
+import { MARBLE_STYLES } from '@/share/marbleStyles';
 
 /**
  * Pick a moment, pick a shape, post it.
@@ -42,6 +43,8 @@ export default function ShareCardScreen() {
 
   const sessions = useWorkoutStore((s) => s.sessions);
   const profile = useWorkoutStore((s) => s.profile);
+  const setProfile = useWorkoutStore((s) => s.setProfile);
+  const marbleStyle = profile.marbleStyle;
 
   const offers = useMemo(
     () => availableCards(sessions, { targetDaysPerWeek: profile.daysPerWeek }),
@@ -92,7 +95,7 @@ export default function ShareCardScreen() {
         )}
 
         <View style={styles.stage}>
-          <ShareCardView ref={cardRef} card={card} format={format} width={cardWidth} />
+          <ShareCardView ref={cardRef} card={card} format={format} width={cardWidth} marbleStyle={marbleStyle} />
         </View>
 
         {list.length > 1 && (
@@ -119,7 +122,29 @@ export default function ShareCardScreen() {
           <Text style={styles.reason}>{reasons[index]}</Text>
         )}
 
-        <Text style={styles.label}>FORMAT</Text>
+        <Text style={styles.label}>STONE</Text>
+        <View style={styles.stoneRow}>
+          {MARBLE_STYLES.map((m) => (
+            <Pressable
+              key={m.id}
+              onPress={() => setProfile({ marbleStyle: m.id })}
+              style={[
+                styles.stoneSwatch,
+                { backgroundColor: m.tone.highlight, borderColor: m.tone.veinColor ?? colors.marbleLight },
+                (marbleStyle ?? 'sienna') === m.id && styles.stoneSwatchOn,
+              ]}
+            >
+              {(marbleStyle ?? 'sienna') === m.id && (
+                <View style={[styles.stoneDot, { backgroundColor: m.tone.veinColor ?? colors.marbleLight }]} />
+              )}
+            </Pressable>
+          ))}
+        </View>
+        <Text style={styles.stoneLabel}>
+          {MARBLE_STYLES.find((m) => m.id === (marbleStyle ?? 'sienna'))?.label}
+        </Text>
+
+        <Text style={[styles.label, { marginTop: spacing.lg }]}>FORMAT</Text>
         <View style={styles.formats}>
           {(Object.keys(CARD_FORMATS) as CardFormat[]).map((f) => (
             <Pressable
@@ -191,6 +216,19 @@ const useStyles = makeStyles((c) => ({
   chipText: { ...typography.caption, color: c.textSecondary, fontWeight: '600' },
   reason: { ...typography.caption, color: c.textFaint, marginBottom: spacing.lg },
   label: { ...typography.micro, color: c.textDim, marginTop: spacing.sm },
+  stoneRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.md },
+  stoneSwatch: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stoneSwatchOn: { borderWidth: 2 },
+  stoneDot: { width: 8, height: 8, borderRadius: 4 },
+  stoneLabel: { ...typography.caption, color: c.textFaint, marginTop: spacing.sm },
   formats: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
   format: {
     flex: 1,

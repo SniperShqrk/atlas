@@ -9,7 +9,7 @@ import { radius, spacing, typography } from '@/theme/theme';
 import { makeStyles, useTheme } from '@/theme/ThemeProvider';
 import { useWorkoutStore, WorkoutSession, sessionVolume, sessionSetCount } from '@/store/workoutStore';
 import type { PrEvent } from '@/store/analytics';
-import { prCard } from '@/share/cards';
+import { prCard, sessionCard } from '@/share/cards';
 import type { AchievementProgress } from '@/data/achievements';
 import { quoteByTheme } from '@/data/quotes';
 import { displayWeight } from '@/utils/units';
@@ -59,7 +59,8 @@ export default function PostWorkoutSummaryScreen() {
     : '—';
 
   const onShare = () => {
-    navigation.navigate('ShareCard', { card: prCard(prEvents[0], sessions) });
+    const card = hasPr ? prCard(prEvents[0], sessions) : sessionCard(session, sessions);
+    navigation.navigate('ShareCard', { card });
   };
 
   const onDone = () => navigation.goBack();
@@ -126,14 +127,12 @@ export default function PostWorkoutSummaryScreen() {
           </Pressable>
         )}
 
-        {hasPr && (
-          <Button
-            label="Share this record"
-            variant="bronze"
-            onPress={onShare}
-            style={{ marginTop: spacing.lg }}
-          />
-        )}
+        <Button
+          label={hasPr ? 'Share this record' : 'Share this workout'}
+          variant={hasPr ? 'bronze' : 'secondary'}
+          onPress={onShare}
+          style={{ marginTop: spacing.lg }}
+        />
 
         <View style={styles.quoteWrap}>
           <StoicQuote quote={quote} variant="card" />
