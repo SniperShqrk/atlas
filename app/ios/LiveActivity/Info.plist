@@ -10,7 +10,7 @@
     <key>RCTNewArchEnabled</key>
     <true/>
     <key>CFBundleVersion</key>
-    <string>10</string>
+    <string>11</string>
     <key>CFBundleShortVersionString</key>
     <string>1.0.0</string>
   </dict>

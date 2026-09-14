@@ -123,7 +123,9 @@ export default function ExerciseLibraryScreen() {
       } else {
         addExerciseToPlanDay(planDayIndex, exercise.id);
       }
-      navigation.navigate('Tabs', { screen: 'PlanTab' });
+      // Plan-day editing now lives on PlanDetail (pushed from the Plan tab,
+      // not the tab itself), so this needs to return there, not to the tab.
+      navigation.navigate('PlanDetail');
       return;
     }
     if (!activeSession) startSession();

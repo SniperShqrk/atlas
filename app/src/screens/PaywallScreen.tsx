@@ -36,7 +36,9 @@ function packageFor(
 const FEATURE_ICONS: Record<ProFeature, IconName> = {
   atlas_insights: 'sparkle',
   ai_planner: 'plan',
+  ai_coach: 'info',
   import_workouts: 'share',
+  custom_exercises: 'plus',
   more_routines: 'library',
   advanced_analytics: 'chart',
   volume_landmarks: 'flame',
@@ -49,7 +51,9 @@ const FEATURE_ICONS: Record<ProFeature, IconName> = {
 const VALUE_HEADLINE: Record<ProFeature, string> = {
   atlas_insights: 'Know exactly what to change',
   ai_planner: 'Never guess your program again',
+  ai_coach: 'Ask anything, get a straight answer',
   import_workouts: 'Turn any plan into a ready week',
+  custom_exercises: "Log the exercise the library doesn't have",
   more_routines: 'Keep every routine you build',
   advanced_analytics: 'See the trend, not just the numbers',
   volume_landmarks: 'Train each muscle exactly enough',

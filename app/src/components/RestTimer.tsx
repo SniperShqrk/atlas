@@ -6,6 +6,8 @@ import { useWorkoutStore } from '@/store/workoutStore';
 import { quoteByTheme } from '@/data/quotes';
 import { StoicQuote } from '@/components/StoicQuote';
 import { haptics } from '@/lib/haptics';
+import { playRestComplete } from '@/lib/sound';
+import { getExerciseById } from '@/data/exercises';
 import { startActivity, updateActivity, stopActivity } from 'expo-live-activity';
 
 function fmt(seconds: number) {
@@ -20,8 +22,10 @@ export function RestTimer() {
   const styles = useStyles();
   const restEndsAt = useWorkoutStore((s) => s.restEndsAt);
   const restTotalSec = useWorkoutStore((s) => s.restTotalSec);
+  const restExerciseId = useWorkoutStore((s) => s.restExerciseId);
   const stopRest = useWorkoutStore((s) => s.stopRest);
   const startRest = useWorkoutStore((s) => s.startRest);
+  const restExercise = restExerciseId ? getExerciseById(restExerciseId) : null;
   const [now, setNow] = useState(Date.now());
   // Live Activity id for whichever rest window is currently on screen — lives
   // exactly as long as restEndsAt is non-null (see the effect below).
@@ -34,11 +38,14 @@ export function RestTimer() {
   }, [restEndsAt]);
 
   // Fire once, right when the countdown crosses zero — not on every 500ms
-  // tick while it sits at "done" waiting for the lifter to move on.
+  // tick while it sits at "done" waiting for the lifter to move on. Felt
+  // (haptic) and heard (chirp) together — a lot of rest happens with the
+  // phone face-down on a bench, where the buzz alone is easy to miss.
   useEffect(() => {
     if (restEndsAt == null) return;
     if (now < restEndsAt) return;
     haptics.restDone();
+    playRestComplete();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restEndsAt, restEndsAt != null && now >= restEndsAt]);
 
@@ -48,19 +55,30 @@ export function RestTimer() {
   // anyway since ActivityKit itself is iOS-exclusive. Every call is wrapped
   // in try/catch: this is pure polish and must never take the rest timer
   // down with it if the native module isn't available for some reason.
+  //
+  // Names the actual lift instead of a generic "Resting" / "ATLAS" — the
+  // app icon on the activity already says which app this is, so that line
+  // was wasted. deepLinkUrl means tapping the Lock Screen card or the
+  // Dynamic Island jumps straight back into the workout (see the atlas://
+  // handler wired up in App.tsx) instead of just unlocking to the home
+  // screen. Requires a native rebuild — this is JS-side config, but the
+  // scheme has to actually be registered in the built app to work.
   useEffect(() => {
     if (Platform.OS !== 'ios') return;
     try {
       if (restEndsAt == null) {
         if (activityId.current) {
-          stopActivity(activityId.current, { title: 'Rest complete' });
+          stopActivity(activityId.current, {
+            title: 'Rest complete',
+            subtitle: restExercise ? `Back to ${restExercise.name}` : 'Back to it',
+          });
           activityId.current = undefined;
         }
         return;
       }
       const state = {
-        title: 'Resting',
-        subtitle: 'ATLAS',
+        title: restExercise ? restExercise.name : 'Resting',
+        subtitle: 'Rest timer',
         progressBar: { date: restEndsAt },
       };
       if (activityId.current) {
@@ -72,12 +90,13 @@ export function RestTimer() {
           subtitleColor: colors.textDim,
           progressViewTint: colors.bronze,
           timerType: 'digital',
+          deepLinkUrl: 'atlas://workout',
         }) || undefined) as string | undefined;
       }
     } catch {
       // Live Activities are best-effort — never let this break the timer.
     }
-  }, [restEndsAt]);
+  }, [restEndsAt, restExercise]);
 
   // Belt-and-braces cleanup for the case the effect above never gets to run
   // its own "restEndsAt went null" branch: finishing or discarding a workout

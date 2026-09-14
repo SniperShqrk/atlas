@@ -317,8 +317,11 @@ export default function HomeScreen() {
 
           {currentPlan && (
             <View style={{ marginTop: spacing.xl }}>
-              <SectionHeader title="Your Plan" action="View" onAction={() => navigation.navigate('PlanTab')} />
-              <Card onPress={() => navigation.navigate('PlanTab')}>
+              {/* Drills straight into the plan itself, same as tapping "Your
+                  current plan" on the Plan tab — this card and that one open
+                  the exact same screen now. */}
+              <SectionHeader title="Your Plan" action="View" onAction={() => navigation.navigate('PlanDetail')} />
+              <Card onPress={() => navigation.navigate('PlanDetail')}>
                 <Text style={styles.planSummary} numberOfLines={3}>
                   {currentPlan.summary}
                 </Text>

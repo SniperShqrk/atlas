@@ -23,7 +23,6 @@ import {
   sampleCard,
 } from '@/share/cards';
 import { shareCard } from '@/share/capture';
-import { artworkCredits } from '@/share/artwork';
 import { MARBLE_STYLES } from '@/share/marbleStyles';
 
 /**
@@ -170,20 +169,6 @@ export default function ShareCardScreen() {
           )}
         </View>
 
-        <Text style={styles.footnote}>
-          Cards are generated on your phone from your own logs. Nothing is uploaded.
-        </Text>
-
-        <Text style={[styles.label, { marginTop: spacing.xl }]}>ARTWORK</Text>
-        <View style={styles.credits}>
-          {artworkCredits().map((a) => (
-            <Text key={a.shortName} style={styles.credit}>
-              <Text style={{ color: colors.textSecondary }}>{a.shortName}</Text>
-              {`  ${a.culture}, ${a.date} · ${a.credit}`}
-            </Text>
-          ))}
-        </View>
-
         <BottomInset />
       </ScrollView>
     </Screen>
@@ -242,13 +227,4 @@ const useStyles = makeStyles((c) => ({
   formatLabel: { ...typography.captionBold, color: c.textSecondary },
   formatNote: { ...typography.caption, color: c.textFaint, fontSize: 11, marginTop: 2 },
   busy: { paddingVertical: 18, alignItems: 'center' },
-  credits: { marginTop: spacing.sm, gap: 6 },
-  credit: { ...typography.caption, color: c.textFaint, fontSize: 11.5, lineHeight: 16 },
-  footnote: {
-    ...typography.caption,
-    color: c.textFaint,
-    textAlign: 'center',
-    marginTop: spacing.lg,
-    lineHeight: 18,
-  },
 }));

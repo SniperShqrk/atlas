@@ -277,20 +277,6 @@ function SetRow({
   return (
     <View style={[styles.setRow, s.completed && styles.setRowDone]}>
       <Pressable
-        style={[
-          styles.checkbox,
-          s.completed && { backgroundColor: colors.bronzeSoft, borderColor: colors.bronze },
-        ]}
-        onPress={() => {
-          haptics.tapMedium();
-          toggleSetComplete(entry.exerciseId, s.id);
-        }}
-        hitSlop={8}
-      >
-        {s.completed && <Icon name="check" size={12} color={colors.bronze} strokeWidth={2.5} />}
-      </Pressable>
-
-      <Pressable
         style={styles.colSet}
         onPress={() => updateSet(entry.exerciseId, s.id, { warmup: !s.warmup })}
         onLongPress={() => removeSet(entry.exerciseId, s.id)}
@@ -345,6 +331,22 @@ function SetRow({
           onCommit={(v) => updateSet(entry.exerciseId, s.id, { rpe: v })}
         />
       </View>
+
+      {/* Set-complete tickbox — right-hand end of the row, back where it was
+          before the swipe-gesture experiment, and bigger for a sweaty thumb. */}
+      <Pressable
+        style={[
+          styles.checkbox,
+          s.completed && { backgroundColor: colors.bronzeSoft, borderColor: colors.bronze },
+        ]}
+        onPress={() => {
+          haptics.tapMedium();
+          toggleSetComplete(entry.exerciseId, s.id);
+        }}
+        hitSlop={8}
+      >
+        {s.completed && <Icon name="check" size={16} color={colors.bronze} strokeWidth={2.5} />}
+      </Pressable>
     </View>
   );
 }
@@ -639,18 +641,13 @@ export default function WorkoutScreen() {
           showsVerticalScrollIndicator={false}
         >
           {active.entries.length === 0 && (
-            <>
-              <EmptyState
-                title="No exercises yet"
-                subtitle="Add exercises from the Exercise Library to start logging."
-              />
-              <Button
-                label="+ Add Exercise"
-                variant="secondary"
-                onPress={() => navigation.navigate('ExerciseLibrary', { picker: true })}
-                style={{ marginTop: spacing.md }}
-              />
-            </>
+            // The "+ Add Exercise" button below the full exercise list (further
+            // down this screen) already covers this — it rendered unconditionally,
+            // so an empty session was showing it twice.
+            <EmptyState
+              title="No exercises yet"
+              subtitle="Add exercises from the Exercise Library to start logging."
+            />
           )}
 
           {active.entries.map((entry) => {
@@ -721,22 +718,39 @@ export default function WorkoutScreen() {
                       <Text style={styles.swapEmpty}>No close substitutes with your equipment</Text>
                     )}
                     {swapCandidates.map((cand) => (
-                      <Pressable
-                        key={cand.exercise.id}
-                        style={styles.swapCard}
-                        onPress={() => {
-                          haptics.select();
-                          swapExerciseInActive(entry.exerciseId, cand.exercise.id);
-                          setSwapFor(null);
-                        }}
-                      >
-                        <Text style={styles.swapCardName} numberOfLines={2}>
-                          {cand.exercise.name}
-                        </Text>
-                        <Text style={styles.swapCardReason} numberOfLines={1}>
-                          {cand.reason}
-                        </Text>
-                      </Pressable>
+                      <View key={cand.exercise.id} style={styles.swapCard}>
+                        <Pressable
+                          onPress={() => {
+                            haptics.select();
+                            swapExerciseInActive(entry.exerciseId, cand.exercise.id);
+                            setSwapFor(null);
+                          }}
+                        >
+                          <View style={styles.swapCardTop}>
+                            <Text style={styles.swapCardName} numberOfLines={2}>
+                              {cand.exercise.name}
+                            </Text>
+                            {/* Look before you leap — a swap is a real decision
+                                (different setup, different feel), so it gets the
+                                same "i" straight into the exercise's own page
+                                that every other exercise row in the app uses,
+                                rather than swapping in blind off a one-line
+                                reason. */}
+                            <Pressable
+                              onPress={() =>
+                                navigation.navigate('ExerciseDetail', { exerciseId: cand.exercise.id })
+                              }
+                              hitSlop={8}
+                              style={styles.swapCardInfoBtn}
+                            >
+                              <Icon name="info" size={14} color={colors.textFaint} strokeWidth={1.6} />
+                            </Pressable>
+                          </View>
+                          <Text style={styles.swapCardReason} numberOfLines={2}>
+                            {cand.reason}
+                          </Text>
+                        </Pressable>
+                      </View>
                     ))}
                   </ScrollView>
                 )}
@@ -938,14 +952,14 @@ const useStyles = makeStyles((c) => ({
   },
   setRowDone: { backgroundColor: 'rgba(255,255,255,0.03)' },
   checkbox: {
-    width: 22,
-    height: 22,
+    width: 30,
+    height: 30,
     borderRadius: radius.sm,
     borderWidth: 1.5,
     borderColor: c.border,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 2,
+    marginLeft: 2,
   },
   setNumber: { ...typography.bodyMedium, color: c.textSecondary },
   warmupTag: { ...typography.captionBold, color: c.textFaint },
@@ -988,7 +1002,9 @@ const useStyles = makeStyles((c) => ({
     borderRadius: radius.md,
     padding: spacing.sm,
   },
-  swapCardName: { ...typography.bodyMedium, color: c.text },
+  swapCardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 4 },
+  swapCardInfoBtn: { padding: 2, marginTop: -2, marginRight: -4 },
+  swapCardName: { ...typography.bodyMedium, color: c.text, flex: 1 },
   swapCardReason: { ...typography.caption, color: c.textDim, marginTop: 4 },
   swapEmpty: { ...typography.caption, color: c.textFaint, paddingVertical: spacing.sm },
   exerciseFooter: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },

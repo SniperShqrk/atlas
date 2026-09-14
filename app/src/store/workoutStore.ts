@@ -171,6 +171,12 @@ interface WorkoutStoreState {
   // rest timer
   restEndsAt: number | null;
   restTotalSec: number;
+  /** Which exercise the current rest window belongs to — lets the Live
+   *  Activity and the on-screen timer name the lift you're resting from
+   *  instead of a generic "Resting". Preserved across the +15s/-15s
+   *  adjustments (they call startRest with no exerciseId), only replaced
+   *  when a new set kicks off a fresh rest window. */
+  restExerciseId: string | null;
 
   startSession: (name?: string) => void;
   /** target, when given, comes from a plan day or a saved Routine's exercise (both carry targetSets/targetReps) — seeds that many sets with that rep target instead of one empty 0/0 set, so starting a planned day doesn't throw away everything the plan already decided. */
@@ -225,7 +231,7 @@ interface WorkoutStoreState {
   updatePlanDay: (dayIndex: number, patch: Partial<Pick<GeneratedPlan['days'][number], 'label' | 'focus'>>) => void;
   removePlanDay: (dayIndex: number) => void;
   addPlanDay: () => void;
-  startRest: (seconds?: number) => void;
+  startRest: (seconds?: number, exerciseId?: string) => void;
   stopRest: () => void;
 
   /** Returns the entry it just created plus the id(s) of any same-day
@@ -297,6 +303,7 @@ export const useWorkoutStore = create<WorkoutStoreState>()(
       currentPlan: null,
       restEndsAt: null,
       restTotalSec: 120,
+      restExerciseId: null,
 
       startSession: (name) => {
         const hour = new Date().getHours();
@@ -319,14 +326,18 @@ export const useWorkoutStore = create<WorkoutStoreState>()(
         const active = get().activeSession;
         if (!active) return;
         if (active.entries.some((e) => e.exerciseId === exerciseId)) return;
-        const exercise = getExerciseById(exerciseId);
-        const isBodyweight = exercise?.equipment === 'bodyweight';
         // Carry the previous session's own numbers forward as real, committed,
         // editable values — not just a placeholder hint — since that's the
         // single most consistently praised mechanic across every competitor
         // logger researched. A target from a plan day/routine still wins on
         // set *count* (the plan knows what it wants), but weight/reps come
         // from history when it's there.
+        //
+        // This applies to bodyweight exercises too: bodyweight lifts are
+        // often done unweighted (prev.weightKg is naturally 0 then) but can
+        // just as easily carry added load (a weighted dip, a weighted
+        // pull-up) — whatever the user actually logged last time carries
+        // forward either way, the same as any other exercise.
         const previous = getPreviousSets(get().sessions, exerciseId);
         const repsSeed = parseRepsSeed(target?.targetReps);
         const setCount = Math.max(1, target?.targetSets ?? previous?.length ?? 1);
@@ -334,9 +345,7 @@ export const useWorkoutStore = create<WorkoutStoreState>()(
           const prev = previous?.[i];
           return {
             id: uid(),
-            // bodyweight lifts default to "no added load", not last session's
-            // number, since 0 is the meaningful/expected value there
-            weightKg: !isBodyweight && prev ? prev.weightKg : 0,
+            weightKg: prev?.weightKg ?? 0,
             reps: repsSeed || prev?.reps || 0,
             completed: false,
           };
@@ -365,8 +374,10 @@ export const useWorkoutStore = create<WorkoutStoreState>()(
         if (!active) return;
         if (oldExerciseId === newExerciseId) return;
         if (active.entries.some((e) => e.exerciseId === newExerciseId)) return;
-        const exercise = getExerciseById(newExerciseId);
-        const isBodyweight = exercise?.equipment === 'bodyweight';
+        // Same rule as addExerciseToActive: carry forward whatever weight was
+        // actually logged last time, bodyweight exercises included — an
+        // added-load bodyweight lift (a weighted dip) shouldn't reset to 0
+        // just because the exercise is filed under "bodyweight".
         const previous = getPreviousSets(get().sessions, newExerciseId);
         const entries = active.entries.map((e) => {
           if (e.exerciseId !== oldExerciseId) return e;
@@ -374,7 +385,7 @@ export const useWorkoutStore = create<WorkoutStoreState>()(
             const prev = previous?.[i];
             return {
               ...s,
-              weightKg: !isBodyweight && prev ? prev.weightKg : 0,
+              weightKg: prev?.weightKg ?? 0,
               reps: prev?.reps ?? s.reps,
               completed: false,
             };
@@ -442,7 +453,7 @@ export const useWorkoutStore = create<WorkoutStoreState>()(
           },
         });
         // completing a set kicks off the rest timer, like every good logger does
-        if (nowCompleted) get().startRest();
+        if (nowCompleted) get().startRest(undefined, exerciseId);
       },
 
       removeSet: (exerciseId, setId) => {
@@ -508,11 +519,12 @@ export const useWorkoutStore = create<WorkoutStoreState>()(
           activeSession: null,
           records,
           restEndsAt: null,
+          restExerciseId: null,
         });
         return completed;
       },
 
-      discardActiveSession: () => set({ activeSession: null, restEndsAt: null }),
+      discardActiveSession: () => set({ activeSession: null, restEndsAt: null, restExerciseId: null }),
 
       // Removes a past workout from history. Deliberately leaves `records`
       // (personal-best tracking) untouched — recomputing PRs from the
@@ -539,7 +551,11 @@ export const useWorkoutStore = create<WorkoutStoreState>()(
             id: uid(),
             createdAt: Date.now(),
             source: 'manual',
-            summary: 'Built by you.',
+            // Describes the plan, not who made it — the screen that shows
+            // this plan also prints a "Built by you." source note for
+            // source === 'manual', so a summary that said the same thing
+            // read as a literal duplicate.
+            summary: `${count} ${count === 1 ? 'day' : 'days'} a week · add your exercises to each day`,
             days: Array.from({ length: count }, (_, i) => ({
               label: `Day ${i + 1}`,
               focus: 'Custom',
@@ -672,12 +688,18 @@ export const useWorkoutStore = create<WorkoutStoreState>()(
         });
       },
 
-      startRest: (seconds) => {
+      startRest: (seconds, exerciseId) => {
         const secs = seconds ?? get().profile.defaultRestSec;
-        set({ restEndsAt: Date.now() + secs * 1000, restTotalSec: secs });
+        set({
+          restEndsAt: Date.now() + secs * 1000,
+          restTotalSec: secs,
+          // omitted on a +15s/-15s adjustment — keep whichever exercise the
+          // rest window already belonged to rather than clearing it
+          restExerciseId: exerciseId ?? get().restExerciseId,
+        });
       },
 
-      stopRest: () => set({ restEndsAt: null }),
+      stopRest: () => set({ restEndsAt: null, restExerciseId: null }),
 
       logBodyweight: (weightKg, note) => {
         const today = new Date().setHours(0, 0, 0, 0);

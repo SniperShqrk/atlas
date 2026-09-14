@@ -17,7 +17,7 @@ import { useAuth } from '@/store/auth';
 import { useWorkoutStore } from '@/store/workoutStore';
 import { pullCloudBackup, pushFullBackup } from '@/lib/dataSync';
 import { initNotificationHandling, scheduleTrainingReminder } from '@/lib/notifications';
-import { CoachSheet } from '@/components/CoachSheet';
+import { initDeepLinkHandling } from '@/lib/deepLinks';
 
 // No-op (and no network calls at all) when EXPO_PUBLIC_SENTRY_DSN isn't set,
 // which is the normal state for local dev — nobody needs a Sentry project
@@ -152,6 +152,7 @@ function useTrainingReminder() {
 
   useEffect(() => {
     initNotificationHandling();
+    initDeepLinkHandling();
   }, []);
 
   useEffect(() => {
@@ -169,10 +170,6 @@ function App() {
       <SafeAreaProvider>
         <ThemedStatusBar />
         <Gate />
-        {/* Mounted once at the root so any screen can raise it via
-            useCoach().openCoach() without owning a modal itself — the bottom-
-            sheet-not-a-tab decision from the AI-coach scoping doc, §3.1. */}
-        <CoachSheet />
       </SafeAreaProvider>
     </ThemeProvider>
   );

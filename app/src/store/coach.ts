@@ -131,19 +131,24 @@ export const useCoach = create<CoachState>((set, get) => ({
     const msg = get().messages.find((m) => m.id === messageId);
     if (!msg?.proposal || msg.proposalStatus !== 'pending') return;
     const workout = useWorkoutStore.getState();
+    // Narrowed onto a local const, not re-read off msg.proposal, so the
+    // type === '...' checks below actually stick inside the nested
+    // filter/map closures — TS drops narrowing on a property access (as
+    // opposed to a local const) once it crosses into a closure.
+    const proposal = msg.proposal;
 
-    if (msg.proposal.type === 'exercise_swap') {
-      workout.swapPlanExercise(msg.proposal.dayIndex, msg.proposal.exerciseIndex, msg.proposal.toExerciseId);
-    } else if (msg.proposal.type === 'session_timebox') {
+    if (proposal.type === 'exercise_swap') {
+      workout.swapPlanExercise(proposal.dayIndex, proposal.exerciseIndex, proposal.toExerciseId);
+    } else if (proposal.type === 'session_timebox') {
       const plan = workout.currentPlan;
       if (plan) {
-        const day = plan.days[msg.proposal.dayIndex];
+        const day = plan.days[proposal.dayIndex];
         if (day) {
-          const keep = day.exercises.filter((_, i) => !msg.proposal!.removeExerciseIndexes.includes(i));
+          const keep = day.exercises.filter((_, i) => !proposal.removeExerciseIndexes.includes(i));
           const days = plan.days.map((d, i) =>
-            i !== msg.proposal!.dayIndex
+            i !== proposal.dayIndex
               ? d
-              : { ...d, exercises: keep, estimatedMinutes: msg.proposal!.estimatedMinutes }
+              : { ...d, exercises: keep, estimatedMinutes: proposal.estimatedMinutes }
           );
           workout.syncPlanEdit({ ...plan, days });
         }

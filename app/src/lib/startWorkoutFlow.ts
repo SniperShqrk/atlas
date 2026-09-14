@@ -26,10 +26,12 @@ export function promptStartWorkout(opts: {
     return;
   }
 
+  // One-off workout / Routine / Plan are the three words used for these
+  // concepts everywhere in the app now — see the Plan screen rebuild notes.
   Alert.alert('Start Workout', 'How do you want to start?', [
-    { text: 'Start Empty', onPress: () => startSession() },
-    { text: 'Choose a Plan or Routine', onPress: onChoosePlanOrRoutine },
-    { text: 'Create a New Plan', onPress: onCreatePlan },
+    { text: 'One-off workout', onPress: () => startSession() },
+    { text: 'Follow a plan or routine', onPress: onChoosePlanOrRoutine },
+    { text: 'Create a plan', onPress: onCreatePlan },
     { text: 'Cancel', style: 'cancel' },
   ]);
 }

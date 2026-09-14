@@ -22,6 +22,9 @@ import ExerciseDetailScreen from '@/screens/ExerciseDetailScreen';
 import AddCustomExerciseScreen from '@/screens/AddCustomExerciseScreen';
 import HistoryScreen from '@/screens/HistoryScreen';
 import PlanScreen from '@/screens/PlanScreen';
+import PlanDetailScreen from '@/screens/PlanDetailScreen';
+import PlanSettingsScreen from '@/screens/PlanSettingsScreen';
+import ProgramsScreen from '@/screens/ProgramsScreen';
 import ProfileScreen from '@/screens/ProfileScreen';
 import AnalyticsScreen from '@/screens/AnalyticsScreen';
 import PaywallScreen from '@/screens/PaywallScreen';
@@ -148,6 +151,11 @@ export default function RootNavigator() {
           options={{ presentation: 'modal' }}
         />
         <Stack.Screen name="History" component={HistoryScreen} />
+        {/* Drill-in, not a modal — this is the plan the user is already
+            looking at, one level deeper, not a separate task. */}
+        <Stack.Screen name="PlanDetail" component={PlanDetailScreen} />
+        <Stack.Screen name="PlanSettings" component={PlanSettingsScreen} options={{ presentation: 'modal' }} />
+        <Stack.Screen name="Programs" component={ProgramsScreen} options={{ presentation: 'modal' }} />
         <Stack.Screen name="Paywall" component={PaywallScreen} options={{ presentation: 'modal' }} />
         <Stack.Screen name="SaveRoutine" component={SaveRoutineScreen} options={{ presentation: 'modal' }} />
         <Stack.Screen name="Bodyweight" component={BodyweightScreen} options={{ presentation: 'modal' }} />

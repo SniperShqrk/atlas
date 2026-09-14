@@ -71,6 +71,9 @@ export interface Artwork {
     brightness: number;
     /** which part of the frame to keep when cropping to portrait */
     gravity: 'north' | 'centre' | 'south';
+    /** vein/speck colour for the procedural fallback — defaults to the
+     *  theme's marbleLight when unset, same as MarbleTone in marbleStyles.ts */
+    veinColor?: string;
   };
 }
 

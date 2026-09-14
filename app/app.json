@@ -2,6 +2,7 @@
   "expo": {
     "name": "ATLAS",
     "slug": "atlas-fitness",
+    "scheme": "atlas",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -13,13 +14,13 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.hugosheehan.atlasapp",
-      "buildNumber": "10",
+      "buildNumber": "11",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
-      "package": "com.hugosheehan.atlas",
+      "package": "com.hugosheehan.atlasapp",
       "versionCode": 1
     },
     "plugins": [
@@ -31,7 +32,8 @@
           "backgroundColor": "#0D0D0E"
         }
       ],
-      "@sentry/react-native"
+      "@sentry/react-native",
+      "expo-audio"
     ],
     "runtimeVersion": "1.0.0",
     "updates": {

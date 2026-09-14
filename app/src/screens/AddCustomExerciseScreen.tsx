@@ -85,7 +85,8 @@ export default function AddCustomExerciseScreen() {
       } else {
         addExerciseToPlanDay(planDayIndex, created.id);
       }
-      navigation.navigate('Tabs', { screen: 'PlanTab' });
+      // Plan-day editing now lives on PlanDetail, not the Plan tab itself.
+      navigation.navigate('PlanDetail');
     } else if (fromPicker) {
       if (!activeSession) startSession();
       addExerciseToActive(created.id);

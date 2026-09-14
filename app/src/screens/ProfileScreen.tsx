@@ -77,10 +77,7 @@ export default function ProfileScreen() {
   const totalVolume = sessions.reduce((sum, s) => sum + sessionVolume(s), 0);
   const totalSets = sessions.reduce((sum, s) => sum + sessionSetCount(s), 0);
   const latestWeight = bodyweight[bodyweight.length - 1];
-  const achievements = computeAchievements(sessions, profile.daysPerWeek, {
-    bodyweightKg: profile.weightKg,
-    gender: profile.gender,
-  });
+  const achievements = computeAchievements(sessions, profile.daysPerWeek);
 
   const topRecords = Object.values(records)
     .sort((a, b) => b.bestE1rm - a.bestE1rm)
@@ -156,9 +153,12 @@ export default function ProfileScreen() {
 
         {/* Account — signing in/up on its own terms, independent of Friends &
             Groups below. Some people want their data backed up to an account
-            without ever touching the social side. */}
+            without ever touching the social side. Bronze outline + tint (the
+            same treatment the Pro card gets when active) so this row doesn't
+            read as just another settings link — it was getting lost between
+            Achievements and Friends & Groups above/below it. */}
         <Pressable
-          style={styles.linkRow}
+          style={[styles.linkRow, styles.accountRow]}
           onPress={() =>
             navigation.navigate(
               authSession && authProfile?.username ? 'Social' : 'Auth',
@@ -166,12 +166,15 @@ export default function ProfileScreen() {
             )
           }
         >
-          <Icon name="profile" size={20} color={colors.textSecondary} strokeWidth={1.6} />
+          <Icon name="profile" size={20} color={colors.bronze} strokeWidth={1.7} />
           <View style={{ flex: 1 }}>
             <Text style={styles.linkTitle}>Account</Text>
             <Text style={styles.linkMeta}>
               {authProfile?.username
-                ? `Signed in as @${authProfile.username}`
+                ? // The one-line confirmation that history is actually backed
+                  // up somewhere other than this phone — worth saying plainly
+                  // rather than leaving people to assume or wonder.
+                  `Signed in as @${authProfile.username} · training history backed up`
                 : 'Create an account or sign in — your data transfers with it'}
             </Text>
           </View>
@@ -563,6 +566,7 @@ const useStyles = makeStyles((c) => ({
     borderRadius: radius.lg,
     padding: spacing.lg,
   },
+  accountRow: { borderWidth: 1.5, borderColor: c.bronze, backgroundColor: c.bronzeSoft },
   linkTitle: { ...typography.bodyMedium, color: c.text },
   linkMeta: { ...typography.caption, color: c.textDim, marginTop: 2 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
