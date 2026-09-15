@@ -49,6 +49,13 @@ interface AuthState {
   cancelPasswordReset: () => void;
   signOut: () => Promise<void>;
   setUsername: (username: string) => Promise<{ error: string | null }>;
+  /** Permanently deletes the signed-in user's account — see
+   *  supabase/schema.sql's delete_own_account() for what this actually
+   *  removes (everything: profile, friendships, groups, stats, and the
+   *  full training backup all cascade from the auth.users row it deletes).
+   *  Required by App Store Review Guideline 5.1.1(v) for any app that lets
+   *  people create an account. */
+  deleteAccount: () => Promise<{ error: string | null }>;
 }
 
 let initialized = false;
@@ -239,6 +246,23 @@ export const useAuth = create<AuthState>()((set, get) => ({
       return { error: error.message };
     }
     await get().refreshProfile();
+    return { error: null };
+  },
+
+  deleteAccount: async () => {
+    if (!isSupabaseConfigured) return { error: 'Not signed in' };
+    set({ busy: true });
+    // security-definer RPC, not a direct table delete — deleting your own
+    // auth.users row needs a privilege level a normal signed-in user
+    // doesn't have (see supabase/schema.sql). It only ever targets
+    // auth.uid(), so it can't be used to delete anyone else's account.
+    const { error } = await supabase.rpc('delete_own_account');
+    if (error) {
+      set({ busy: false });
+      return { error: error.message };
+    }
+    await supabase.auth.signOut();
+    set({ busy: false, session: null, profile: null });
     return { error: null };
   },
 }));

@@ -39,6 +39,14 @@ export default function HistoryScreen() {
   // obvious which row is the one being pointed at
   const highlightId: string | undefined = route.params?.highlightSessionId;
   const [flashId, setFlashId] = useState<string | null>(null);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const toggleExpanded = (id: string) =>
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   const sorted = useMemo(
     () =>
@@ -146,26 +154,34 @@ export default function HistoryScreen() {
               </View>
 
               <View style={styles.exerciseList}>
-                {item.entries.slice(0, 5).map((entry) => {
-                  const ex = getExerciseById(entry.exerciseId);
-                  if (!ex) return null;
-                  const best = entry.sets.reduce(
-                    (b, s) => (s.weightKg * s.reps > b.weightKg * b.reps ? s : b),
-                    entry.sets[0]
-                  );
-                  return (
-                    <View key={entry.exerciseId} style={styles.exerciseRow}>
-                      <Text style={styles.exerciseName} numberOfLines={1}>
-                        {entry.sets.length} × {ex.name}
-                      </Text>
-                      <Text style={styles.exerciseBest}>
-                        {best ? `${displayWeight(best.weightKg, unit)}${unit} × ${best.reps}` : ''}
-                      </Text>
-                    </View>
-                  );
-                })}
+                {(expandedIds.has(item.id) ? item.entries : item.entries.slice(0, 5)).map(
+                  (entry) => {
+                    const ex = getExerciseById(entry.exerciseId);
+                    if (!ex) return null;
+                    const best = entry.sets.reduce(
+                      (b, s) => (s.weightKg * s.reps > b.weightKg * b.reps ? s : b),
+                      entry.sets[0]
+                    );
+                    return (
+                      <View key={entry.exerciseId} style={styles.exerciseRow}>
+                        <Text style={styles.exerciseName} numberOfLines={1}>
+                          {entry.sets.length} × {ex.name}
+                        </Text>
+                        <Text style={styles.exerciseBest}>
+                          {best ? `${displayWeight(best.weightKg, unit)}${unit} × ${best.reps}` : ''}
+                        </Text>
+                      </View>
+                    );
+                  }
+                )}
                 {item.entries.length > 5 && (
-                  <Text style={styles.more}>+{item.entries.length - 5} more</Text>
+                  <Pressable onPress={() => toggleExpanded(item.id)} hitSlop={6}>
+                    <Text style={styles.more}>
+                      {expandedIds.has(item.id)
+                        ? 'Show less'
+                        : `+${item.entries.length - 5} more`}
+                    </Text>
+                  </Pressable>
                 )}
               </View>
             </Card>

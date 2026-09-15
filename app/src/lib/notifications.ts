@@ -85,6 +85,57 @@ export async function scheduleTrainingReminder(sessions: WorkoutSession[]): Prom
   }
 }
 
+const REST_COMPLETE_ID = 'atlas-rest-complete';
+
+/**
+ * Schedules a local notification for the exact moment the current rest
+ * window ends. The in-app chirp (lib/sound.ts) and haptic in RestTimer.tsx
+ * only fire while the JS timer is actually ticking in the foreground — RN
+ * pauses that interval the moment the app backgrounds, which is exactly why
+ * "it's been 5 minutes and it only beeped once I reopened the app" happens.
+ * A scheduled OS notification fires at the right time regardless of app
+ * state, and doubles as the alert when the phone's locked or on silent.
+ *
+ * Cancels whatever was pending first, so every +15s/-15s adjustment or a
+ * fresh set's rest window replaces the old alarm instead of stacking a
+ * second one behind it.
+ */
+export async function scheduleRestCompleteNotification(endsAt: number): Promise<void> {
+  try {
+    await Notifications.cancelScheduledNotificationAsync(REST_COMPLETE_ID);
+    const granted = await ensureNotificationPermission();
+    if (!granted) return;
+
+    await Notifications.scheduleNotificationAsync({
+      identifier: REST_COMPLETE_ID,
+      content: {
+        title: 'Rest complete',
+        body: 'Back to it.',
+        sound: true,
+        data: { screen: 'WorkoutTab' },
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: new Date(endsAt),
+      },
+    });
+  } catch {
+    // best-effort — a missed alarm here still leaves the in-app chirp as
+    // the fallback for anyone who's actually looking at the phone
+  }
+}
+
+/** Call whenever rest ends any way other than the clock running out —
+ *  stopping it, finishing or discarding the session — so a notification
+ *  doesn't fire for a rest window that's no longer real. */
+export async function cancelRestCompleteNotification(): Promise<void> {
+  try {
+    await Notifications.cancelScheduledNotificationAsync(REST_COMPLETE_ID);
+  } catch {
+    // best-effort
+  }
+}
+
 /**
  * Registers the foreground display behavior and the tap handler that deep
  * links into the Workout tab. Call once, near app start (see App.tsx) —
@@ -112,13 +163,15 @@ export function initNotificationHandling() {
   // resolve, and TS would otherwise flag these as implicit-any. Once the
   // package is installed this keeps working — it just stops being the
   // tightest possible type — so there's nothing to revisit here.
+  const isWorkoutNotification = (id: string) => id === REMINDER_ID || id === REST_COMPLETE_ID;
+
   Notifications.addNotificationResponseReceivedListener((response: any) => {
-    if (response.notification.request.identifier === REMINDER_ID) goToWorkout();
+    if (isWorkoutNotification(response.notification.request.identifier)) goToWorkout();
   });
 
   // App was launched fresh by tapping the notification — the listener above
   // never fires for this case, since it wasn't running yet to hear it.
   Notifications.getLastNotificationResponseAsync().then((response: any) => {
-    if (response?.notification.request.identifier === REMINDER_ID) goToWorkout();
+    if (response && isWorkoutNotification(response.notification.request.identifier)) goToWorkout();
   });
 }

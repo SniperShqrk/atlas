@@ -443,3 +443,35 @@ create policy "custom_exercises owner all" on public.custom_exercises
 drop policy if exists "bodyweight_entries owner all" on public.bodyweight_entries;
 create policy "bodyweight_entries owner all" on public.bodyweight_entries
   for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- Account deletion — required by App Store Review Guideline 5.1.1(v): any
+-- app that lets someone create an account must also let them delete it.
+--
+-- Deleting the auth.users row is enough on its own: profiles references it
+-- `on delete cascade`, and every table above references profiles the same
+-- way, so one delete here removes the profile, friendships, group
+-- memberships, exercise_stats, profile_stats, and the full personal backup
+-- (workout_sessions, routines, custom_exercises, bodyweight_entries) in one
+-- transaction. Known edge case, deliberately not handled specially: if the
+-- deleted account created a group, that group (and its other members'
+-- membership rows) goes with it, since groups.created_by also cascades from
+-- profiles — acceptable for a small social feature, not worth an ownership
+-- hand-off flow for v1.
+--
+-- security definer because a normal authenticated role has no grants on the
+-- auth schema at all — this function runs as its owner (postgres) instead,
+-- which does. It only ever deletes auth.uid()'s own row, never an id the
+-- caller passes in, so there's no way to use it on anyone else's account.
+create or replace function public.delete_own_account()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  delete from auth.users where id = auth.uid();
+end;
+$$;
+
+grant execute on function public.delete_own_account() to authenticated;

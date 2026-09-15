@@ -761,6 +761,12 @@ export default function WorkoutScreen() {
                   <Text style={[styles.th, styles.colWeight, styles.center]}>{unit.toUpperCase()}</Text>
                   <Text style={[styles.th, styles.colInput, styles.center]}>REPS</Text>
                   <Text style={[styles.th, styles.colRpe, styles.center]}>RPE</Text>
+                  {/* Matches the checkbox's own width+margin at the end of
+                      every SetRow — without this, PREVIOUS's flex:1 eats
+                      that space in the header but not in the data rows,
+                      which drags KG/REPS/RPE header labels to the right of
+                      the actual inputs they're meant to sit above. */}
+                  <View style={styles.colCheckSpacer} />
                 </View>
 
                 {entry.sets.map((s, idx) => {
@@ -942,6 +948,7 @@ const useStyles = makeStyles((c) => ({
   colInput: { width: 54 },
   colWeight: { width: 104, flexDirection: 'row', alignItems: 'center', gap: 2 },
   colRpe: { width: 38 },
+  colCheckSpacer: { width: 30, marginLeft: 2 },
   setRow: {
     flexDirection: 'row',
     alignItems: 'center',

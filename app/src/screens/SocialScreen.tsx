@@ -39,6 +39,8 @@ export default function SocialScreen() {
   const session = useAuth((s) => s.session);
   const profile = useAuth((s) => s.profile);
   const signOut = useAuth((s) => s.signOut);
+  const deleteAccount = useAuth((s) => s.deleteAccount);
+  const [deleting, setDeleting] = useState(false);
 
   // Defense in depth: AuthScreen is the only place that's supposed to grant
   // entry here (it won't move on until a session AND a username exist), but
@@ -144,6 +146,30 @@ export default function SocialScreen() {
     }
     setJoinCodeInput('');
     load();
+  };
+
+  const onDeleteAccount = () => {
+    Alert.alert(
+      'Delete your account?',
+      'This permanently deletes your account, your training history backup, and your friends and groups data. Anything only ever stored on this device stays until you delete the app. This can\'t be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete Account',
+          style: 'destructive',
+          onPress: async () => {
+            setDeleting(true);
+            const { error } = await deleteAccount();
+            setDeleting(false);
+            if (error) {
+              Alert.alert("Couldn't delete account", error);
+              return;
+            }
+            navigation.navigate('Auth');
+          },
+        },
+      ]
+    );
   };
 
   if (!session || !profile?.username) return null;
@@ -307,6 +333,22 @@ export default function SocialScreen() {
             )}
           </>
         )}
+
+        {/* Deliberately down here rather than next to Sign Out in the header
+            — that's a routine, reversible action; this one needs its own
+            weight and a full confirmation, not a spot next to something
+            casual. */}
+        <Pressable
+          style={styles.deleteAccountRow}
+          onPress={onDeleteAccount}
+          disabled={deleting}
+        >
+          {deleting ? (
+            <ActivityIndicator color={colors.danger} size="small" />
+          ) : (
+            <Text style={styles.deleteAccountText}>Delete Account</Text>
+          )}
+        </Pressable>
       </View>
     </Screen>
   );
@@ -315,6 +357,12 @@ export default function SocialScreen() {
 const useStyles = makeStyles((c) => ({
   content: { padding: spacing.lg },
   signOut: { ...typography.caption, color: c.danger, fontWeight: '600' },
+  deleteAccountRow: {
+    alignItems: 'center',
+    marginTop: spacing.xxl,
+    paddingVertical: spacing.md,
+  },
+  deleteAccountText: { ...typography.caption, color: c.danger },
   meRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.lg },
   meText: { ...typography.h3, color: c.text },
   avatar: {

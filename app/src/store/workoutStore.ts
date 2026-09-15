@@ -12,6 +12,7 @@ import {
 } from '@/data/exercises';
 import { MovementPattern } from '@/data/patterns';
 import { estimate1RM } from '@/store/formulas';
+import { scheduleRestCompleteNotification, cancelRestCompleteNotification } from '@/lib/notifications';
 
 export { estimate1RM };
 
@@ -514,6 +515,7 @@ export const useWorkoutStore = create<WorkoutStoreState>()(
           }
         }
 
+        cancelRestCompleteNotification();
         set({
           sessions: [...get().sessions, completed],
           activeSession: null,
@@ -524,7 +526,10 @@ export const useWorkoutStore = create<WorkoutStoreState>()(
         return completed;
       },
 
-      discardActiveSession: () => set({ activeSession: null, restEndsAt: null, restExerciseId: null }),
+      discardActiveSession: () => {
+        cancelRestCompleteNotification();
+        set({ activeSession: null, restEndsAt: null, restExerciseId: null });
+      },
 
       // Removes a past workout from history. Deliberately leaves `records`
       // (personal-best tracking) untouched — recomputing PRs from the
@@ -690,16 +695,23 @@ export const useWorkoutStore = create<WorkoutStoreState>()(
 
       startRest: (seconds, exerciseId) => {
         const secs = seconds ?? get().profile.defaultRestSec;
+        const endsAt = Date.now() + secs * 1000;
         set({
-          restEndsAt: Date.now() + secs * 1000,
+          restEndsAt: endsAt,
           restTotalSec: secs,
           // omitted on a +15s/-15s adjustment — keep whichever exercise the
           // rest window already belonged to rather than clearing it
           restExerciseId: exerciseId ?? get().restExerciseId,
         });
+        // Fire-and-forget — a background notification is how the alert
+        // actually reaches anyone who's put the phone down mid-rest.
+        scheduleRestCompleteNotification(endsAt);
       },
 
-      stopRest: () => set({ restEndsAt: null, restExerciseId: null }),
+      stopRest: () => {
+        cancelRestCompleteNotification();
+        set({ restEndsAt: null, restExerciseId: null });
+      },
 
       logBodyweight: (weightKg, note) => {
         const today = new Date().setHours(0, 0, 0, 0);

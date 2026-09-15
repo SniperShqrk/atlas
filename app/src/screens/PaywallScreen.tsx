@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, Alert, TextInput } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, Alert, TextInput, Linking } from 'react-native';
 import { PACKAGE_TYPE, PurchasesOffering, PurchasesPackage } from 'react-native-purchases';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Screen, Button } from '@/components/ui';
@@ -60,6 +60,12 @@ const VALUE_HEADLINE: Record<ProFeature, string> = {
   csv_export: 'Your data, never locked in',
 };
 const DEFAULT_FEATURE: ProFeature = 'ai_planner';
+
+// Required by App Store Review Guideline 3.1.2 — a subscription purchase
+// screen needs functional links to both of these. Update these two URLs if
+// the policies ever move to a custom domain.
+const TERMS_URL = 'https://claude.ai/artifact/3YjD3VREpPyPRgGifwTgwE';
+const PRIVACY_URL = 'https://claude.ai/artifact/BXEacmASR1Yia4ghuBgtfb';
 
 /** The whole free-vs-premium picture in one glance, replacing two separate
  *  walls of text (a card per Pro feature, then a bulleted "always free"
@@ -295,6 +301,15 @@ export default function PaywallScreen() {
           No trial to expire and no session caps — the free tier is permanent. Cancel any time;
           your logged workouts stay yours either way.
         </Text>
+        <View style={styles.legalRow}>
+          <Pressable onPress={() => Linking.openURL(TERMS_URL)} hitSlop={8}>
+            <Text style={styles.legalLink}>Terms of Use</Text>
+          </Pressable>
+          <Text style={styles.legalDot}>·</Text>
+          <Pressable onPress={() => Linking.openURL(PRIVACY_URL)} hitSlop={8}>
+            <Text style={styles.legalLink}>Privacy Policy</Text>
+          </Pressable>
+        </View>
         <BottomInset extra={spacing.lg} />
       </ScrollView>
     </Screen>
@@ -387,4 +402,13 @@ const useStyles = makeStyles((c) => ({
     marginTop: spacing.md,
     lineHeight: 18,
   },
+  legalRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  legalLink: { ...typography.caption, color: c.textDim, textDecorationLine: 'underline' },
+  legalDot: { color: c.textFaint, fontSize: 10 },
 }));

@@ -162,19 +162,19 @@ const marble: Palette = {
   textDim: '#6F6A61',
   textFaint: '#9A948A',
 
-  accent: '#9C3A24',
-  accentPressed: '#7E2D19',
-  accentSoft: 'rgba(156,58,36,0.12)',
+  accent: '#B3452A',
+  accentPressed: '#8F3620',
+  accentSoft: 'rgba(179,69,42,0.12)',
 
-  bronze: '#8A6224',
-  bronzeSoft: 'rgba(138,98,36,0.13)',
+  bronze: '#8C651F',
+  bronzeSoft: 'rgba(140,101,31,0.13)',
 
-  success: '#8A6224',
-  successSoft: 'rgba(138,98,36,0.12)',
+  success: '#8C651F',
+  successSoft: 'rgba(140,101,31,0.12)',
   danger: '#8F3222',
   dangerSoft: 'rgba(143,50,34,0.12)',
-  warning: '#8A6224',
-  gold: '#8A6224',
+  warning: '#8C651F',
+  gold: '#8C651F',
 
   // The figure has to be materially darker than the page, or a rested muscle —
   // which is the palest thing on the scale — disappears into the body it is
@@ -188,8 +188,8 @@ const marble: Palette = {
   marbleMid: '#57534B',
   marbleShade: '#8A857B',
 
-  targetPrimary: '#9C3A24',
-  targetSecondary: '#8A6224',
+  targetPrimary: '#B3452A',
+  targetSecondary: '#8C651F',
 
   // same direction as every other theme: palest is rested, accent is trashed.
   // Marble's own surfaces (bg/card/cardAlt) sit near #F0EAE0, so "palest" here
@@ -198,8 +198,8 @@ const marble: Palette = {
   // against cardAlt in the recovery bars.
   recoveryFresh: '#D8D0BC',
   recoveryReady: '#C2B696',
-  recoveryModerate: '#8A6224',
-  recoveryFatigued: '#9C3A24',
+  recoveryModerate: '#8C651F',
+  recoveryFatigued: '#B3452A',
   recoveryUntrained: '#B5AE9F',
 
   onAccent: '#FAF8F4',

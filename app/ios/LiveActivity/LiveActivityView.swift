@@ -212,10 +212,18 @@ import WidgetKit
                 ProgressView(timerInterval: Date.toTimerInterval(miliseconds: date))
                   .tint(progressViewTint)
                   .modifier(ConditionalForegroundViewModifier(color: attributes.progressViewLabelColor))
+                  // The system track is only a couple of points tall by default
+                  // on the Lock Screen — scaleEffect visually stretches the
+                  // whole track+fill rather than just its bounding frame,
+                  // which is what .frame(height:) alone fails to do here.
+                  .scaleEffect(x: 1, y: 1.8, anchor: .center)
+                  .padding(.vertical, 3)
               } else if let progress = contentState.progress {
                 ProgressView(value: progress)
                   .tint(progressViewTint)
                   .modifier(ConditionalForegroundViewModifier(color: attributes.progressViewLabelColor))
+                  .scaleEffect(x: 1, y: 1.8, anchor: .center)
+                  .padding(.vertical, 3)
               }
             }
           }.layoutPriority(1)
@@ -233,10 +241,14 @@ import WidgetKit
             ProgressView(timerInterval: Date.toTimerInterval(miliseconds: date))
               .tint(progressViewTint)
               .modifier(ConditionalForegroundViewModifier(color: attributes.progressViewLabelColor))
+              .scaleEffect(x: 1, y: 1.8, anchor: .center)
+              .padding(.vertical, 3)
           } else if let progress = contentState.progress {
             ProgressView(value: progress)
               .tint(progressViewTint)
               .modifier(ConditionalForegroundViewModifier(color: attributes.progressViewLabelColor))
+              .scaleEffect(x: 1, y: 1.8, anchor: .center)
+              .padding(.vertical, 3)
           }
         }
       }

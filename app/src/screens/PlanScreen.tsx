@@ -5,7 +5,7 @@ import { Screen, Card, Button, SectionHeader, Chip } from '@/components/ui';
 import { ScreenLayout } from '@/components/ScreenLayout';
 import { ProBadge } from '@/components/Pro';
 import { Icon } from '@/components/Icon';
-import { spacing, typography } from '@/theme/theme';
+import { radius, spacing, typography } from '@/theme/theme';
 import { makeStyles, useTheme } from '@/theme/ThemeProvider';
 import { useWorkoutStore } from '@/store/workoutStore';
 import { useEntitlements } from '@/store/entitlements';
@@ -90,21 +90,23 @@ export default function PlanScreen() {
     <Screen>
       <ScreenLayout>
         <View style={styles.titleRow}>
-          <Text style={styles.title}>Plan</Text>
-        </View>
-
-        <Pressable
-          onPress={() => navigation.navigate('PlanSettings')}
-          style={({ pressed }) => [styles.settingsLine, pressed && { opacity: 0.7 }]}
-        >
-          <Text style={styles.subtitle}>
-            {profile.daysPerWeek} days · {profile.sessionMinutes} min · {profile.goal.replace('_', ' ')}
-          </Text>
-          <View style={styles.settingsLineRight}>
-            <Text style={styles.settingsLineTap}>Tap to change</Text>
-            <Icon name="chevron" size={14} color={colors.textFaint} strokeWidth={1.8} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>Plan</Text>
+            <Text style={styles.subtitle}>
+              {profile.daysPerWeek} days · {profile.sessionMinutes} min · {profile.goal.replace('_', ' ')}
+            </Text>
           </View>
-        </Pressable>
+          {/* Was a plain "Tap to change" text link under the subtitle — easy
+              to miss entirely. A real bronze pill button (same pattern as
+              the Workout screen's "How to use") is unmissable at a glance. */}
+          <Pressable
+            onPress={() => navigation.navigate('PlanSettings')}
+            style={({ pressed }) => [styles.settingsButton, pressed && { opacity: 0.7 }]}
+          >
+            <Icon name="settings" size={16} color={colors.bronze} strokeWidth={1.8} />
+            <Text style={styles.settingsButtonText}>Settings</Text>
+          </Pressable>
+        </View>
 
         {/* Guarantees an open plan is never lost and never hides anything
             else on this screen — it's just one more card among the others. */}
@@ -314,15 +316,19 @@ export default function PlanScreen() {
 const useStyles = makeStyles((c) => ({
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   title: { ...typography.hero, color: c.text },
-  settingsLine: {
+  subtitle: { ...typography.body, color: c.textDim, textTransform: 'capitalize', marginTop: 2 },
+  settingsButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 2,
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: radius.pill,
+    backgroundColor: c.bronzeSoft,
+    borderWidth: 1,
+    borderColor: c.bronze,
   },
-  settingsLineRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  subtitle: { ...typography.body, color: c.textDim, textTransform: 'capitalize' },
-  settingsLineTap: { ...typography.caption, color: c.textFaint },
+  settingsButtonText: { ...typography.caption, color: c.bronze, fontWeight: '700' },
   currentPlanCard: {
     backgroundColor: c.bronzeSoft,
     borderWidth: 1.5,

@@ -642,8 +642,17 @@ export interface LiftPoint {
   sessionId: string;
 }
 
-/** Best estimated 1RM per session for one lift, oldest first. */
-export function liftSeries(sessions: WorkoutSession[], exerciseId: string): LiftPoint[] {
+/** Best estimated 1RM per session for one lift, oldest first. bodyweightKg is
+ *  only applied when the lift is bodyweight equipment (see estimate1RM) — it
+ *  is what lets a rep increase on a push-up or pull-up register as progress
+ *  instead of a flat 0kg line. */
+export function liftSeries(
+  sessions: WorkoutSession[],
+  exerciseId: string,
+  bodyweightKg = 0
+): LiftPoint[] {
+  const exercise = getExerciseById(exerciseId);
+  const bw = exercise?.equipment === 'bodyweight' ? bodyweightKg : 0;
   return sessions
     .map((session) => {
       const entry = session.entries.find((e) => e.exerciseId === exerciseId);
@@ -651,7 +660,7 @@ export function liftSeries(sessions: WorkoutSession[], exerciseId: string): Lift
       let best: LiftPoint | null = null;
       for (const s of entry.sets) {
         if (!isWorkingSet(s)) continue;
-        const e1rm = estimate1RM(s.weightKg, s.reps);
+        const e1rm = estimate1RM(s.weightKg, s.reps, bw);
         if (!best || e1rm > best.e1rm) {
           best = {
             at: sessionTime(session),
@@ -691,7 +700,8 @@ export function liftProgress(
   sessions: WorkoutSession[],
   w: Window,
   now: number = Date.now(),
-  minSessions = 3
+  minSessions = 3,
+  bodyweightKg = 0
 ): LiftProgress[] {
   const inWindow = sessionsInWindow(sessions, w);
   const ids = new Set<string>();
@@ -699,7 +709,7 @@ export function liftProgress(
 
   const out: LiftProgress[] = [];
   for (const id of ids) {
-    const series = liftSeries(inWindow, id);
+    const series = liftSeries(inWindow, id, bodyweightKg);
     if (series.length < minSessions) continue;
     const ex = getExerciseById(id);
     const first = series[0];

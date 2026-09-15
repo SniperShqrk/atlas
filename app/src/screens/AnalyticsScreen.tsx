@@ -107,17 +107,30 @@ export default function AnalyticsScreen() {
   const lifts = useMemo(() => trackedLifts(inWindow, 8), [inWindow]);
   const [selectedLift, setSelectedLift] = useState<string | null>(null);
   const activeLift = selectedLift && lifts.includes(selectedLift) ? selectedLift : lifts[0] ?? null;
+
+  // Most recent weigh-in first, falling back to the profile's stored weight,
+  // and quietly null (not an error state) if neither is set yet. Computed
+  // here — before the lift-series/lift-progress memos below — because a
+  // bodyweight exercise's e1RM needs it to register a rep increase as
+  // progress at all (see estimate1RM/liftSeries): weightKg on a push-up or
+  // pull-up is only the ADDED weight, so without a bodyweight number a set
+  // that jumps from 8 reps to 15 at the same 0kg looks like zero progress.
+  const latestBodyweightKg = useMemo(() => {
+    if (!bodyweight.length) return profile.weightKg ?? null;
+    return bodyweight.reduce((latest, b) => (!latest || b.at > latest.at ? b : latest)).weightKg;
+  }, [bodyweight, profile.weightKg]);
+
   const series = useMemo(
-    () => (activeLift ? liftSeries(inWindow, activeLift) : []),
-    [inWindow, activeLift]
+    () => (activeLift ? liftSeries(inWindow, activeLift, latestBodyweightKg ?? 0) : []),
+    [inWindow, activeLift, latestBodyweightKg]
   );
 
   const movers = useMemo(
     () =>
-      liftProgress(sessions, window, now, 3)
+      liftProgress(sessions, window, now, 3, latestBodyweightKg ?? 0)
         .slice()
         .sort((a, b) => b.deltaKg - a.deltaKg),
-    [sessions, window, now]
+    [sessions, window, now, latestBodyweightKg]
   );
 
   const prs = useMemo(
@@ -153,16 +166,19 @@ export default function AnalyticsScreen() {
     [sessions]
   );
   const hasTwoMonthsHistory = firstTrainedAt !== null && now - firstTrainedAt >= 60 * 24 * 60 * 60 * 1000;
+  // Same idea, one week out: Consistency's adherence % only counts complete
+  // calendar weeks before this one (see consistency() in analytics.ts), so
+  // inside your first week it has zero complete weeks to look at and reads
+  // as "0% adherence" even if you've trained every single day so far. Volume
+  // Landmarks divides total sets by the window length in weeks to get a
+  // weekly rate — accurate once a real week has passed, but a wild
+  // over/under-estimate from two or three days of data. Both need a real
+  // week behind them before the number means what it says.
+  const hasWeekHistory = firstTrainedAt !== null && now - firstTrainedAt >= 7 * 24 * 60 * 60 * 1000;
 
   // Bodyweight-relative strength standard for whichever lift is selected in
-  // the Strength Trend chip row below — most recent weigh-in first, falling
-  // back to the profile's stored weight, and quietly absent (not an error
-  // state) for any lift without a standard table or with no bodyweight yet.
-  const latestBodyweightKg = useMemo(() => {
-    if (!bodyweight.length) return profile.weightKg ?? null;
-    return bodyweight.reduce((latest, b) => (!latest || b.at > latest.at ? b : latest)).weightKg;
-  }, [bodyweight, profile.weightKg]);
-
+  // the Strength Trend chip row below — quietly absent (not an error state)
+  // for any lift without a standard table or with no bodyweight yet.
   const standard = useMemo(() => {
     if (!activeLift) return null;
     const e1rm = records[activeLift]?.bestE1rm;
@@ -402,6 +418,19 @@ export default function AnalyticsScreen() {
                     </View>
                   )}
 
+                  {/* Bodyweight lifts only log ADDED weight (0kg for a plain
+                      push-up), so the trend below is built on bodyweight +
+                      added weight rather than added weight alone — otherwise
+                      going from 8 to 15 reps at 0kg would plot as no change
+                      at all, when it's a real strength gain. */}
+                  {activeLift && getExerciseById(activeLift)?.equipment === 'bodyweight' && (
+                    <Text style={styles.bodyweightNote}>
+                      {latestBodyweightKg
+                        ? `Tracked against your ${displayWeight(latestBodyweightKg, unit)}${unit} bodyweight, so more reps at the same weight still counts as progress.`
+                        : 'Log your bodyweight in Profile so rep increases on this lift count as progress here.'}
+                    </Text>
+                  )}
+
                   <View style={{ marginTop: spacing.md }}>
                     <TrendChart
                       points={series.map((p) => ({
@@ -505,43 +534,63 @@ export default function AnalyticsScreen() {
         {/* ---------------- consistency ---------------- */}
         <View style={{ marginTop: spacing.xl }}>
           <SectionHeader title="Consistency" />
-          <Card>
-            <View style={{ flexDirection: 'row', marginBottom: spacing.lg }}>
-              <StatTile label="Week streak" value={`${streak.weekStreak}`} />
-              <StatTile label="Best run" value={`${streak.longestWeekStreak}w`} />
-              <StatTile label="Adherence" value={`${streak.adherencePct}%`} />
-            </View>
-            <ConsistencyGrid days={days} />
-          </Card>
+          {hasWeekHistory ? (
+            <Card>
+              <View style={{ flexDirection: 'row', marginBottom: spacing.lg }}>
+                <StatTile label="Week streak" value={`${streak.weekStreak}`} />
+                <StatTile label="Best run" value={`${streak.longestWeekStreak}w`} />
+                <StatTile label="Adherence" value={`${streak.adherencePct}%`} />
+              </View>
+              <ConsistencyGrid days={days} />
+            </Card>
+          ) : (
+            <Card>
+              <Text style={styles.note}>
+                Complete a week of training to see your streak and adherence — this week's
+                still in progress, so there's no full week behind it yet.
+              </Text>
+            </Card>
+          )}
         </View>
 
         {/* ---------------- weekly volume landmarks ---------------- */}
         <View style={{ marginTop: spacing.xl }}>
           <SectionHeader title="Volume Landmarks" />
           <ProGate feature="volume_landmarks">
-            <Card>
-              <Text style={styles.note}>
-                Working sets per muscle per week. The shaded band is the range most lifters
-                grow in; below it is maintenance.
-              </Text>
-              <View style={{ marginTop: spacing.sm }}>
-                {(Object.keys(WEEKLY_SET_TARGETS) as MuscleGroup[])
-                  .map((m) => ({
-                    m,
-                    sets: Math.round(((perMuscle[m] ?? 0) / weeks) * 10) / 10,
-                  }))
-                  .sort((a, b) => b.sets - a.sets)
-                  .map(({ m, sets }) => (
-                    <VolumeBar
-                      key={m}
-                      label={MUSCLE_LABELS[m]}
-                      sets={sets}
-                      maintenance={WEEKLY_SET_TARGETS[m].maintenance}
-                      growth={WEEKLY_SET_TARGETS[m].growth}
-                    />
-                  ))}
-              </View>
-            </Card>
+            {hasWeekHistory ? (
+              <Card>
+                <Text style={styles.note}>
+                  Working sets per muscle per week. The shaded band is the range most lifters
+                  grow in; below it is maintenance.
+                </Text>
+                <View style={{ marginTop: spacing.sm }}>
+                  {(Object.keys(WEEKLY_SET_TARGETS) as MuscleGroup[])
+                    .map((m) => ({
+                      m,
+                      sets: Math.round(((perMuscle[m] ?? 0) / weeks) * 10) / 10,
+                    }))
+                    .sort((a, b) => b.sets - a.sets)
+                    .map(({ m, sets }) => (
+                      <VolumeBar
+                        key={m}
+                        label={MUSCLE_LABELS[m]}
+                        sets={sets}
+                        maintenance={WEEKLY_SET_TARGETS[m].maintenance}
+                        growth={WEEKLY_SET_TARGETS[m].growth}
+                      />
+                    ))}
+                </View>
+              </Card>
+            ) : (
+              <Card>
+                <Text style={styles.note}>
+                  Complete a week of training to see this. It works out sets-per-muscle as a
+                  weekly rate, and a week is how long it takes for that rate to mean anything —
+                  any earlier and a couple of sessions get stretched or squeezed into a "per
+                  week" number that isn't real yet.
+                </Text>
+              </Card>
+            )}
           </ProGate>
         </View>
 
@@ -687,5 +736,6 @@ const useStyles = makeStyles((c) => ({
   standardRow: { marginTop: spacing.md },
   standardTier: { ...typography.bodyMedium, color: c.bronze, fontWeight: '700' },
   standardNote: { ...typography.caption, color: c.textFaint, marginTop: 2 },
+  bodyweightNote: { ...typography.caption, color: c.textFaint, marginTop: spacing.sm },
   tapHint: { ...typography.caption, color: c.textFaint, textAlign: 'center', marginTop: spacing.sm },
 }));
